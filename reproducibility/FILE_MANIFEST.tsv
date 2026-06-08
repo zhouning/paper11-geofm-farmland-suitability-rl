@@ -3,6 +3,7 @@ README.md	documentation	Repository overview, scope boundary, quick start, and re
 requirements.txt	environment	Python dependencies for smoke checks and full RL/runtime inspection.
 .gitignore	repository	Ignore rules for local environments, caches, generated outputs, and large artifacts.
 docs/source_notes/paper11_design_thought.md	source_note	Original Paper11 design thought copied from the source Paper58 workspace.
+docs/superpowers/specs/2026-06-08-phase1-bishan-geofm-baseline-design.md	design	Approved Phase 1 design for an executable Bishan GeoFM representation baseline.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
