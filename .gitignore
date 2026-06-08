@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.pytest_tmp/
 
 # Local environments
 .venv/
@@ -18,6 +19,7 @@ CHECKPOINT.md
 # Generated experiment outputs
 experiments/**/results/
 experiments/**/weights/
+experiments/**/outputs/
 runs/
 logs/
 

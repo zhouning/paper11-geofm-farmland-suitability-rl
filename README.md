@@ -17,6 +17,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `paper/design/`: Paper11 design package, including system design, experiment plan, manuscript outline, and risk boundaries.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
+- `experiments/phase1_bishan_baseline/`: executable Phase 1 Bishan GeoFM representation baseline.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, suitability proxy scoring, and artifact export.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -41,12 +43,22 @@ python -m pytest tests
 
 The smoke check reads the included Bishan sample arrays and verifies metadata. It does not run training, contact Google Earth Engine, or require GPU access.
 
+Run the Phase 1 Bishan GeoFM representation baseline:
+
+```powershell
+python experiments\phase1_bishan_baseline\run_phase1.py
+```
+
+The command writes `region_features.csv` and `summary.json` under `experiments/phase1_bishan_baseline/outputs/`. These outputs are generated artifacts and are ignored by Git.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
 - System design: `paper/design/02_system_design.md`
 - Experiment plan: `paper/design/03_experiment_plan.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
+- Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
+- Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
 - Legacy county environment: `src/legacy_runtime/county_env.py`

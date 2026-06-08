@@ -28,7 +28,28 @@ Expected outcome:
 - `data/bishan_alphaearth_sample/metadata.json` reports years 2017-2024 and embedding dimension 64;
 - each included Bishan embedding array is readable and has final dimension 64.
 
-## 3. Inspect the Paper11 Design
+## 3. Run the Phase 1 Bishan Baseline
+
+Run:
+
+```powershell
+python experiments\phase1_bishan_baseline\run_phase1.py
+```
+
+Expected outcome:
+
+- `experiments/phase1_bishan_baseline/outputs/region_features.csv` is created;
+- `experiments/phase1_bishan_baseline/outputs/summary.json` is created;
+- the summary reports 25 deterministic grid regions by default;
+- `claim_boundary` states that `suitability_proxy` is derived from latent remote-sensing embeddings and does not directly measure soil, fertility, or irrigation.
+
+The default outputs are ignored by Git. Use a custom output directory for controlled verification:
+
+```powershell
+python experiments\phase1_bishan_baseline\run_phase1.py --output-dir D:\tmp\paper11_phase1_outputs
+```
+
+## 4. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -42,7 +63,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 4. Inspect Runtime Code
+## 5. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -57,7 +78,16 @@ src/legacy_runtime/parcel_scoring_policy.py
 
 These scripts preserve the original Paper58/Paper8 development code. Some scripts still contain historical path assumptions from the source workspace, especially for Google Earth Engine helpers, model weights, or `data` directories. The smoke check is the stable reviewer entry point for this repository snapshot.
 
-## 5. Regenerate Embeddings
+Phase 1 executable files:
+
+```text
+experiments/phase1_bishan_baseline/run_phase1.py
+src/paper11_geofm/
+```
+
+The Phase 1 baseline is deterministic and does not require internet, GPU, Earth Engine, or full DRL training.
+
+## 6. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -74,7 +104,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 6. Large Data and Weights
+## 7. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
