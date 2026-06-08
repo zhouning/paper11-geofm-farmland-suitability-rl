@@ -1,0 +1,44 @@
+path	category	description
+README.md	documentation	Repository overview, scope boundary, quick start, and reviewer entry points.
+requirements.txt	environment	Python dependencies for smoke checks and full RL/runtime inspection.
+.gitignore	repository	Ignore rules for local environments, caches, generated outputs, and large artifacts.
+docs/source_notes/paper11_design_thought.md	source_note	Original Paper11 design thought copied from the source Paper58 workspace.
+paper/design/README.md	design	Index for the Paper11 design package.
+paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
+paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
+paper/design/03_experiment_plan.md	design	Baselines, ablations, metrics, transfer tests, and expected evidence.
+paper/design/04_manuscript_outline.md	design	Manuscript structure, contribution framing, and figure plan.
+paper/design/05_risks_and_boundaries.md	design	Claim boundaries, failure modes, and paper-positioning risks.
+src/legacy_runtime/block_definition.py	runtime	Copied block definition utilities from the legacy runtime.
+src/legacy_runtime/block_definition_all.py	runtime	Copied batch/all-region block definition utilities from the legacy runtime.
+src/legacy_runtime/county_env.py	runtime	Copied county-level farmland layout RL environment.
+src/legacy_runtime/learned_env.py	runtime	Copied learned environment utilities.
+src/legacy_runtime/parcel_scoring_policy.py	runtime	Copied parcel-scoring policy implementation for block/action scoring.
+src/legacy_runtime/township_utils.py	runtime	Copied township utility functions.
+experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
+experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
+experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
+experiments/geofm_runtime/embedding_space_env.py	experiment	Copied AlphaEarth embedding-space Gymnasium environment.
+experiments/geofm_runtime/extract_bishan_embeddings.py	experiment	Copied Google Earth Engine extraction script for Bishan AlphaEarth embeddings.
+experiments/geofm_runtime/extract_village_embeddings.py	experiment	Copied Google Earth Engine extraction script for village AlphaEarth embeddings.
+experiments/geofm_runtime/intervention_dynamics.py	experiment	Copied intervention dynamics model code.
+experiments/geofm_runtime/intervention_env.py	experiment	Copied intervention environment code.
+experiments/geofm_runtime/paper58_runtime.py	experiment	Copied lightweight runtime definitions used by Paper58/Paper8 experiments.
+experiments/geofm_runtime/train_dual_rep.py	experiment	Copied dual-representation RL training script.
+experiments/geofm_runtime/train_embedding_rl.py	experiment	Copied embedding-space RL training script.
+data/bishan_alphaearth_sample/metadata.json	data	Metadata for the lightweight Bishan AlphaEarth sample.
+data/bishan_alphaearth_sample/bishan_context.npy	data	Included Bishan context array for smoke tests and inspection.
+data/bishan_alphaearth_sample/bishan_emb_2017.npy	data	Included Bishan AlphaEarth embedding grid for 2017.
+data/bishan_alphaearth_sample/bishan_emb_2018.npy	data	Included Bishan AlphaEarth embedding grid for 2018.
+data/bishan_alphaearth_sample/bishan_emb_2019.npy	data	Included Bishan AlphaEarth embedding grid for 2019.
+data/bishan_alphaearth_sample/bishan_emb_2020.npy	data	Included Bishan AlphaEarth embedding grid for 2020.
+data/bishan_alphaearth_sample/bishan_emb_2021.npy	data	Included Bishan AlphaEarth embedding grid for 2021.
+data/bishan_alphaearth_sample/bishan_emb_2022.npy	data	Included Bishan AlphaEarth embedding grid for 2022.
+data/bishan_alphaearth_sample/bishan_emb_2023.npy	data	Included Bishan AlphaEarth embedding grid for 2023.
+data/bishan_alphaearth_sample/bishan_emb_2024.npy	data	Included Bishan AlphaEarth embedding grid for 2024.
+reproducibility/REPRODUCTION_GUIDE.md	reproducibility	Step-by-step lightweight verification and full-reproduction notes.
+reproducibility/DATA_MANIFEST.md	reproducibility	Included and excluded data-artifact manifest.
+reproducibility/FILE_MANIFEST.tsv	reproducibility	Repository file inventory and role descriptions.
+scripts/smoke_check.py	verification	Lightweight repository and sample-data verification script.
+tests/test_repository_layout.py	verification	Pytest check for expected repository structure and Bishan sample files.
+tests/test_smoke_check.py	verification	Pytest check for the smoke-check API.

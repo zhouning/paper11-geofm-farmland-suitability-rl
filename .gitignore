@@ -1,0 +1,42 @@
+# Python build/cache
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environments
+.venv/
+venv/
+env/
+.env
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+*.tmp
+CHECKPOINT.md
+
+# Generated experiment outputs
+experiments/**/results/
+experiments/**/weights/
+runs/
+logs/
+
+# Large local geospatial and model artifacts should be documented in the
+# data manifest and stored through Git LFS or an external archive.
+*.gpkg
+*.shp
+*.shx
+*.dbf
+*.prj
+*.cpg
+*.tif
+*.tiff
+*.pt
+*.pth
+*.ckpt
+*.npy
+*.npz
+
+# Keep the included lightweight Bishan AlphaEarth sample in ordinary Git.
+!data/bishan_alphaearth_sample/*.npy
+!data/bishan_alphaearth_sample/metadata.json
