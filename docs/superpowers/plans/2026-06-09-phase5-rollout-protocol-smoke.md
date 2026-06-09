@@ -597,7 +597,8 @@ After the Phase 4 command block in `README.md`, add:
 Run the Phase 5 deterministic masked-rollout protocol smoke check:
 
 ```powershell
-python experiments\phase5_rollout_protocol\run_phase5_rollout.py --phase2-output-dir .pytest_tmp\phase2_variant_csv_exports --output-dir .pytest_tmp\phase5_rollout_protocol --variants B0,B1,B2,B3
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase5_rollout_protocol\outputs\phase2_fixture
+python experiments\phase5_rollout_protocol\run_phase5_rollout.py --phase2-output-dir experiments\phase5_rollout_protocol\outputs\phase2_fixture --output-dir experiments\phase5_rollout_protocol\outputs\phase5_protocol --variants B0,B1,B2,B3
 ```
 
 This command runs the same deterministic masked rollout protocol across ready variants and writes `phase5_rollout_summary.csv` and `phase5_rollout_steps.json`. It does not train or evaluate a policy and does not report planning performance.
@@ -620,8 +621,8 @@ After the Phase 4 section in `reproducibility/REPRODUCTION_GUIDE.md`, add a new 
 Include these commands:
 
 ```powershell
-python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir .pytest_tmp\phase5_rollout_fixture
-python experiments\phase5_rollout_protocol\run_phase5_rollout.py --phase2-output-dir .pytest_tmp\phase5_rollout_fixture --output-dir .pytest_tmp\phase5_rollout_protocol --variants B0,B1,B2,B3
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase5_rollout_protocol\outputs\phase2_fixture
+python experiments\phase5_rollout_protocol\run_phase5_rollout.py --phase2-output-dir experiments\phase5_rollout_protocol\outputs\phase2_fixture --output-dir experiments\phase5_rollout_protocol\outputs\phase5_protocol --variants B0,B1,B2,B3
 ```
 
 State that expected artifacts are `phase5_rollout_summary.csv` and
@@ -662,7 +663,7 @@ Expected: all Phase 5 tests pass.
 Run:
 
 ```powershell
-python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir .pytest_tmp\phase5_rollout_fixture
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase5_rollout_protocol\outputs\phase2_fixture
 ```
 
 Expected: B0/B1/B2/B3 variant feature CSVs and weak-label validation are written.
@@ -672,7 +673,7 @@ Expected: B0/B1/B2/B3 variant feature CSVs and weak-label validation are written
 Run:
 
 ```powershell
-python experiments\phase5_rollout_protocol\run_phase5_rollout.py --phase2-output-dir .pytest_tmp\phase5_rollout_fixture --output-dir .pytest_tmp\phase5_rollout_protocol --variants B0,B1,B2,B3
+python experiments\phase5_rollout_protocol\run_phase5_rollout.py --phase2-output-dir experiments\phase5_rollout_protocol\outputs\phase2_fixture --output-dir experiments\phase5_rollout_protocol\outputs\phase5_protocol --variants B0,B1,B2,B3
 ```
 
 Expected output contains:
