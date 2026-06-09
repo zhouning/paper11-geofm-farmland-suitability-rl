@@ -15,6 +15,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 ## Repository Layout
 
 - `paper/design/`: Paper11 design package, including system design, experiment plan, manuscript outline, and risk boundaries.
+- `paper/phase1_results/`: interpretation of the executable Phase 1 baseline and the next experiment matrix.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
 - `experiments/phase1_bishan_baseline/`: executable Phase 1 Bishan GeoFM representation baseline.
@@ -56,6 +57,8 @@ The command writes `region_features.csv` and `summary.json` under `experiments/p
 - Design synthesis: `paper/design/01_design_synthesis.md`
 - System design: `paper/design/02_system_design.md`
 - Experiment plan: `paper/design/03_experiment_plan.md`
+- Phase 1 result interpretation: `paper/phase1_results/01_phase1_result_interpretation.md`
+- Next experiment matrix: `paper/phase1_results/02_next_experiment_matrix.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 1 utility package: `src/paper11_geofm/`

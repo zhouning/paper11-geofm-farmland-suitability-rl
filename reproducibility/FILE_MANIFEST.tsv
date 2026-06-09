@@ -12,6 +12,9 @@ paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced c
 paper/design/03_experiment_plan.md	design	Baselines, ablations, metrics, transfer tests, and expected evidence.
 paper/design/04_manuscript_outline.md	design	Manuscript structure, contribution framing, and figure plan.
 paper/design/05_risks_and_boundaries.md	design	Claim boundaries, failure modes, and paper-positioning risks.
+paper/phase1_results/README.md	results	Index for the Phase 1 result interpretation package.
+paper/phase1_results/01_phase1_result_interpretation.md	results	Reviewer-facing interpretation of the executable Phase 1 Bishan GeoFM baseline.
+paper/phase1_results/02_next_experiment_matrix.md	results	Next experiment matrix connecting Phase 1 to Paper11 DRL, ablation, and transfer evidence.
 src/legacy_runtime/block_definition.py	runtime	Copied block definition utilities from the legacy runtime.
 src/legacy_runtime/block_definition_all.py	runtime	Copied batch/all-region block definition utilities from the legacy runtime.
 src/legacy_runtime/county_env.py	runtime	Copied county-level farmland layout RL environment.
