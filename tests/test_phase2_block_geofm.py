@@ -248,3 +248,103 @@ def test_phase2_runner_writes_block_feature_artifacts(tmp_path):
     assert summary["n_blocks"] == 25
     assert summary["mapping_mode"] == "generated_grid"
     assert summary["feature_readiness"]["B3"]["ready"] is False
+
+
+def test_phase2_runner_accepts_mapping_csv(tmp_path):
+    runner_path = (
+        ROOT / "experiments" / "phase2_block_geofm_features" / "run_phase2.py"
+    )
+    mapping_csv = tmp_path / "mapping.csv"
+    mapping_csv.write_text(
+        "block_id,row,col,weight\n"
+        "block_a,0,0,1.0\n"
+        "block_a,0,1,2.0\n"
+        "block_b,1,0,1.0\n",
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "outputs"
+
+    spec = importlib.util.spec_from_file_location("phase2_runner_csv", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    exit_code = module.main(
+        [
+            "--mapping-csv",
+            str(mapping_csv),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+
+    assert exit_code == 0
+
+    summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
+    with (output_dir / "block_geofm_features.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        records = list(csv.DictReader(handle))
+
+    assert summary["n_blocks"] == 2
+    assert summary["mapping_mode"] == "mapping_csv"
+    assert summary["mapping_csv"] == str(mapping_csv)
+    assert [record["block_id"] for record in records] == ["block_a", "block_b"]
+    assert records[0]["pixel_weight_sum"] == "3.0"
+
+
+def test_phase2_runner_accepts_attributes_csv_and_marks_b3_ready(tmp_path):
+    runner_path = (
+        ROOT / "experiments" / "phase2_block_geofm_features" / "run_phase2.py"
+    )
+    mapping_csv = tmp_path / "mapping.csv"
+    mapping_csv.write_text(
+        "block_id,row,col\n"
+        "block_a,0,0\n"
+        "block_b,1,0\n",
+        encoding="utf-8",
+    )
+    attribute_columns = [f"explicit_feature_{idx:02d}" for idx in range(17)]
+    attributes_csv = tmp_path / "attributes.csv"
+    attributes_csv.write_text(
+        ",".join(["block_id", *attribute_columns, "stable_farmland_label", "split"])
+        + "\n"
+        + ",".join(["block_a", *["1.0" for _ in attribute_columns], "1", "train"])
+        + "\n"
+        + ",".join(["block_b", *["2.0" for _ in attribute_columns], "0", "test"])
+        + "\n",
+        encoding="utf-8",
+    )
+    output_dir = tmp_path / "outputs"
+
+    spec = importlib.util.spec_from_file_location("phase2_runner_attrs", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    exit_code = module.main(
+        [
+            "--mapping-csv",
+            str(mapping_csv),
+            "--attributes-csv",
+            str(attributes_csv),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+
+    assert exit_code == 0
+
+    summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
+    with (output_dir / "block_geofm_features.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        records = list(csv.DictReader(handle))
+
+    assert summary["mapping_mode"] == "mapping_csv"
+    assert summary["attributes_csv"] == str(attributes_csv)
+    assert "explicit_planning_features" in summary["feature_groups_present"]
+    assert "weak_labels" in summary["feature_groups_present"]
+    assert summary["feature_readiness"]["B3"] == {"ready": True, "missing": []}
+    assert records[0]["explicit_feature_00"] == "1.0"
+    assert records[1]["split"] == "test"

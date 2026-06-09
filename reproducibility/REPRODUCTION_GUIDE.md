@@ -73,6 +73,28 @@ Use a custom output directory for controlled verification:
 python experiments\phase2_block_geofm_features\run_phase2.py --output-dir D:\tmp\paper11_phase2_outputs
 ```
 
+To run Phase 2 with real planning units, provide a mapping table:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv D:\tmp\block_pixel_mapping.csv --output-dir D:\tmp\paper11_phase2_outputs
+```
+
+The mapping CSV schema is:
+
+```text
+block_id,row,col,weight
+```
+
+`weight` is optional. If omitted, every mapping row receives weight `1.0`.
+
+To join explicit block features or weak labels, add an attributes CSV:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv D:\tmp\block_pixel_mapping.csv --attributes-csv D:\tmp\block_attributes.csv --output-dir D:\tmp\paper11_phase2_outputs
+```
+
+The attributes CSV must be keyed by `block_id`. For B0/B1/B2/B3 readiness, include all columns from `explicit_feature_00` through `explicit_feature_16`. Optional weak-label columns include `stable_farmland_label` and `high_standard_farmland_label`; optional split metadata can use `split`.
+
 ## 5. Inspect the Paper11 Design
 
 Read these files in order:

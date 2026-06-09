@@ -61,6 +61,20 @@ python experiments\phase2_block_geofm_features\run_phase2.py
 
 The default Phase 2 path uses a generated grid-derived block-to-pixel mapping from the included Bishan sample. It writes `block_geofm_features.csv` and `summary.json` under `experiments/phase2_block_geofm_features/outputs/`. This is a feature-assembly smoke test, not real block-level DRL evidence.
 
+To use real planning units, pass a block-to-pixel mapping CSV:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv path\to\block_pixel_mapping.csv
+```
+
+The mapping CSV must include `block_id`, `row`, and `col`, with optional `weight`. Optional block attributes can be joined by `block_id`:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv path\to\block_pixel_mapping.csv --attributes-csv path\to\block_attributes.csv
+```
+
+The attributes CSV can include `explicit_feature_00` through `explicit_feature_16`, weak labels such as `stable_farmland_label`, and split labels such as `split`.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
