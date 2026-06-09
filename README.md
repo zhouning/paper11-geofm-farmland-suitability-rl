@@ -73,7 +73,7 @@ The mapping CSV must include `block_id`, `row`, and `col`, with optional `weight
 python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv path\to\block_pixel_mapping.csv --attributes-csv path\to\block_attributes.csv
 ```
 
-The attributes CSV can include `explicit_feature_00` through `explicit_feature_16`, weak labels such as `stable_farmland_label`, and split labels such as `split`.
+The attributes CSV can include `explicit_feature_00` through `explicit_feature_16`, weak labels such as `stable_farmland_label`, and split labels such as `split`. When weak-label columns are present, the runner also writes `weak_label_validation.json` as a diagnostic proxy check comparing `suitability_proxy` against available weak labels.
 
 This repository includes a tiny CSV fixture for checking that path directly:
 

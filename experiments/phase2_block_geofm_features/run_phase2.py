@@ -59,7 +59,10 @@ def build_parser() -> argparse.ArgumentParser:
         "--output-dir",
         type=Path,
         default=Path(__file__).resolve().parent / "outputs",
-        help="Directory for block_geofm_features.csv and summary.json.",
+        help=(
+            "Directory for block_geofm_features.csv, summary.json, and optional "
+            "weak_label_validation.json."
+        ),
     )
     parser.add_argument(
         "--mapping-csv",
@@ -190,6 +193,8 @@ def main(argv: list[str] | None = None) -> int:
     paths = run_phase2(args)
     print(f"Wrote block table: {paths['block_table']}")
     print(f"Wrote summary: {paths['summary']}")
+    if "weak_label_validation" in paths:
+        print(f"Wrote weak-label validation: {paths['weak_label_validation']}")
     return 0
 
 

@@ -95,6 +95,8 @@ python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv D:\tm
 
 The attributes CSV must be keyed by `block_id`. For B0/B1/B2/B3 readiness, include all columns from `explicit_feature_00` through `explicit_feature_16`. Optional weak-label columns include `stable_farmland_label` and `high_standard_farmland_label`; optional split metadata can use `split`.
 
+When weak-label columns are present, Phase 2 also writes `weak_label_validation.json`. This file is a diagnostic proxy check that compares `suitability_proxy` distributions against the available weak labels; it is not proof of agronomic validity or direct measurement of soil quality, fertility, or irrigation access.
+
 The repository includes a tiny CSV fixture for this path:
 
 ```powershell
@@ -105,7 +107,8 @@ Expected outcome:
 
 - the summary reports `mapping_mode` as `mapping_csv`;
 - `n_blocks` is `4`;
-- B3 readiness is `true` because the fixture includes all 17 explicit feature columns plus GeoFM embeddings and `suitability_proxy`.
+- B3 readiness is `true` because the fixture includes all 17 explicit feature columns plus GeoFM embeddings and `suitability_proxy`;
+- `weak_label_validation.json` is created because the fixture includes `stable_farmland_label` and `high_standard_farmland_label`.
 
 ## 5. Inspect the Paper11 Design
 

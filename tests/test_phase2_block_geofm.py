@@ -229,6 +229,83 @@ def test_phase2_artifacts_are_written_with_readiness_and_claim_boundary(tmp_path
     assert "does not directly measure soil" in summary["claim_boundary"].lower()
 
 
+def test_phase2_artifacts_write_weak_label_validation_when_labels_exist(tmp_path):
+    from paper11_geofm.artifacts import write_phase2_artifacts
+
+    rows = [
+        {"block_id": "b0", "suitability_proxy": 0.9, "stable_farmland_label": 1},
+        {"block_id": "b1", "suitability_proxy": 0.7, "stable_farmland_label": 1},
+        {"block_id": "b2", "suitability_proxy": 0.3, "stable_farmland_label": 0},
+        {"block_id": "b3", "suitability_proxy": 0.1, "stable_farmland_label": 0},
+    ]
+
+    paths = write_phase2_artifacts(
+        rows,
+        tmp_path,
+        {
+            "metadata_source": "test",
+            "base_year_requested": 2020,
+            "base_year_used": 2020,
+            "years": [2020],
+            "grid_shape": [2, 2],
+            "embedding_dim": 64,
+            "mapping_mode": "test",
+        },
+    )
+
+    validation = json.loads(
+        paths["weak_label_validation"].read_text(encoding="utf-8")
+    )
+    summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
+
+    assert paths["weak_label_validation"].name == "weak_label_validation.json"
+    assert summary["weak_label_validation"] == "weak_label_validation.json"
+    assert validation["validation_available"] is True
+    assert validation["label_columns"] == ["stable_farmland_label"]
+    assert validation["labels"]["stable_farmland_label"] == {
+        "positive_count": 2,
+        "negative_count": 2,
+        "positive_suitability_mean": 0.8,
+        "negative_suitability_mean": 0.2,
+        "mean_difference": 0.6,
+        "rank_auc": 1.0,
+    }
+    assert "diagnostic proxy check" in validation["claim_boundary"].lower()
+
+
+def test_phase2_artifacts_remove_stale_weak_label_validation_without_labels(tmp_path):
+    from paper11_geofm.artifacts import write_phase2_artifacts
+
+    summary = {
+        "metadata_source": "test",
+        "base_year_requested": 2020,
+        "base_year_used": 2020,
+        "years": [2020],
+        "grid_shape": [2, 2],
+        "embedding_dim": 64,
+        "mapping_mode": "test",
+    }
+    write_phase2_artifacts(
+        [
+            {"block_id": "b0", "suitability_proxy": 0.9, "stable_farmland_label": 1},
+            {"block_id": "b1", "suitability_proxy": 0.1, "stable_farmland_label": 0},
+        ],
+        tmp_path,
+        summary,
+    )
+
+    paths = write_phase2_artifacts(
+        [{"block_id": "b0", "suitability_proxy": 0.5}],
+        tmp_path,
+        summary,
+    )
+    summary_without_labels = json.loads(paths["summary"].read_text(encoding="utf-8"))
+
+    assert "weak_label_validation" not in paths
+    assert "weak_label_validation" not in summary_without_labels
+    assert not (tmp_path / "weak_label_validation.json").exists()
+
+
 def test_phase2_runner_writes_block_feature_artifacts(tmp_path):
     runner_path = (
         ROOT / "experiments" / "phase2_block_geofm_features" / "run_phase2.py"
@@ -425,3 +502,45 @@ def test_phase2_runner_accepts_included_csv_fixtures(tmp_path):
         "sample_block_02",
         "sample_block_03",
     ]
+
+
+def test_phase2_runner_writes_weak_label_validation_for_included_csv_fixtures(tmp_path):
+    runner_path = (
+        ROOT / "experiments" / "phase2_block_geofm_features" / "run_phase2.py"
+    )
+    fixture_dir = ROOT / "data" / "bishan_phase2_csv_sample"
+    mapping_csv = fixture_dir / "block_pixel_mapping.csv"
+    attributes_csv = fixture_dir / "block_attributes.csv"
+    output_dir = tmp_path / "outputs"
+
+    spec = importlib.util.spec_from_file_location(
+        "phase2_runner_fixture_validation", runner_path
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    exit_code = module.main(
+        [
+            "--mapping-csv",
+            str(mapping_csv),
+            "--attributes-csv",
+            str(attributes_csv),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+
+    assert exit_code == 0
+
+    validation_path = output_dir / "weak_label_validation.json"
+    validation = json.loads(validation_path.read_text(encoding="utf-8"))
+    summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
+
+    assert summary["weak_label_validation"] == "weak_label_validation.json"
+    assert validation["label_columns"] == [
+        "high_standard_farmland_label",
+        "stable_farmland_label",
+    ]
+    assert validation["labels"]["stable_farmland_label"]["positive_count"] == 2
+    assert validation["labels"]["stable_farmland_label"]["negative_count"] == 2
