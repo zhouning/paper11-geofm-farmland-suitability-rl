@@ -19,7 +19,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
 - `experiments/phase1_bishan_baseline/`: executable Phase 1 Bishan GeoFM representation baseline.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, suitability proxy scoring, and artifact export.
+- `experiments/phase2_block_geofm_features/`: executable Phase 2 block-level GeoFM feature assembly baseline.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, and artifact export.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -52,6 +53,14 @@ python experiments\phase1_bishan_baseline\run_phase1.py
 
 The command writes `region_features.csv` and `summary.json` under `experiments/phase1_bishan_baseline/outputs/`. These outputs are generated artifacts and are ignored by Git.
 
+Run the Phase 2 block-level GeoFM feature assembly baseline:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py
+```
+
+The default Phase 2 path uses a generated grid-derived block-to-pixel mapping from the included Bishan sample. It writes `block_geofm_features.csv` and `summary.json` under `experiments/phase2_block_geofm_features/outputs/`. This is a feature-assembly smoke test, not real block-level DRL evidence.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -61,6 +70,7 @@ The command writes `region_features.csv` and `summary.json` under `experiments/p
 - Next experiment matrix: `paper/phase1_results/02_next_experiment_matrix.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
+- Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

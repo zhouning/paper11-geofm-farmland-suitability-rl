@@ -49,7 +49,31 @@ The default outputs are ignored by Git. Use a custom output directory for contro
 python experiments\phase1_bishan_baseline\run_phase1.py --output-dir D:\tmp\paper11_phase1_outputs
 ```
 
-## 4. Inspect the Paper11 Design
+## 4. Run the Phase 2 Block Feature Assembly Baseline
+
+Run:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py
+```
+
+Expected outcome:
+
+- `experiments/phase2_block_geofm_features/outputs/block_geofm_features.csv` is created;
+- `experiments/phase2_block_geofm_features/outputs/summary.json` is created;
+- the summary reports 25 generated grid-derived blocks by default;
+- `feature_readiness` reports B0/B1/B2/B3 readiness and marks explicit-feature-dependent variants incomplete when explicit planning features are absent;
+- `claim_boundary` keeps the same remote-sensing proxy boundary used in Phase 1.
+
+The default Phase 2 path derives a deterministic block-to-pixel mapping from the included Bishan sample. It is a lightweight feature-assembly smoke test, not real block-level DRL evidence and not a substitute for parcel/block geometry, explicit planning features, or weak-label validation.
+
+Use a custom output directory for controlled verification:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --output-dir D:\tmp\paper11_phase2_outputs
+```
+
+## 5. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -63,7 +87,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 5. Inspect Runtime Code
+## 6. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -85,9 +109,18 @@ experiments/phase1_bishan_baseline/run_phase1.py
 src/paper11_geofm/
 ```
 
-The Phase 1 baseline is deterministic and does not require internet, GPU, Earth Engine, or full DRL training.
+Phase 2 executable files:
 
-## 6. Regenerate Embeddings
+```text
+experiments/phase2_block_geofm_features/run_phase2.py
+src/paper11_geofm/block_mapping.py
+src/paper11_geofm/block_features.py
+src/paper11_geofm/block_schema.py
+```
+
+The Phase 1 and Phase 2 baselines are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+
+## 7. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -104,7 +137,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 7. Large Data and Weights
+## 8. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

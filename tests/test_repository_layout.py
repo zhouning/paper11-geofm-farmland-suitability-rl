@@ -28,6 +28,7 @@ def test_required_repository_files_exist():
         "paper/phase1_results/01_phase1_result_interpretation.md",
         "paper/phase1_results/02_next_experiment_matrix.md",
         "experiments/phase1_bishan_baseline/run_phase1.py",
+        "experiments/phase2_block_geofm_features/run_phase2.py",
         "experiments/geofm_runtime/embedding_space_env.py",
         "experiments/geofm_runtime/train_embedding_rl.py",
         "src/paper11_geofm/__init__.py",
@@ -36,8 +37,12 @@ def test_required_repository_files_exist():
         "src/paper11_geofm/features.py",
         "src/paper11_geofm/suitability.py",
         "src/paper11_geofm/artifacts.py",
+        "src/paper11_geofm/block_mapping.py",
+        "src/paper11_geofm/block_features.py",
+        "src/paper11_geofm/block_schema.py",
         "src/legacy_runtime/county_env.py",
         "tests/test_phase1_geofm.py",
+        "tests/test_phase2_block_geofm.py",
         "data/bishan_alphaearth_sample/metadata.json",
     ]
 
