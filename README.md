@@ -20,6 +20,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
 - `experiments/phase1_bishan_baseline/`: executable Phase 1 Bishan GeoFM representation baseline.
 - `experiments/phase2_block_geofm_features/`: executable Phase 2 block-level GeoFM feature assembly baseline.
+- `experiments/phase3_drl_input_adapter/`: executable Phase 3 DRL input-contract inspection runner.
+- `experiments/phase4_drl_smoke_env/`: executable Phase 4 one-step DRL input-contract smoke runner.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, and artifact export.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -91,6 +93,14 @@ python experiments\phase3_drl_input_adapter\inspect_variant_inputs.py --phase2-o
 
 This command validates the `experiment_variants.json` contract, loads the requested variant CSV into a numeric matrix, and reports shape and reward metadata only. It does not train or evaluate a DRL policy.
 
+After Phase 2 has produced ready variant CSVs, run the Phase 4 one-step Gymnasium contract smoke environment:
+
+```powershell
+python experiments\phase4_drl_smoke_env\run_phase4_smoke.py --phase2-output-dir .pytest_tmp\phase2_variant_csv_exports --variant B3
+```
+
+This command wraps the Phase 3 input matrix as a Gymnasium-compatible observation/action/mask contract, takes the first valid action once, and prints reward wiring metadata. It does not train a policy, evaluate a policy, or simulate planning outcomes.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -102,6 +112,7 @@ This command validates the `experiment_variants.json` contract, loads the reques
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
 - Phase 3 DRL input inspection runner: `experiments/phase3_drl_input_adapter/inspect_variant_inputs.py`
+- Phase 4 DRL smoke environment runner: `experiments/phase4_drl_smoke_env/run_phase4_smoke.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
