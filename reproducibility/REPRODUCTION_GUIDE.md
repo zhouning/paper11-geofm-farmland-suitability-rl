@@ -64,9 +64,11 @@ Expected outcome:
 - `experiments/phase2_block_geofm_features/outputs/experiment_variants.json` is created;
 - the summary reports 25 generated grid-derived blocks by default;
 - `feature_readiness` reports B0/B1/B2/B3 readiness and marks explicit-feature-dependent variants incomplete when explicit planning features are absent;
+- no `variant_B*_features.csv` files are created by default because the generated-grid path lacks explicit planning features;
+- incomplete variants in `experiment_variants.json` have `feature_table` set to `null` and `row_count` set to `0`;
 - `claim_boundary` keeps the same remote-sensing proxy boundary used in Phase 1.
 
-The default Phase 2 path derives a deterministic block-to-pixel mapping from the included Bishan sample. It is a lightweight feature-assembly smoke test, not real block-level DRL evidence and not a substitute for parcel/block geometry, explicit planning features, or weak-label validation. The `experiment_variants.json` file defines B0/B1/B2/B3 feature-table contracts for later DRL experiments; it does not report trained-policy performance.
+The default Phase 2 path derives a deterministic block-to-pixel mapping from the included Bishan sample. It is a lightweight feature-assembly smoke test, not real block-level DRL evidence and not a substitute for parcel/block geometry, explicit planning features, or weak-label validation. The `experiment_variants.json` file defines B0/B1/B2/B3 feature-table contracts for later DRL experiments; it does not report trained-policy performance. Ready variants are exported as CSV inputs only when all required columns are present.
 
 Use a custom output directory for controlled verification:
 
@@ -110,6 +112,8 @@ Expected outcome:
 - `n_blocks` is `4`;
 - B3 readiness is `true` because the fixture includes all 17 explicit feature columns plus GeoFM embeddings and `suitability_proxy`;
 - `experiment_variants.json` marks B0/B1/B2/B3 ready for the fixture;
+- `variant_B0_features.csv`, `variant_B1_features.csv`, `variant_B2_features.csv`, and `variant_B3_features.csv` are created;
+- the fixture `experiment_variants.json` points each ready variant to its feature table and reports `row_count` as `4`;
 - `weak_label_validation.json` is created because the fixture includes `stable_farmland_label` and `high_standard_farmland_label`.
 
 ## 5. Inspect the Paper11 Design

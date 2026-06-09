@@ -194,6 +194,9 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Wrote block table: {paths['block_table']}")
     print(f"Wrote summary: {paths['summary']}")
     print(f"Wrote experiment variants: {paths['experiment_variants']}")
+    for key in sorted(paths):
+        if key.startswith("variant_") and key.endswith("_table"):
+            print(f"Wrote {key}: {paths[key]}")
     if "weak_label_validation" in paths:
         print(f"Wrote weak-label validation: {paths['weak_label_validation']}")
     return 0

@@ -28,7 +28,7 @@ src/paper11_geofm/sample_data.py	runtime	Validated loader for the included Bisha
 src/paper11_geofm/regions.py	runtime	Deterministic grid-region labeling and region-bound utilities.
 src/paper11_geofm/features.py	runtime	Region-level GeoFM feature aggregation and temporal stability calculation.
 src/paper11_geofm/suitability.py	runtime	Bounded latent remote-sensing suitability proxy scoring.
-src/paper11_geofm/artifacts.py	runtime	CSV and JSON artifact writer with explicit claim boundary, experiment variant manifest, and optional weak-label validation output.
+src/paper11_geofm/artifacts.py	runtime	CSV and JSON artifact writer with explicit claim boundary, experiment variant manifest, ready-only variant feature CSV tables, and optional weak-label validation output.
 src/paper11_geofm/block_mapping.py	runtime	Block-to-pixel mapping validation utilities for Phase 2 block-level feature assembly.
 src/paper11_geofm/block_features.py	runtime	Block-level GeoFM embedding aggregation and optional attribute joining utilities.
 src/paper11_geofm/block_schema.py	runtime	Phase 2 block-feature schema, B0/B1/B2/B3 readiness metadata, and experiment variant contract utilities.
@@ -64,4 +64,4 @@ scripts/smoke_check.py	verification	Lightweight repository and sample-data verif
 tests/test_repository_layout.py	verification	Pytest check for expected repository structure and Bishan sample files.
 tests/test_smoke_check.py	verification	Pytest check for the smoke-check API.
 tests/test_phase1_geofm.py	verification	Pytest checks for Phase 1 sample loading, region aggregation, suitability proxy, artifact writing, and runner behavior.
-tests/test_phase2_block_geofm.py	verification	Pytest checks for Phase 2 mapping validation, block aggregation, schema readiness, artifact writing, and runner behavior.
+tests/test_phase2_block_geofm.py	verification	Pytest checks for Phase 2 mapping validation, block aggregation, schema readiness, artifact writing, ready-only variant CSV exports, and runner behavior.

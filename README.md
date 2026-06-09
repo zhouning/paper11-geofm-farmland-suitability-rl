@@ -59,7 +59,7 @@ Run the Phase 2 block-level GeoFM feature assembly baseline:
 python experiments\phase2_block_geofm_features\run_phase2.py
 ```
 
-The default Phase 2 path uses a generated grid-derived block-to-pixel mapping from the included Bishan sample. It writes `block_geofm_features.csv`, `summary.json`, and `experiment_variants.json` under `experiments/phase2_block_geofm_features/outputs/`. The variant manifest defines B0/B1/B2/B3 feature-table contracts for later DRL experiments; it is not trained-policy evidence. This is a feature-assembly smoke test, not real block-level DRL evidence.
+The default Phase 2 path uses a generated grid-derived block-to-pixel mapping from the included Bishan sample. It writes `block_geofm_features.csv`, `summary.json`, and `experiment_variants.json` under `experiments/phase2_block_geofm_features/outputs/`. The variant manifest defines B0/B1/B2/B3 feature-table contracts for later DRL experiments; it is not trained-policy evidence. Because the generated-grid path does not include explicit planning features, the default manifest leaves variant `feature_table` values unset and does not create `variant_B*_features.csv` files. This is a feature-assembly smoke test, not real block-level DRL evidence.
 
 To use real planning units, pass a block-to-pixel mapping CSV:
 
@@ -73,13 +73,15 @@ The mapping CSV must include `block_id`, `row`, and `col`, with optional `weight
 python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv path\to\block_pixel_mapping.csv --attributes-csv path\to\block_attributes.csv
 ```
 
-The attributes CSV can include `explicit_feature_00` through `explicit_feature_16`, weak labels such as `stable_farmland_label`, and split labels such as `split`. When weak-label columns are present, the runner also writes `weak_label_validation.json` as a diagnostic proxy check comparing `suitability_proxy` against available weak labels.
+The attributes CSV can include `explicit_feature_00` through `explicit_feature_16`, weak labels such as `stable_farmland_label`, and split labels such as `split`. When a variant has all required columns, Phase 2 also writes a ready-only variant table: `variant_B0_features.csv`, `variant_B1_features.csv`, `variant_B2_features.csv`, or `variant_B3_features.csv`. B0 contains explicit planning features, B1 adds GeoFM embedding means, B2 adds the latent suitability proxy, and B3 combines explicit planning features, GeoFM embedding means, and the suitability proxy. When weak-label columns are present, the runner also writes `weak_label_validation.json` as a diagnostic proxy check comparing `suitability_proxy` against available weak labels.
 
 This repository includes a tiny CSV fixture for checking that path directly:
 
 ```powershell
 python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv
 ```
+
+The included fixture has the required explicit feature columns, so it creates `variant_B0_features.csv` through `variant_B3_features.csv` and records those filenames in `experiment_variants.json`.
 
 ## Key Entry Points
 

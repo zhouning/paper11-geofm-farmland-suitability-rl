@@ -108,6 +108,8 @@ def build_phase2_variant_manifest(
             "required_columns": list(definition["required_columns"]),
             "ready": readiness[variant_id]["ready"],
             "missing": list(readiness[variant_id]["missing"]),
+            "feature_table": None,
+            "row_count": 0,
         }
 
     return {

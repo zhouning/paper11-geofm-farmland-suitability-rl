@@ -126,6 +126,12 @@ def write_phase2_artifacts(
     }
 
     experiment_variants = build_phase2_variant_manifest(rows)
+    _write_variant_feature_tables(
+        rows,
+        output_dir,
+        experiment_variants,
+        artifact_paths,
+    )
     experiment_variants_path.write_text(
         json.dumps(experiment_variants, indent=2, sort_keys=True),
         encoding="utf-8",
@@ -172,6 +178,43 @@ def _phase2_fieldnames(rows: Sequence[Mapping[str, object]]) -> list[str]:
     known = BLOCK_BASE_COLUMNS + EMBEDDING_COLUMNS + METRIC_COLUMNS
     extras = sorted({key for row in rows for key in row if key not in known})
     return [field for field in known if any(field in row for row in rows)] + extras
+
+
+def _write_variant_feature_tables(
+    rows: Sequence[Mapping[str, object]],
+    output_dir: Path,
+    manifest: dict[str, object],
+    artifact_paths: dict[str, Path],
+) -> None:
+    variants = manifest["variants"]
+    assert isinstance(variants, dict)
+
+    for variant_id, variant in variants.items():
+        assert isinstance(variant, dict)
+        table_path = output_dir / f"variant_{variant_id}_features.csv"
+        if variant["ready"]:
+            fieldnames = ["block_id", *list(variant["required_columns"])]
+            _write_csv_rows(rows, table_path, fieldnames)
+            variant["feature_table"] = table_path.name
+            variant["row_count"] = len(rows)
+            artifact_paths[f"variant_{str(variant_id).lower()}_table"] = table_path
+        else:
+            if table_path.exists():
+                table_path.unlink()
+            variant["feature_table"] = None
+            variant["row_count"] = 0
+
+
+def _write_csv_rows(
+    rows: Sequence[Mapping[str, object]],
+    path: Path,
+    fieldnames: Sequence[str],
+) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
 
 
 def _build_weak_label_validation(
