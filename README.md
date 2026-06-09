@@ -78,10 +78,18 @@ The attributes CSV can include `explicit_feature_00` through `explicit_feature_1
 This repository includes a tiny CSV fixture for checking that path directly:
 
 ```powershell
-python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir .pytest_tmp\phase2_variant_csv_exports
 ```
 
 The included fixture has the required explicit feature columns, so it creates `variant_B0_features.csv` through `variant_B3_features.csv` and records those filenames in `experiment_variants.json`.
+
+After a Phase 2 run has produced ready variant CSVs, inspect the DRL input matrix without training a policy:
+
+```powershell
+python experiments\phase3_drl_input_adapter\inspect_variant_inputs.py --phase2-output-dir .pytest_tmp\phase2_variant_csv_exports --variant B3
+```
+
+This command validates the `experiment_variants.json` contract, loads the requested variant CSV into a numeric matrix, and reports shape and reward metadata only. It does not train or evaluate a DRL policy.
 
 ## Key Entry Points
 
@@ -93,6 +101,7 @@ The included fixture has the required explicit feature columns, so it creates `v
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
+- Phase 3 DRL input inspection runner: `experiments/phase3_drl_input_adapter/inspect_variant_inputs.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

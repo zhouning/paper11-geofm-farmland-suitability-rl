@@ -116,7 +116,27 @@ Expected outcome:
 - the fixture `experiment_variants.json` points each ready variant to its feature table and reports `row_count` as `4`;
 - `weak_label_validation.json` is created because the fixture includes `stable_farmland_label` and `high_standard_farmland_label`.
 
-## 5. Inspect the Paper11 Design
+## 5. Inspect Phase 3 DRL Input Contracts
+
+Run Phase 2 with the included fixture, then inspect B3 as a later-DRL input matrix:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir .pytest_tmp\phase3_drl_adapter_fixture
+python experiments\phase3_drl_input_adapter\inspect_variant_inputs.py --phase2-output-dir .pytest_tmp\phase3_drl_adapter_fixture --variant B3
+```
+
+Expected outcome:
+
+- the command reports variant `B3`;
+- row count is `4` for the fixture;
+- feature count is `82`;
+- matrix shape is `4 x 82`;
+- reward mode is `base_plus_suitability_reward`;
+- the claim boundary states that no DRL policy is trained or evaluated.
+
+The Phase 3 inspection command validates the input contract between Phase 2 feature assembly and later DRL experiments. It does not create a Gymnasium environment, run Stable-Baselines3, simulate actions, or report planning performance.
+
+## 6. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -130,7 +150,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 6. Inspect Runtime Code
+## 7. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -161,9 +181,16 @@ src/paper11_geofm/block_features.py
 src/paper11_geofm/block_schema.py
 ```
 
-The Phase 1 and Phase 2 baselines are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+Phase 3 executable files:
 
-## 7. Regenerate Embeddings
+```text
+experiments/phase3_drl_input_adapter/inspect_variant_inputs.py
+src/paper11_geofm/drl_inputs.py
+```
+
+The Phase 1, Phase 2, and Phase 3 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+
+## 8. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -180,7 +207,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 8. Large Data and Weights
+## 9. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
