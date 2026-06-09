@@ -45,6 +45,8 @@ REQUIRED_PATHS = [
     "tests/test_phase1_geofm.py",
     "tests/test_phase2_block_geofm.py",
     "data/bishan_alphaearth_sample/metadata.json",
+    "data/bishan_phase2_csv_sample/block_pixel_mapping.csv",
+    "data/bishan_phase2_csv_sample/block_attributes.csv",
 ]
 
 

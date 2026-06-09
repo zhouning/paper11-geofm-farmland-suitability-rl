@@ -24,6 +24,23 @@ GOOGLE/SATELLITE_EMBEDDING/V1/ANNUAL
 
 The included sample is intended for repository smoke tests and reviewer inspection. It is not a complete experiment dataset.
 
+## Included Phase 2 CSV Fixture
+
+Directory:
+
+```text
+data/bishan_phase2_csv_sample/
+```
+
+Files:
+
+| File | Role |
+|---|---|
+| `block_pixel_mapping.csv` | Tiny block-to-pixel mapping table with four sample blocks and eight mapped Bishan grid pixels. |
+| `block_attributes.csv` | Tiny block attribute table with 17 explicit feature columns, weak labels, and split labels. |
+
+This fixture is for exercising the Phase 2 `--mapping-csv` and `--attributes-csv` code path. It is not a real parcel/block planning dataset and should not be interpreted as real block-level evidence.
+
 ## Deliberately Excluded Large Artifacts
 
 The source workspace also contained larger arrays and trained artifacts, including:

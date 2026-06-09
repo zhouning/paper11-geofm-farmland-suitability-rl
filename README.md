@@ -75,6 +75,12 @@ python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv path\
 
 The attributes CSV can include `explicit_feature_00` through `explicit_feature_16`, weak labels such as `stable_farmland_label`, and split labels such as `split`.
 
+This repository includes a tiny CSV fixture for checking that path directly:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv
+```
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`

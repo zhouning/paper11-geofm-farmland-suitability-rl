@@ -55,6 +55,8 @@ data/bishan_alphaearth_sample/bishan_emb_2021.npy	data	Included Bishan AlphaEart
 data/bishan_alphaearth_sample/bishan_emb_2022.npy	data	Included Bishan AlphaEarth embedding grid for 2022.
 data/bishan_alphaearth_sample/bishan_emb_2023.npy	data	Included Bishan AlphaEarth embedding grid for 2023.
 data/bishan_alphaearth_sample/bishan_emb_2024.npy	data	Included Bishan AlphaEarth embedding grid for 2024.
+data/bishan_phase2_csv_sample/block_pixel_mapping.csv	data	Tiny Phase 2 block-to-pixel mapping fixture for the CSV input path.
+data/bishan_phase2_csv_sample/block_attributes.csv	data	Tiny Phase 2 block attribute fixture with explicit features, weak labels, and split metadata.
 reproducibility/REPRODUCTION_GUIDE.md	reproducibility	Step-by-step lightweight verification and full-reproduction notes.
 reproducibility/DATA_MANIFEST.md	reproducibility	Included and excluded data-artifact manifest.
 reproducibility/FILE_MANIFEST.tsv	reproducibility	Repository file inventory and role descriptions.

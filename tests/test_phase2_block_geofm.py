@@ -348,3 +348,80 @@ def test_phase2_runner_accepts_attributes_csv_and_marks_b3_ready(tmp_path):
     assert summary["feature_readiness"]["B3"] == {"ready": True, "missing": []}
     assert records[0]["explicit_feature_00"] == "1.0"
     assert records[1]["split"] == "test"
+
+
+def test_included_phase2_csv_fixtures_have_expected_schema():
+    fixture_dir = ROOT / "data" / "bishan_phase2_csv_sample"
+    mapping_csv = fixture_dir / "block_pixel_mapping.csv"
+    attributes_csv = fixture_dir / "block_attributes.csv"
+
+    assert mapping_csv.exists()
+    assert attributes_csv.exists()
+
+    with mapping_csv.open("r", encoding="utf-8", newline="") as handle:
+        mapping_rows = list(csv.DictReader(handle))
+    with attributes_csv.open("r", encoding="utf-8", newline="") as handle:
+        attribute_rows = list(csv.DictReader(handle))
+
+    assert len(mapping_rows) == 8
+    assert len(attribute_rows) == 4
+    assert {"block_id", "row", "col", "weight"}.issubset(mapping_rows[0])
+    assert {row["block_id"] for row in mapping_rows} == {
+        "sample_block_00",
+        "sample_block_01",
+        "sample_block_02",
+        "sample_block_03",
+    }
+
+    required_attributes = {
+        "block_id",
+        "stable_farmland_label",
+        "high_standard_farmland_label",
+        "split",
+    }
+    required_attributes.update(f"explicit_feature_{idx:02d}" for idx in range(17))
+    assert required_attributes.issubset(attribute_rows[0])
+
+
+def test_phase2_runner_accepts_included_csv_fixtures(tmp_path):
+    runner_path = (
+        ROOT / "experiments" / "phase2_block_geofm_features" / "run_phase2.py"
+    )
+    fixture_dir = ROOT / "data" / "bishan_phase2_csv_sample"
+    mapping_csv = fixture_dir / "block_pixel_mapping.csv"
+    attributes_csv = fixture_dir / "block_attributes.csv"
+    output_dir = tmp_path / "outputs"
+
+    spec = importlib.util.spec_from_file_location("phase2_runner_fixture", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    exit_code = module.main(
+        [
+            "--mapping-csv",
+            str(mapping_csv),
+            "--attributes-csv",
+            str(attributes_csv),
+            "--output-dir",
+            str(output_dir),
+        ]
+    )
+
+    assert exit_code == 0
+
+    summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
+    with (output_dir / "block_geofm_features.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        records = list(csv.DictReader(handle))
+
+    assert summary["n_blocks"] == 4
+    assert summary["mapping_mode"] == "mapping_csv"
+    assert summary["feature_readiness"]["B3"] == {"ready": True, "missing": []}
+    assert [record["block_id"] for record in records] == [
+        "sample_block_00",
+        "sample_block_01",
+        "sample_block_02",
+        "sample_block_03",
+    ]

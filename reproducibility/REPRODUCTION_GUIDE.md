@@ -95,6 +95,18 @@ python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv D:\tm
 
 The attributes CSV must be keyed by `block_id`. For B0/B1/B2/B3 readiness, include all columns from `explicit_feature_00` through `explicit_feature_16`. Optional weak-label columns include `stable_farmland_label` and `high_standard_farmland_label`; optional split metadata can use `split`.
 
+The repository includes a tiny CSV fixture for this path:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir D:\tmp\paper11_phase2_csv_fixture_outputs
+```
+
+Expected outcome:
+
+- the summary reports `mapping_mode` as `mapping_csv`;
+- `n_blocks` is `4`;
+- B3 readiness is `true` because the fixture includes all 17 explicit feature columns plus GeoFM embeddings and `suitability_proxy`.
+
 ## 5. Inspect the Paper11 Design
 
 Read these files in order:

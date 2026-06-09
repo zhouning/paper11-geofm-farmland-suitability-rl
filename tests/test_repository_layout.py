@@ -44,6 +44,8 @@ def test_required_repository_files_exist():
         "tests/test_phase1_geofm.py",
         "tests/test_phase2_block_geofm.py",
         "data/bishan_alphaearth_sample/metadata.json",
+        "data/bishan_phase2_csv_sample/block_pixel_mapping.csv",
+        "data/bishan_phase2_csv_sample/block_attributes.csv",
     ]
 
     missing = [path for path in required_paths if not (ROOT / path).exists()]

@@ -1,0 +1,9 @@
+block_id,row,col,weight
+sample_block_00,0,0,1.0
+sample_block_00,0,1,1.0
+sample_block_01,0,2,1.0
+sample_block_01,1,2,1.0
+sample_block_02,2,0,1.0
+sample_block_02,2,1,1.0
+sample_block_03,2,2,1.0
+sample_block_03,3,2,1.0
