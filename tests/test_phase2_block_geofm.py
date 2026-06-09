@@ -185,6 +185,45 @@ def test_phase2_readiness_marks_complete_b3_table_ready():
     assert readiness["B3"] == {"ready": True, "missing": []}
 
 
+def test_phase2_variant_manifest_defines_b0_b1_b2_b3_columns():
+    from paper11_geofm.block_schema import build_phase2_variant_manifest
+
+    row = {
+        "block_id": "b0",
+        "suitability_proxy": 0.8,
+    }
+    for dim in range(64):
+        row[f"embedding_mean_{dim:02d}"] = float(dim)
+    for idx in range(17):
+        row[f"explicit_feature_{idx:02d}"] = float(idx)
+
+    manifest = build_phase2_variant_manifest([row])
+
+    assert list(manifest["variants"]) == ["B0", "B1", "B2", "B3"]
+    assert manifest["variants"]["B0"]["ready"] is True
+    assert manifest["variants"]["B0"]["state_groups"] == ["explicit_planning_features"]
+    assert manifest["variants"]["B0"]["reward"] == "base_planning_reward"
+    assert manifest["variants"]["B0"]["required_columns"] == [
+        f"explicit_feature_{idx:02d}" for idx in range(17)
+    ]
+    assert manifest["variants"]["B1"]["state_groups"] == [
+        "explicit_planning_features",
+        "geofm_embedding",
+    ]
+    assert manifest["variants"]["B1"]["required_columns"][-1] == "embedding_mean_63"
+    assert manifest["variants"]["B2"]["state_groups"] == [
+        "explicit_planning_features",
+        "suitability_proxy",
+    ]
+    assert manifest["variants"]["B2"]["reward"] == "base_plus_suitability_reward"
+    assert manifest["variants"]["B3"]["state_groups"] == [
+        "explicit_planning_features",
+        "geofm_embedding",
+        "suitability_proxy",
+    ]
+    assert manifest["claim_boundary"].startswith("These variants define")
+
+
 def test_phase2_artifacts_are_written_with_readiness_and_claim_boundary(tmp_path):
     from paper11_geofm.artifacts import write_phase2_artifacts
 
@@ -227,6 +266,41 @@ def test_phase2_artifacts_are_written_with_readiness_and_claim_boundary(tmp_path
     assert summary["block_table"] == "block_geofm_features.csv"
     assert summary["feature_readiness"]["B1"]["ready"] is False
     assert "does not directly measure soil" in summary["claim_boundary"].lower()
+
+
+def test_phase2_artifacts_write_experiment_variant_manifest(tmp_path):
+    from paper11_geofm.artifacts import write_phase2_artifacts
+
+    row = {
+        "block_id": "b0",
+        "suitability_proxy": 0.75,
+    }
+    for dim in range(64):
+        row[f"embedding_mean_{dim:02d}"] = float(dim)
+    for idx in range(17):
+        row[f"explicit_feature_{idx:02d}"] = float(idx)
+
+    paths = write_phase2_artifacts(
+        [row],
+        tmp_path,
+        {
+            "metadata_source": "test",
+            "base_year_requested": 2020,
+            "base_year_used": 2020,
+            "years": [2020],
+            "grid_shape": [2, 2],
+            "embedding_dim": 64,
+            "mapping_mode": "test",
+        },
+    )
+
+    manifest = json.loads(paths["experiment_variants"].read_text(encoding="utf-8"))
+    summary = json.loads(paths["summary"].read_text(encoding="utf-8"))
+
+    assert paths["experiment_variants"].name == "experiment_variants.json"
+    assert summary["experiment_variants"] == "experiment_variants.json"
+    assert manifest["variants"]["B3"]["ready"] is True
+    assert manifest["variants"]["B3"]["missing"] == []
 
 
 def test_phase2_artifacts_write_weak_label_validation_when_labels_exist(tmp_path):
@@ -325,6 +399,8 @@ def test_phase2_runner_writes_block_feature_artifacts(tmp_path):
     assert summary["n_blocks"] == 25
     assert summary["mapping_mode"] == "generated_grid"
     assert summary["feature_readiness"]["B3"]["ready"] is False
+    assert summary["experiment_variants"] == "experiment_variants.json"
+    assert (tmp_path / "experiment_variants.json").exists()
 
 
 def test_phase2_runner_accepts_mapping_csv(tmp_path):
@@ -496,6 +572,8 @@ def test_phase2_runner_accepts_included_csv_fixtures(tmp_path):
     assert summary["n_blocks"] == 4
     assert summary["mapping_mode"] == "mapping_csv"
     assert summary["feature_readiness"]["B3"] == {"ready": True, "missing": []}
+    assert summary["experiment_variants"] == "experiment_variants.json"
+    assert (output_dir / "experiment_variants.json").exists()
     assert [record["block_id"] for record in records] == [
         "sample_block_00",
         "sample_block_01",

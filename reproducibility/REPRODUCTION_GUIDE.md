@@ -61,11 +61,12 @@ Expected outcome:
 
 - `experiments/phase2_block_geofm_features/outputs/block_geofm_features.csv` is created;
 - `experiments/phase2_block_geofm_features/outputs/summary.json` is created;
+- `experiments/phase2_block_geofm_features/outputs/experiment_variants.json` is created;
 - the summary reports 25 generated grid-derived blocks by default;
 - `feature_readiness` reports B0/B1/B2/B3 readiness and marks explicit-feature-dependent variants incomplete when explicit planning features are absent;
 - `claim_boundary` keeps the same remote-sensing proxy boundary used in Phase 1.
 
-The default Phase 2 path derives a deterministic block-to-pixel mapping from the included Bishan sample. It is a lightweight feature-assembly smoke test, not real block-level DRL evidence and not a substitute for parcel/block geometry, explicit planning features, or weak-label validation.
+The default Phase 2 path derives a deterministic block-to-pixel mapping from the included Bishan sample. It is a lightweight feature-assembly smoke test, not real block-level DRL evidence and not a substitute for parcel/block geometry, explicit planning features, or weak-label validation. The `experiment_variants.json` file defines B0/B1/B2/B3 feature-table contracts for later DRL experiments; it does not report trained-policy performance.
 
 Use a custom output directory for controlled verification:
 
@@ -108,6 +109,7 @@ Expected outcome:
 - the summary reports `mapping_mode` as `mapping_csv`;
 - `n_blocks` is `4`;
 - B3 readiness is `true` because the fixture includes all 17 explicit feature columns plus GeoFM embeddings and `suitability_proxy`;
+- `experiment_variants.json` marks B0/B1/B2/B3 ready for the fixture;
 - `weak_label_validation.json` is created because the fixture includes `stable_farmland_label` and `high_standard_farmland_label`.
 
 ## 5. Inspect the Paper11 Design

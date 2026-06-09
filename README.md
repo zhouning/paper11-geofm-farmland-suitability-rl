@@ -59,7 +59,7 @@ Run the Phase 2 block-level GeoFM feature assembly baseline:
 python experiments\phase2_block_geofm_features\run_phase2.py
 ```
 
-The default Phase 2 path uses a generated grid-derived block-to-pixel mapping from the included Bishan sample. It writes `block_geofm_features.csv` and `summary.json` under `experiments/phase2_block_geofm_features/outputs/`. This is a feature-assembly smoke test, not real block-level DRL evidence.
+The default Phase 2 path uses a generated grid-derived block-to-pixel mapping from the included Bishan sample. It writes `block_geofm_features.csv`, `summary.json`, and `experiment_variants.json` under `experiments/phase2_block_geofm_features/outputs/`. The variant manifest defines B0/B1/B2/B3 feature-table contracts for later DRL experiments; it is not trained-policy evidence. This is a feature-assembly smoke test, not real block-level DRL evidence.
 
 To use real planning units, pass a block-to-pixel mapping CSV:
 

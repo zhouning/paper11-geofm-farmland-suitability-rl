@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .block_schema import summarize_phase2_readiness
+from .block_schema import build_phase2_variant_manifest, summarize_phase2_readiness
 
 
 CLAIM_BOUNDARY = (
@@ -102,6 +102,7 @@ def write_phase2_artifacts(
 
     block_table = output_dir / "block_geofm_features.csv"
     summary_path = output_dir / "summary.json"
+    experiment_variants_path = output_dir / "experiment_variants.json"
     weak_label_validation_path = output_dir / "weak_label_validation.json"
     fieldnames = _phase2_fieldnames(rows)
 
@@ -116,8 +117,21 @@ def write_phase2_artifacts(
         dtype=np.float64,
     )
     output_summary = dict(summary)
+    output_summary.pop("experiment_variants", None)
     output_summary.pop("weak_label_validation", None)
-    artifact_paths = {"block_table": block_table, "summary": summary_path}
+    artifact_paths = {
+        "block_table": block_table,
+        "summary": summary_path,
+        "experiment_variants": experiment_variants_path,
+    }
+
+    experiment_variants = build_phase2_variant_manifest(rows)
+    experiment_variants_path.write_text(
+        json.dumps(experiment_variants, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    output_summary["experiment_variants"] = experiment_variants_path.name
+
     weak_label_validation = _build_weak_label_validation(rows)
     if weak_label_validation is not None:
         weak_label_validation_path.write_text(
