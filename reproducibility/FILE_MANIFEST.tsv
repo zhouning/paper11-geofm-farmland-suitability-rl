@@ -5,6 +5,7 @@ pytest.ini	environment	Pytest configuration that keeps temporary test files insi
 .gitignore	repository	Ignore rules for local environments, caches, generated outputs, and large artifacts.
 docs/source_notes/paper11_design_thought.md	source_note	Original Paper11 design thought copied from the source Paper58 workspace.
 docs/superpowers/specs/2026-06-08-phase1-bishan-geofm-baseline-design.md	design	Approved Phase 1 design for an executable Bishan GeoFM representation baseline.
+docs/superpowers/specs/2026-06-09-phase2-block-geofm-feature-assembly-design.md	design	Phase 2 design for block-level GeoFM feature assembly and B0/B1/B2/B3-ready output tables.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.

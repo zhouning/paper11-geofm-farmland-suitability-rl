@@ -16,6 +16,7 @@ def test_required_repository_files_exist():
         "scripts/smoke_check.py",
         "docs/source_notes/paper11_design_thought.md",
         "docs/superpowers/specs/2026-06-08-phase1-bishan-geofm-baseline-design.md",
+        "docs/superpowers/specs/2026-06-09-phase2-block-geofm-feature-assembly-design.md",
         "docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md",
         "paper/design/01_design_synthesis.md",
         "paper/design/02_system_design.md",
