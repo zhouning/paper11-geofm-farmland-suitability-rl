@@ -29,6 +29,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase9_proxy_validation/`: executable Phase 9 weak-label proxy-validation report runner.
 - `experiments/phase10_reward_readiness/`: executable Phase 10 suitability reward-readiness gate runner.
 - `experiments/phase11_bishan_dltb_real/`: executable Phase 11 real Bishan DLTB adapter and local real-data workflow.
+- `experiments/phase12_real_scale_audit/`: executable Phase 12 real DLTB scale audit and downstream-readiness gate.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -174,6 +175,14 @@ python experiments\phase10_reward_readiness\run_phase10_reward_readiness.py --ph
 
 In the local Bishan run, the adapter exported 64,984 DLTB polygons into Phase 2-compatible inputs. Phase 9 found weak positive alignment for `current_farmland_label` and `farmland_or_orchard_label`, but not for `low_slope_farmland_label`; Phase 10 therefore reported `not_ready_for_suitability_reward`. This is real-data feature-table evidence, not DRL policy-performance evidence.
 
+Run the Phase 12 real DLTB scale audit after the Phase 11 real-data chain:
+
+```powershell
+python experiments\phase12_real_scale_audit\run_phase12_real_scale_audit.py --phase11-summary experiments\phase11_bishan_dltb_real\outputs\adapter\phase11_bishan_dltb_adapter_summary.json --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase9-report experiments\phase11_bishan_dltb_real\outputs\phase9_real\phase9_proxy_validation_report.json --phase10-gate experiments\phase11_bishan_dltb_real\outputs\phase10_real\phase10_reward_readiness_gate.json --output-dir experiments\phase12_real_scale_audit\outputs\real_bishan
+```
+
+For the current real Bishan artifacts, Phase 12 reports that real feature tables are ready and representation-only smoke checks are allowed, but suitability reward is not allowed and full-scale flat DRL training is not ready. The maximum flat B3 observation dimension is 5,328,691, so the next training-oriented design should be tiled or hierarchical.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -193,6 +202,7 @@ In the local Bishan run, the adapter exported 64,984 DLTB polygons into Phase 2-
 - Phase 9 proxy-validation report runner: `experiments/phase9_proxy_validation/run_phase9_proxy_validation.py`
 - Phase 10 reward-readiness gate runner: `experiments/phase10_reward_readiness/run_phase10_reward_readiness.py`
 - Phase 11 Bishan DLTB real-data adapter runner: `experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py`
+- Phase 12 real DLTB scale audit runner: `experiments/phase12_real_scale_audit/run_phase12_real_scale_audit.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

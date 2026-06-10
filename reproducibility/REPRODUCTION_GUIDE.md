@@ -330,7 +330,31 @@ This confirms the Bishan DLTB data can drive real Phase 2 feature-table
 experiments. It does not enable a suitability reward under the current strict
 all-label gate, and it does not train, evaluate, or report a DRL policy.
 
-## 14. Inspect the Paper11 Design
+## 14. Run the Phase 12 Real DLTB Scale Audit
+
+After the Phase 11 real-data chain has produced Phase 11, Phase 2, Phase 9,
+and Phase 10 artifacts, run:
+
+```powershell
+python experiments\phase12_real_scale_audit\run_phase12_real_scale_audit.py --phase11-summary experiments\phase11_bishan_dltb_real\outputs\adapter\phase11_bishan_dltb_adapter_summary.json --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase9-report experiments\phase11_bishan_dltb_real\outputs\phase9_real\phase9_proxy_validation_report.json --phase10-gate experiments\phase11_bishan_dltb_real\outputs\phase10_real\phase10_reward_readiness_gate.json --output-dir experiments\phase12_real_scale_audit\outputs\real_bishan
+```
+
+Expected current Bishan outcome:
+
+- `phase12_real_dltb_scale_audit.json` is written;
+- blocks are `64984`;
+- maximum flat observation dimension is `5328691`;
+- `real_feature_tables_ready` is `true`;
+- `representation_only_smoke_allowed` is `true`;
+- `suitability_reward_allowed` is `false`;
+- `flat_full_scale_training_ready` is `false`;
+- `requires_tiled_or_hierarchical_env` is `true`.
+
+Phase 12 is a downstream-readiness audit. It preserves the Phase 10 reward
+gate, does not read the large DLTB GeoPackage, does not train a policy, and
+does not report planning performance.
+
+## 15. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -344,7 +368,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 15. Inspect Runtime Code
+## 16. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -438,9 +462,16 @@ experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py
 src/paper11_geofm/dltb_adapter.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, and Phase 11 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 12 executable files:
 
-## 16. Regenerate Embeddings
+```text
+experiments/phase12_real_scale_audit/run_phase12_real_scale_audit.py
+src/paper11_geofm/real_scale_audit.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, and Phase 12 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 17. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -457,7 +488,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 17. Large Data and Weights
+## 18. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
