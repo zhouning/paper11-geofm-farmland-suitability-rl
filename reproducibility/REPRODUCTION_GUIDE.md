@@ -244,7 +244,27 @@ Expected outcome:
 
 The seed controls deterministic random and shuffled controls. The command creates table-readiness artifacts for later ablation design only. It does not train a policy, evaluate a policy, compare policy results, compute planning metrics, or report planning performance.
 
-## 11. Inspect the Paper11 Design
+## 11. Run the Phase 9 Weak-Label Proxy-Validation Report
+
+Run Phase 2 with the included fixture, then build the Phase 9 validation report:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase9_proxy_validation\outputs\phase2_fixture
+python experiments\phase9_proxy_validation\run_phase9_proxy_validation.py --phase2-output-dir experiments\phase9_proxy_validation\outputs\phase2_fixture --output-dir experiments\phase9_proxy_validation\outputs\phase9_report --label-columns stable_farmland_label,high_standard_farmland_label
+```
+
+Expected outcome:
+
+- the command reports `4` blocks for the fixture;
+- `stable_farmland_label` and `high_standard_farmland_label` are listed as available labels;
+- per-label rank AUC, mean difference, and interpretation are printed;
+- `phase9_proxy_validation_report.json` is written;
+- the report includes suitability min, max, mean, standard deviation, quartiles, and label-specific suitability quantiles;
+- the claim boundary states that Phase 9 does not prove agronomic validity, train a policy, evaluate a policy, or report planning performance.
+
+The report is a diagnostic check for directional alignment between `suitability_proxy` and available weak labels. Missing labels, one-class labels, or weak alignment are reported explicitly and should not be reframed as policy or planning-performance evidence.
+
+## 12. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -258,7 +278,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 12. Inspect Runtime Code
+## 13. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -331,9 +351,16 @@ experiments/phase8_ablation_controls/run_phase8_ablation_controls.py
 src/paper11_geofm/ablation_controls.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, and Phase 8 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+Phase 9 executable files:
 
-## 13. Regenerate Embeddings
+```text
+experiments/phase9_proxy_validation/run_phase9_proxy_validation.py
+src/paper11_geofm/proxy_validation.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+
+## 14. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -350,7 +377,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 14. Large Data and Weights
+## 15. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

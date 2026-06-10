@@ -26,7 +26,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase6_masked_baselines/`: executable Phase 6 non-learning masked baseline evaluator.
 - `experiments/phase7_maskableppo_smoke/`: executable Phase 7 MaskablePPO compatibility smoke runner.
 - `experiments/phase8_ablation_controls/`: executable Phase 8 ablation-control feature-table generator.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, and artifact export.
+- `experiments/phase9_proxy_validation/`: executable Phase 9 weak-label proxy-validation report runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, and proxy validation.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -141,6 +142,15 @@ python experiments\phase8_ablation_controls\run_phase8_ablation_controls.py --ph
 
 This command derives D2/D3/D4P8/D4P16 diagnostic control feature tables, writes a Phase 3-compatible `experiment_variants.json`, and writes `phase8_ablation_control_summary.json`. It does not train, tune, evaluate, compare, or report a useful DRL policy.
 
+Run the Phase 9 weak-label proxy-validation report:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase9_proxy_validation\outputs\phase2_fixture
+python experiments\phase9_proxy_validation\run_phase9_proxy_validation.py --phase2-output-dir experiments\phase9_proxy_validation\outputs\phase2_fixture --output-dir experiments\phase9_proxy_validation\outputs\phase9_report --label-columns stable_farmland_label,high_standard_farmland_label
+```
+
+This command writes `phase9_proxy_validation_report.json` with suitability distribution and weak-label alignment diagnostics. It does not prove agronomic validity, train a policy, evaluate a policy, or report planning performance.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -157,6 +167,7 @@ This command derives D2/D3/D4P8/D4P16 diagnostic control feature tables, writes 
 - Phase 6 masked baseline evaluator runner: `experiments/phase6_masked_baselines/run_phase6_baselines.py`
 - Phase 7 MaskablePPO compatibility smoke runner: `experiments/phase7_maskableppo_smoke/run_phase7_maskableppo_smoke.py`
 - Phase 8 ablation-control feature-table runner: `experiments/phase8_ablation_controls/run_phase8_ablation_controls.py`
+- Phase 9 proxy-validation report runner: `experiments/phase9_proxy_validation/run_phase9_proxy_validation.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
