@@ -264,7 +264,31 @@ Expected outcome:
 
 The report is a diagnostic check for directional alignment between `suitability_proxy` and available weak labels. Missing labels, one-class labels, or weak alignment are reported explicitly and should not be reframed as policy or planning-performance evidence.
 
-## 12. Inspect the Paper11 Design
+## 12. Run the Phase 10 Suitability Reward-Readiness Gate
+
+Run Phase 2 with the included fixture, build the Phase 9 report, then build the
+Phase 10 gate:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase10_reward_readiness\outputs\phase2_fixture
+python experiments\phase9_proxy_validation\run_phase9_proxy_validation.py --phase2-output-dir experiments\phase10_reward_readiness\outputs\phase2_fixture --output-dir experiments\phase10_reward_readiness\outputs\phase9_report --label-columns stable_farmland_label,high_standard_farmland_label
+python experiments\phase10_reward_readiness\run_phase10_reward_readiness.py --phase9-report experiments\phase10_reward_readiness\outputs\phase9_report\phase9_proxy_validation_report.json --output-dir experiments\phase10_reward_readiness\outputs\phase10_gate --required-labels stable_farmland_label,high_standard_farmland_label
+```
+
+Expected outcome for the included tiny fixture:
+
+- `phase10_reward_readiness_gate.json` is written;
+- status is `not_ready_for_suitability_reward`;
+- recommendation is `do_not_enable_suitability_reward`;
+- both included weak labels fail the gate because Phase 9 reports `negative_or_no_alignment`;
+- the claim boundary states that Phase 10 does not train, tune, evaluate, or report a DRL policy and does not prove agronomic validity.
+
+The Phase 10 gate is an executable guardrail for later reward experiments. It
+does not make a planning-performance claim; it records whether current weak
+label diagnostics are strong enough to permit later bounded suitability-reward
+smoke tests.
+
+## 13. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -278,7 +302,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 13. Inspect Runtime Code
+## 14. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -358,9 +382,16 @@ experiments/phase9_proxy_validation/run_phase9_proxy_validation.py
 src/paper11_geofm/proxy_validation.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, and Phase 9 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+Phase 10 executable files:
 
-## 14. Regenerate Embeddings
+```text
+experiments/phase10_reward_readiness/run_phase10_reward_readiness.py
+src/paper11_geofm/reward_readiness.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, and Phase 10 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+
+## 15. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -377,7 +408,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 15. Large Data and Weights
+## 16. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

@@ -27,7 +27,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase7_maskableppo_smoke/`: executable Phase 7 MaskablePPO compatibility smoke runner.
 - `experiments/phase8_ablation_controls/`: executable Phase 8 ablation-control feature-table generator.
 - `experiments/phase9_proxy_validation/`: executable Phase 9 weak-label proxy-validation report runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, and proxy validation.
+- `experiments/phase10_reward_readiness/`: executable Phase 10 suitability reward-readiness gate runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -151,6 +152,16 @@ python experiments\phase9_proxy_validation\run_phase9_proxy_validation.py --phas
 
 This command writes `phase9_proxy_validation_report.json` with suitability distribution and weak-label alignment diagnostics. It does not prove agronomic validity, train a policy, evaluate a policy, or report planning performance.
 
+Run the Phase 10 suitability reward-readiness gate:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase10_reward_readiness\outputs\phase2_fixture
+python experiments\phase9_proxy_validation\run_phase9_proxy_validation.py --phase2-output-dir experiments\phase10_reward_readiness\outputs\phase2_fixture --output-dir experiments\phase10_reward_readiness\outputs\phase9_report --label-columns stable_farmland_label,high_standard_farmland_label
+python experiments\phase10_reward_readiness\run_phase10_reward_readiness.py --phase9-report experiments\phase10_reward_readiness\outputs\phase9_report\phase9_proxy_validation_report.json --output-dir experiments\phase10_reward_readiness\outputs\phase10_gate --required-labels stable_farmland_label,high_standard_farmland_label
+```
+
+This command writes `phase10_reward_readiness_gate.json`. For the included tiny fixture, the expected status is `not_ready_for_suitability_reward` because Phase 9 reports `negative_or_no_alignment` for both weak labels. It does not train, tune, evaluate, or report a DRL policy.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -168,6 +179,7 @@ This command writes `phase9_proxy_validation_report.json` with suitability distr
 - Phase 7 MaskablePPO compatibility smoke runner: `experiments/phase7_maskableppo_smoke/run_phase7_maskableppo_smoke.py`
 - Phase 8 ablation-control feature-table runner: `experiments/phase8_ablation_controls/run_phase8_ablation_controls.py`
 - Phase 9 proxy-validation report runner: `experiments/phase9_proxy_validation/run_phase9_proxy_validation.py`
+- Phase 10 reward-readiness gate runner: `experiments/phase10_reward_readiness/run_phase10_reward_readiness.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
