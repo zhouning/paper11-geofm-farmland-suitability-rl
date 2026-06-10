@@ -34,6 +34,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase14_tiled_smoke_env/`: executable Phase 14 tile-level one-step smoke environment.
 - `experiments/phase15_tiled_batch_smoke/`: executable Phase 15 all-tile batch smoke runner.
 - `experiments/phase16_tiled_baseline_protocol/`: executable Phase 16 tiled non-learning baseline protocol runner.
+- `experiments/phase17_tiled_maskableppo_readiness/`: executable Phase 17 tiled MaskablePPO readiness smoke runner.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -219,6 +220,14 @@ python experiments\phase16_tiled_baseline_protocol\run_phase16_tiled_baselines.p
 
 For the current real Bishan artifacts, Phase 16 processes all 54 tiles with two deterministic non-learning policies, writes 108 summary rows, covers 64,984 blocks, and keeps B1 contract reward at `0.0`. It is a tiled masked-rollout protocol check only; it does not train, evaluate, or compare a DRL policy and does not enable suitability reward.
 
+Run the Phase 17 tiled MaskablePPO readiness smoke check:
+
+```powershell
+python experiments\phase17_tiled_maskableppo_readiness\run_phase17_tiled_maskableppo_readiness.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variant B1 --tile-selection largest --total-timesteps 8 --seed 0 --output-dir experiments\phase17_tiled_maskableppo_readiness\outputs\real_bishan_largest_tile
+```
+
+For the current real Bishan artifacts, Phase 17 selects the largest tile, `tile_r003_c003`, with 2,234 blocks and B1 observation shape 180,957. It verifies MaskablePPO action-mask compatibility, a tiny CPU-only `learn()` call, and a valid masked prediction. It does not train, tune, evaluate, or compare a useful DRL policy and does not enable suitability reward.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -243,6 +252,7 @@ For the current real Bishan artifacts, Phase 16 processes all 54 tiles with two 
 - Phase 14 tiled smoke environment runner: `experiments/phase14_tiled_smoke_env/run_phase14_tiled_smoke.py`
 - Phase 15 tiled batch smoke runner: `experiments/phase15_tiled_batch_smoke/run_phase15_tiled_batch_smoke.py`
 - Phase 16 tiled baseline protocol runner: `experiments/phase16_tiled_baseline_protocol/run_phase16_tiled_baselines.py`
+- Phase 17 tiled MaskablePPO readiness runner: `experiments/phase17_tiled_maskableppo_readiness/run_phase17_tiled_maskableppo_readiness.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
