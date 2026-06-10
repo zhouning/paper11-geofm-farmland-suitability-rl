@@ -222,7 +222,29 @@ Expected outcome:
 
 This command requires the `stable-baselines3` and `sb3-contrib` dependencies listed in `requirements.txt`. It runs a tiny CPU-only `MaskablePPO.learn()` call and one masked `predict()` call to check library integration. It does not train, tune, evaluate, compare variants, report reward, or report a useful DRL policy.
 
-## 10. Inspect the Paper11 Design
+## 10. Run the Phase 8 Ablation-Control Feature-Table Generator
+
+Run Phase 2 with the included fixture, then generate deterministic D-control feature tables:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase8_ablation_controls\outputs\phase2_fixture
+python experiments\phase8_ablation_controls\run_phase8_ablation_controls.py --phase2-output-dir experiments\phase8_ablation_controls\outputs\phase2_fixture --output-dir experiments\phase8_ablation_controls\outputs\phase8_controls --seed 0 --pca-dimensions 8,16
+```
+
+Expected outcome:
+
+- the command reports generated variants `D2,D3,D4P8,D4P16`;
+- D2 and D3 each report `81` features;
+- D4P8 reports `25` features;
+- D4P16 reports `33` features;
+- `variant_D2_features.csv`, `variant_D3_features.csv`, `variant_D4P8_features.csv`, and `variant_D4P16_features.csv` are written;
+- `experiment_variants.json` is written and can be consumed by the Phase 3 input loader;
+- `phase8_ablation_control_summary.json` is written;
+- the claim boundary states that Phase 8 builds diagnostic ablation-control feature tables.
+
+The seed controls deterministic random and shuffled controls. The command creates table-readiness artifacts for later ablation design only. It does not train a policy, evaluate a policy, compare policy results, compute planning metrics, or report planning performance.
+
+## 11. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -236,7 +258,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 11. Inspect Runtime Code
+## 12. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -302,9 +324,16 @@ experiments/phase7_maskableppo_smoke/run_phase7_maskableppo_smoke.py
 src/paper11_geofm/maskableppo_smoke.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+Phase 8 executable files:
 
-## 12. Regenerate Embeddings
+```text
+experiments/phase8_ablation_controls/run_phase8_ablation_controls.py
+src/paper11_geofm/ablation_controls.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, and Phase 8 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+
+## 13. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -321,7 +350,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 13. Large Data and Weights
+## 14. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
