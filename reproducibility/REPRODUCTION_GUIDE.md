@@ -354,7 +354,31 @@ Phase 12 is a downstream-readiness audit. It preserves the Phase 10 reward
 gate, does not read the large DLTB GeoPackage, does not train a policy, and
 does not report planning performance.
 
-## 15. Inspect the Paper11 Design
+## 15. Run the Phase 13 Tiled Real-Data Contract Builder
+
+After Phase 11 has produced `block_pixel_mapping.csv` and Phase 2 has produced
+`experiment_variants.json`, run:
+
+```powershell
+python experiments\phase13_tiled_real_contract\run_phase13_tiled_real_contract.py --mapping-csv experiments\phase11_bishan_dltb_real\outputs\adapter\block_pixel_mapping.csv --variant-manifest experiments\phase11_bishan_dltb_real\outputs\phase2_real\experiment_variants.json --output-dir experiments\phase13_tiled_real_contract\outputs\real_bishan --tile-rows 8 --tile-cols 8
+```
+
+Expected current Bishan outcome:
+
+- `phase13_tile_index.csv` is written;
+- `phase13_tiled_real_contract.json` is written;
+- total blocks are `64984`;
+- non-empty tiles are `54`;
+- maximum blocks per tile are `2234`;
+- B3 maximum tiled observation dimension is `183191`;
+- `all_tiles_within_observation_threshold` is `true`;
+- `tiled_contract_ready` is `true`.
+
+Phase 13 answers the scale issue raised by Phase 12 by creating tractable
+tile-level episode metadata. It does not train a policy, enable suitability
+reward, or report planning performance.
+
+## 16. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -368,7 +392,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 16. Inspect Runtime Code
+## 17. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -469,9 +493,16 @@ experiments/phase12_real_scale_audit/run_phase12_real_scale_audit.py
 src/paper11_geofm/real_scale_audit.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, and Phase 12 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 13 executable files:
 
-## 17. Regenerate Embeddings
+```text
+experiments/phase13_tiled_real_contract/run_phase13_tiled_real_contract.py
+src/paper11_geofm/tiled_contract.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, and Phase 13 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 18. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -488,7 +519,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 18. Large Data and Weights
+## 19. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

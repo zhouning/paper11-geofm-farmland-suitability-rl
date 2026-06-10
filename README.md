@@ -30,6 +30,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase10_reward_readiness/`: executable Phase 10 suitability reward-readiness gate runner.
 - `experiments/phase11_bishan_dltb_real/`: executable Phase 11 real Bishan DLTB adapter and local real-data workflow.
 - `experiments/phase12_real_scale_audit/`: executable Phase 12 real DLTB scale audit and downstream-readiness gate.
+- `experiments/phase13_tiled_real_contract/`: executable Phase 13 tiled real-data contract builder.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -183,6 +184,14 @@ python experiments\phase12_real_scale_audit\run_phase12_real_scale_audit.py --ph
 
 For the current real Bishan artifacts, Phase 12 reports that real feature tables are ready and representation-only smoke checks are allowed, but suitability reward is not allowed and full-scale flat DRL training is not ready. The maximum flat B3 observation dimension is 5,328,691, so the next training-oriented design should be tiled or hierarchical.
 
+Run the Phase 13 tiled real-data contract builder after Phase 11/12 artifacts exist:
+
+```powershell
+python experiments\phase13_tiled_real_contract\run_phase13_tiled_real_contract.py --mapping-csv experiments\phase11_bishan_dltb_real\outputs\adapter\block_pixel_mapping.csv --variant-manifest experiments\phase11_bishan_dltb_real\outputs\phase2_real\experiment_variants.json --output-dir experiments\phase13_tiled_real_contract\outputs\real_bishan --tile-rows 8 --tile-cols 8
+```
+
+For the current real Bishan mapping, Phase 13 produces 54 non-empty tiles. The largest tile has 2,234 blocks, and the B3 maximum tiled observation dimension is 183,191, which is below the 1,000,000 threshold. This establishes a tractable tiled contract for later environment design, not policy performance.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -203,6 +212,7 @@ For the current real Bishan artifacts, Phase 12 reports that real feature tables
 - Phase 10 reward-readiness gate runner: `experiments/phase10_reward_readiness/run_phase10_reward_readiness.py`
 - Phase 11 Bishan DLTB real-data adapter runner: `experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py`
 - Phase 12 real DLTB scale audit runner: `experiments/phase12_real_scale_audit/run_phase12_real_scale_audit.py`
+- Phase 13 tiled real-data contract runner: `experiments/phase13_tiled_real_contract/run_phase13_tiled_real_contract.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
