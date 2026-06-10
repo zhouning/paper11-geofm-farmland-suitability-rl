@@ -24,6 +24,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase4_drl_smoke_env/`: executable Phase 4 one-step DRL input-contract smoke runner.
 - `experiments/phase5_rollout_protocol/`: executable Phase 5 deterministic rollout protocol smoke runner.
 - `experiments/phase6_masked_baselines/`: executable Phase 6 non-learning masked baseline evaluator.
+- `experiments/phase7_maskableppo_smoke/`: executable Phase 7 MaskablePPO compatibility smoke runner.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, and artifact export.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -121,6 +122,15 @@ python experiments\phase6_masked_baselines\run_phase6_baselines.py --phase2-outp
 
 This command runs `first_valid` and `seeded_random` masked action selectors across ready variants and writes `phase6_baseline_summary.csv` and `phase6_baseline_traces.json`. It does not train or evaluate a DRL policy and does not report planning performance.
 
+Run the Phase 7 MaskablePPO compatibility smoke check:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase7_maskableppo_smoke\outputs\phase2_fixture
+python experiments\phase7_maskableppo_smoke\run_phase7_maskableppo_smoke.py --phase2-output-dir experiments\phase7_maskableppo_smoke\outputs\phase2_fixture --output-dir experiments\phase7_maskableppo_smoke\outputs\phase7_smoke --variant B3 --total-timesteps 8 --seed 0
+```
+
+This command checks that `sb3-contrib` MaskablePPO can consume the Phase 4 action-mask environment, run a tiny CPU-only `learn()` call, make a masked prediction, and write `phase7_maskableppo_smoke.json`. It does not train, tune, evaluate, or report a useful DRL policy.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -135,6 +145,7 @@ This command runs `first_valid` and `seeded_random` masked action selectors acro
 - Phase 4 DRL smoke environment runner: `experiments/phase4_drl_smoke_env/run_phase4_smoke.py`
 - Phase 5 rollout protocol smoke runner: `experiments/phase5_rollout_protocol/run_phase5_rollout.py`
 - Phase 6 masked baseline evaluator runner: `experiments/phase6_masked_baselines/run_phase6_baselines.py`
+- Phase 7 MaskablePPO compatibility smoke runner: `experiments/phase7_maskableppo_smoke/run_phase7_maskableppo_smoke.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

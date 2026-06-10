@@ -201,7 +201,28 @@ Expected outcome:
 
 The Phase 6 command checks masked baseline-evaluator plumbing only. It does not train a policy, evaluate a DRL policy, compute planning metrics, simulate land-use transitions, or report planning performance.
 
-## 9. Inspect the Paper11 Design
+## 9. Run the Phase 7 MaskablePPO Compatibility Smoke Check
+
+Run Phase 2 with the included fixture, then run the MaskablePPO compatibility smoke check for B3:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase7_maskableppo_smoke\outputs\phase2_fixture
+python experiments\phase7_maskableppo_smoke\run_phase7_maskableppo_smoke.py --phase2-output-dir experiments\phase7_maskableppo_smoke\outputs\phase2_fixture --output-dir experiments\phase7_maskableppo_smoke\outputs\phase7_smoke --variant B3 --total-timesteps 8 --seed 0
+```
+
+Expected outcome:
+
+- the command reports variant `B3`;
+- observation shape is `331` for the 4-row fixture, computed as `4 * 82 + 3`;
+- action space is `Discrete(4)`;
+- masking support is `True`;
+- predicted action validity is `True`;
+- `phase7_maskableppo_smoke.json` is written;
+- the claim boundary states that Phase 7 is a MaskablePPO compatibility smoke check.
+
+This command requires the `stable-baselines3` and `sb3-contrib` dependencies listed in `requirements.txt`. It runs a tiny CPU-only `MaskablePPO.learn()` call and one masked `predict()` call to check library integration. It does not train, tune, evaluate, compare variants, report reward, or report a useful DRL policy.
+
+## 10. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -215,7 +236,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 10. Inspect Runtime Code
+## 11. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -274,9 +295,16 @@ experiments/phase6_masked_baselines/run_phase6_baselines.py
 src/paper11_geofm/baseline_eval.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+Phase 7 executable files:
 
-## 11. Regenerate Embeddings
+```text
+experiments/phase7_maskableppo_smoke/run_phase7_maskableppo_smoke.py
+src/paper11_geofm/maskableppo_smoke.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, and Phase 7 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+
+## 12. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -293,7 +321,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 12. Large Data and Weights
+## 13. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
