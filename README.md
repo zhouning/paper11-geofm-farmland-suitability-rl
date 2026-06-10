@@ -32,6 +32,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase12_real_scale_audit/`: executable Phase 12 real DLTB scale audit and downstream-readiness gate.
 - `experiments/phase13_tiled_real_contract/`: executable Phase 13 tiled real-data contract builder.
 - `experiments/phase14_tiled_smoke_env/`: executable Phase 14 tile-level one-step smoke environment.
+- `experiments/phase15_tiled_batch_smoke/`: executable Phase 15 all-tile batch smoke runner.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -201,6 +202,14 @@ python experiments\phase14_tiled_smoke_env\run_phase14_tiled_smoke.py --phase2-o
 
 For the current real Bishan artifacts, Phase 14 loads 2,234 blocks from `tile_r003_c003` into the B1 representation-only contract. The observation shape is 180,957, the action space is `Discrete(2234)`, and the one-step reward is `0.0`. This is a tiled input-contract smoke check, not training or planning-performance evidence.
 
+Run the Phase 15 all-tile batch smoke check:
+
+```powershell
+python experiments\phase15_tiled_batch_smoke\run_phase15_tiled_batch_smoke.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variant B1 --output-dir experiments\phase15_tiled_batch_smoke\outputs\real_bishan_all_tiles
+```
+
+For the current real Bishan artifacts, Phase 15 processes all 54 tiles, covers 64,984 blocks, and reports `All passed: True` with maximum B1 observation shape 180,957. It is still a representation-only input-contract smoke check, not policy training or evaluation.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -223,6 +232,7 @@ For the current real Bishan artifacts, Phase 14 loads 2,234 blocks from `tile_r0
 - Phase 12 real DLTB scale audit runner: `experiments/phase12_real_scale_audit/run_phase12_real_scale_audit.py`
 - Phase 13 tiled real-data contract runner: `experiments/phase13_tiled_real_contract/run_phase13_tiled_real_contract.py`
 - Phase 14 tiled smoke environment runner: `experiments/phase14_tiled_smoke_env/run_phase14_tiled_smoke.py`
+- Phase 15 tiled batch smoke runner: `experiments/phase15_tiled_batch_smoke/run_phase15_tiled_batch_smoke.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

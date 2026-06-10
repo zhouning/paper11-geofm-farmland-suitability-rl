@@ -403,7 +403,28 @@ Phase 14 verifies that a real Phase 13 tile can be loaded into the existing
 Phase 4 environment contract. It does not train a policy, enable suitability
 reward, or report planning performance.
 
-## 17. Inspect the Paper11 Design
+## 17. Run the Phase 15 All-Tile Batch Smoke Check
+
+After Phase 13 has produced the real tile index, run B1 across all tiles:
+
+```powershell
+python experiments\phase15_tiled_batch_smoke\run_phase15_tiled_batch_smoke.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variant B1 --output-dir experiments\phase15_tiled_batch_smoke\outputs\real_bishan_all_tiles
+```
+
+Expected current Bishan outcome:
+
+- `phase15_tiled_batch_smoke_summary.csv` is written;
+- `phase15_tiled_batch_smoke_report.json` is written;
+- tiles processed are `54`;
+- total blocks are `64984`;
+- maximum observation shape is `180957`;
+- all tile smoke checks pass.
+
+Phase 15 verifies that every real Phase 13 tile can run the representation-only
+B1 input-contract smoke step. It does not train a policy, enable suitability
+reward, or report planning performance.
+
+## 18. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -417,7 +438,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 18. Inspect Runtime Code
+## 19. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -532,9 +553,16 @@ experiments/phase14_tiled_smoke_env/run_phase14_tiled_smoke.py
 src/paper11_geofm/tiled_inputs.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, and Phase 14 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 15 executable files:
 
-## 19. Regenerate Embeddings
+```text
+experiments/phase15_tiled_batch_smoke/run_phase15_tiled_batch_smoke.py
+src/paper11_geofm/tiled_batch_smoke.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, and Phase 15 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 20. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -551,7 +579,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 20. Large Data and Weights
+## 21. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

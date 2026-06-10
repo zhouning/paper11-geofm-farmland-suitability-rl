@@ -18,6 +18,7 @@ docs/superpowers/specs/2026-06-10-phase11-bishan-dltb-real-adapter-design.md	des
 docs/superpowers/specs/2026-06-10-phase12-real-dltb-scale-audit-design.md	design	Phase 12 design for auditing real Bishan DLTB artifact scale, reward readiness, and downstream experiment gates.
 docs/superpowers/specs/2026-06-10-phase13-tiled-real-contract-design.md	design	Phase 13 design for building tiled real-data contract metadata from Bishan DLTB block mappings.
 docs/superpowers/specs/2026-06-10-phase14-tiled-smoke-env-design.md	design	Phase 14 design for loading one real tile into the existing Phase 4 input-contract smoke environment.
+docs/superpowers/specs/2026-06-10-phase15-tiled-batch-smoke-design.md	design	Phase 15 design for running representation-only tiled smoke checks across all real Phase 13 tiles.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 docs/superpowers/plans/2026-06-09-phase2-block-geofm-feature-assembly.md	plan	Implementation plan for the Phase 2 block-level GeoFM feature assembly pipeline.
 docs/superpowers/plans/2026-06-09-phase3-drl-input-adapter.md	plan	Implementation plan for the Phase 3 DRL input adapter.
@@ -32,6 +33,7 @@ docs/superpowers/plans/2026-06-10-phase11-bishan-dltb-real-adapter.md	plan	Imple
 docs/superpowers/plans/2026-06-10-phase12-real-dltb-scale-audit.md	plan	Implementation plan for the Phase 12 real DLTB scale audit.
 docs/superpowers/plans/2026-06-10-phase13-tiled-real-contract.md	plan	Implementation plan for the Phase 13 tiled real-data contract builder.
 docs/superpowers/plans/2026-06-10-phase14-tiled-smoke-env.md	plan	Implementation plan for the Phase 14 tiled smoke environment.
+docs/superpowers/plans/2026-06-10-phase15-tiled-batch-smoke.md	plan	Implementation plan for the Phase 15 tiled batch smoke runner.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
@@ -68,6 +70,7 @@ src/paper11_geofm/dltb_adapter.py	runtime	Phase 11 Bishan DLTB real-data adapter
 src/paper11_geofm/real_scale_audit.py	runtime	Phase 12 real DLTB artifact scale audit and downstream-readiness gate builder.
 src/paper11_geofm/tiled_contract.py	runtime	Phase 13 tiled real-data contract builder for grouping DLTB blocks into tractable spatial episodes.
 src/paper11_geofm/tiled_inputs.py	runtime	Phase 14 tile subset loader and one-step tiled smoke environment runner.
+src/paper11_geofm/tiled_batch_smoke.py	runtime	Phase 15 batch runner for one-step representation-only smoke checks across all Phase 13 tiles.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -82,6 +85,7 @@ experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py	experime
 experiments/phase12_real_scale_audit/run_phase12_real_scale_audit.py	experiment	Executable Phase 12 audit runner for real Bishan DLTB artifact readiness and flat-scale limits.
 experiments/phase13_tiled_real_contract/run_phase13_tiled_real_contract.py	experiment	Executable Phase 13 tiled contract runner for real Bishan DLTB block mappings.
 experiments/phase14_tiled_smoke_env/run_phase14_tiled_smoke.py	experiment	Executable Phase 14 one-step tiled smoke environment runner for real Phase 13 tiles.
+experiments/phase15_tiled_batch_smoke/run_phase15_tiled_batch_smoke.py	experiment	Executable Phase 15 batch smoke runner across all real Phase 13 tiles.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -125,3 +129,4 @@ tests/test_phase11_bishan_dltb_adapter.py	verification	Pytest checks for Phase 1
 tests/test_phase12_real_scale_audit.py	verification	Pytest checks for Phase 12 artifact audit decisions, threshold gates, JSON writing, and CLI output.
 tests/test_phase13_tiled_contract.py	verification	Pytest checks for Phase 13 tile grouping, observation-threshold gates, CSV/JSON writing, and CLI output.
 tests/test_phase14_tiled_smoke.py	verification	Pytest checks for Phase 14 tiled variant loading, reward-variant rejection, one-step smoke summaries, JSON writing, and CLI output.
+tests/test_phase15_tiled_batch_smoke.py	verification	Pytest checks for Phase 15 all-tile batch smoke summaries, max-tile caps, reward-variant rejection, artifact writing, and CLI output.
