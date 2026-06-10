@@ -424,7 +424,32 @@ Phase 15 verifies that every real Phase 13 tile can run the representation-only
 B1 input-contract smoke step. It does not train a policy, enable suitability
 reward, or report planning performance.
 
-## 18. Inspect the Paper11 Design
+## 18. Run the Phase 16 Tiled Non-Learning Baseline Protocol
+
+After Phase 15 has confirmed all real tiles pass the input contract, run short
+deterministic masked rollouts over the same real tile index:
+
+```powershell
+python experiments\phase16_tiled_baseline_protocol\run_phase16_tiled_baselines.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variant B1 --policies first_valid,seeded_random --max-steps 4 --seed 0 --output-dir experiments\phase16_tiled_baseline_protocol\outputs\real_bishan_b1
+```
+
+Expected current Bishan outcome:
+
+- `phase16_tiled_baseline_summary.csv` is written;
+- `phase16_tiled_baseline_traces.json` is written;
+- tiles processed are `54`;
+- policies processed are `2`;
+- summary rows are `108`;
+- total blocks are `64984`;
+- maximum observation shape is `180957`;
+- all rollouts complete;
+- B1 total contract reward remains `0.0`.
+
+Phase 16 verifies deterministic non-learning masked rollouts across every real
+Phase 13 tile. It does not train, tune, evaluate, or compare a DRL policy, does
+not enable suitability reward, and does not report planning performance.
+
+## 19. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -438,7 +463,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 19. Inspect Runtime Code
+## 20. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -560,9 +585,16 @@ experiments/phase15_tiled_batch_smoke/run_phase15_tiled_batch_smoke.py
 src/paper11_geofm/tiled_batch_smoke.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, and Phase 15 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 16 executable files:
 
-## 20. Regenerate Embeddings
+```text
+experiments/phase16_tiled_baseline_protocol/run_phase16_tiled_baselines.py
+src/paper11_geofm/tiled_baseline_protocol.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, and Phase 16 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 21. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -579,7 +611,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 21. Large Data and Weights
+## 22. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

@@ -33,6 +33,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase13_tiled_real_contract/`: executable Phase 13 tiled real-data contract builder.
 - `experiments/phase14_tiled_smoke_env/`: executable Phase 14 tile-level one-step smoke environment.
 - `experiments/phase15_tiled_batch_smoke/`: executable Phase 15 all-tile batch smoke runner.
+- `experiments/phase16_tiled_baseline_protocol/`: executable Phase 16 tiled non-learning baseline protocol runner.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -210,6 +211,14 @@ python experiments\phase15_tiled_batch_smoke\run_phase15_tiled_batch_smoke.py --
 
 For the current real Bishan artifacts, Phase 15 processes all 54 tiles, covers 64,984 blocks, and reports `All passed: True` with maximum B1 observation shape 180,957. It is still a representation-only input-contract smoke check, not policy training or evaluation.
 
+Run the Phase 16 tiled non-learning baseline protocol:
+
+```powershell
+python experiments\phase16_tiled_baseline_protocol\run_phase16_tiled_baselines.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variant B1 --policies first_valid,seeded_random --max-steps 4 --seed 0 --output-dir experiments\phase16_tiled_baseline_protocol\outputs\real_bishan_b1
+```
+
+For the current real Bishan artifacts, Phase 16 processes all 54 tiles with two deterministic non-learning policies, writes 108 summary rows, covers 64,984 blocks, and keeps B1 contract reward at `0.0`. It is a tiled masked-rollout protocol check only; it does not train, evaluate, or compare a DRL policy and does not enable suitability reward.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -233,6 +242,7 @@ For the current real Bishan artifacts, Phase 15 processes all 54 tiles, covers 6
 - Phase 13 tiled real-data contract runner: `experiments/phase13_tiled_real_contract/run_phase13_tiled_real_contract.py`
 - Phase 14 tiled smoke environment runner: `experiments/phase14_tiled_smoke_env/run_phase14_tiled_smoke.py`
 - Phase 15 tiled batch smoke runner: `experiments/phase15_tiled_batch_smoke/run_phase15_tiled_batch_smoke.py`
+- Phase 16 tiled baseline protocol runner: `experiments/phase16_tiled_baseline_protocol/run_phase16_tiled_baselines.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
