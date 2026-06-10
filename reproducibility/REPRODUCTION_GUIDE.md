@@ -178,7 +178,30 @@ Expected outcome:
 
 The Phase 5 command standardizes episode-summary and action-mask accounting across ready variants. It does not train a policy, evaluate a policy, compute planning metrics, simulate land-use transitions, or report planning performance.
 
-## 8. Inspect the Paper11 Design
+## 8. Run the Phase 6 Masked Baseline Evaluator
+
+Run Phase 2 with the included fixture, then run the non-learning masked baseline evaluator across B0/B1/B2/B3:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase6_masked_baselines\outputs\phase2_fixture
+python experiments\phase6_masked_baselines\run_phase6_baselines.py --phase2-output-dir experiments\phase6_masked_baselines\outputs\phase2_fixture --output-dir experiments\phase6_masked_baselines\outputs\phase6_baselines --variants B0,B1,B2,B3 --policies first_valid,seeded_random --seed 0
+```
+
+Expected outcome:
+
+- the command prints one summary line for each requested policy and variant;
+- default policies are `first_valid` and `seeded_random`;
+- fixture feature counts are B0 = `17`, B1 = `81`, B2 = `18`, and B3 = `82`;
+- `seeded_random` is deterministic for the same seed;
+- B0 and B1 report zero contract reward because their reward mode is `base_planning_reward`;
+- B2 and B3 report positive contract reward from `suitability_proxy` wiring;
+- `phase6_baseline_summary.csv` is written;
+- `phase6_baseline_traces.json` is written;
+- the claim boundary states that Phase 6 is a non-learning masked baseline evaluator.
+
+The Phase 6 command checks masked baseline-evaluator plumbing only. It does not train a policy, evaluate a DRL policy, compute planning metrics, simulate land-use transitions, or report planning performance.
+
+## 9. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -192,7 +215,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 9. Inspect Runtime Code
+## 10. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -244,9 +267,16 @@ experiments/phase5_rollout_protocol/run_phase5_rollout.py
 src/paper11_geofm/rollout_smoke.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, and Phase 5 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+Phase 6 executable files:
 
-## 10. Regenerate Embeddings
+```text
+experiments/phase6_masked_baselines/run_phase6_baselines.py
+src/paper11_geofm/baseline_eval.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, and Phase 6 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+
+## 11. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -263,7 +293,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 11. Large Data and Weights
+## 12. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

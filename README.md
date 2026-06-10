@@ -23,6 +23,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase3_drl_input_adapter/`: executable Phase 3 DRL input-contract inspection runner.
 - `experiments/phase4_drl_smoke_env/`: executable Phase 4 one-step DRL input-contract smoke runner.
 - `experiments/phase5_rollout_protocol/`: executable Phase 5 deterministic rollout protocol smoke runner.
+- `experiments/phase6_masked_baselines/`: executable Phase 6 non-learning masked baseline evaluator.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, and artifact export.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -111,6 +112,15 @@ python experiments\phase5_rollout_protocol\run_phase5_rollout.py --phase2-output
 
 This command runs the same deterministic masked rollout protocol across ready variants and writes `phase5_rollout_summary.csv` and `phase5_rollout_steps.json`. It does not train or evaluate a policy and does not report planning performance.
 
+Run the Phase 6 non-learning masked baseline evaluator:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv data\bishan_phase2_csv_sample\block_pixel_mapping.csv --attributes-csv data\bishan_phase2_csv_sample\block_attributes.csv --output-dir experiments\phase6_masked_baselines\outputs\phase2_fixture
+python experiments\phase6_masked_baselines\run_phase6_baselines.py --phase2-output-dir experiments\phase6_masked_baselines\outputs\phase2_fixture --output-dir experiments\phase6_masked_baselines\outputs\phase6_baselines --variants B0,B1,B2,B3 --policies first_valid,seeded_random --seed 0
+```
+
+This command runs `first_valid` and `seeded_random` masked action selectors across ready variants and writes `phase6_baseline_summary.csv` and `phase6_baseline_traces.json`. It does not train or evaluate a DRL policy and does not report planning performance.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -124,6 +134,7 @@ This command runs the same deterministic masked rollout protocol across ready va
 - Phase 3 DRL input inspection runner: `experiments/phase3_drl_input_adapter/inspect_variant_inputs.py`
 - Phase 4 DRL smoke environment runner: `experiments/phase4_drl_smoke_env/run_phase4_smoke.py`
 - Phase 5 rollout protocol smoke runner: `experiments/phase5_rollout_protocol/run_phase5_rollout.py`
+- Phase 6 masked baseline evaluator runner: `experiments/phase6_masked_baselines/run_phase6_baselines.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
