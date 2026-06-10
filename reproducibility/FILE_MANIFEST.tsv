@@ -14,6 +14,7 @@ docs/superpowers/specs/2026-06-10-phase7-maskableppo-smoke-design.md	design	Phas
 docs/superpowers/specs/2026-06-10-phase8-ablation-control-features-design.md	design	Phase 8 design for deterministic ablation-control feature tables without policy training or evaluation.
 docs/superpowers/specs/2026-06-10-phase9-proxy-validation-report-design.md	design	Phase 9 design for a weak-label proxy-validation report without policy training or planning-performance claims.
 docs/superpowers/specs/2026-06-10-phase10-reward-readiness-gate-design.md	design	Phase 10 design for a suitability reward-readiness gate without policy training or planning-performance claims.
+docs/superpowers/specs/2026-06-10-phase11-bishan-dltb-real-adapter-design.md	design	Phase 11 design for converting real Bishan DLTB-with-slope polygons into Phase 2-compatible inputs.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 docs/superpowers/plans/2026-06-09-phase2-block-geofm-feature-assembly.md	plan	Implementation plan for the Phase 2 block-level GeoFM feature assembly pipeline.
 docs/superpowers/plans/2026-06-09-phase3-drl-input-adapter.md	plan	Implementation plan for the Phase 3 DRL input adapter.
@@ -24,6 +25,7 @@ docs/superpowers/plans/2026-06-10-phase7-maskableppo-smoke.md	plan	Implementatio
 docs/superpowers/plans/2026-06-10-phase8-ablation-control-features.md	plan	Implementation plan for the Phase 8 ablation-control feature-table generator.
 docs/superpowers/plans/2026-06-10-phase9-proxy-validation-report.md	plan	Implementation plan for the Phase 9 proxy-validation report.
 docs/superpowers/plans/2026-06-10-phase10-reward-readiness-gate.md	plan	Implementation plan for the Phase 10 reward-readiness gate.
+docs/superpowers/plans/2026-06-10-phase11-bishan-dltb-real-adapter.md	plan	Implementation plan for the Phase 11 Bishan DLTB real-data adapter.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
@@ -56,6 +58,7 @@ src/paper11_geofm/maskableppo_smoke.py	runtime	Phase 7 MaskablePPO compatibility
 src/paper11_geofm/ablation_controls.py	runtime	Phase 8 deterministic ablation-control table builder and CSV/JSON artifact writer.
 src/paper11_geofm/proxy_validation.py	runtime	Phase 9 weak-label proxy-validation report builder and JSON artifact writer.
 src/paper11_geofm/reward_readiness.py	runtime	Phase 10 suitability reward-readiness gate builder and JSON artifact writer.
+src/paper11_geofm/dltb_adapter.py	runtime	Phase 11 Bishan DLTB real-data adapter for centroid-to-grid mapping, explicit features, weak labels, and Phase 2 input artifacts.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -66,6 +69,7 @@ experiments/phase7_maskableppo_smoke/run_phase7_maskableppo_smoke.py	experiment	
 experiments/phase8_ablation_controls/run_phase8_ablation_controls.py	experiment	Executable Phase 8 ablation-control feature-table generator for ready B0/B1 inputs.
 experiments/phase9_proxy_validation/run_phase9_proxy_validation.py	experiment	Executable Phase 9 weak-label proxy-validation report runner for Phase 2 block feature outputs.
 experiments/phase10_reward_readiness/run_phase10_reward_readiness.py	experiment	Executable Phase 10 suitability reward-readiness gate runner for Phase 9 reports.
+experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py	experiment	Executable Phase 11 adapter runner for local real Bishan DLTB-with-slope data.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -105,3 +109,4 @@ tests/test_phase7_maskableppo_smoke.py	verification	Pytest checks for Phase 7 Ma
 tests/test_phase8_ablation_controls.py	verification	Pytest checks for Phase 8 D2/D3/D4 feature controls, determinism, artifacts, loader compatibility, and CLI output.
 tests/test_phase9_proxy_validation.py	verification	Pytest checks for Phase 9 proxy-validation report statistics, validation failures, JSON artifact writing, and CLI output.
 tests/test_phase10_reward_readiness.py	verification	Pytest checks for Phase 10 reward-readiness gate status, recommendations, JSON artifact writing, and CLI output.
+tests/test_phase11_bishan_dltb_adapter.py	verification	Pytest checks for Phase 11 DLTB centroid-to-grid assignment, feature derivation, artifact writing, max-block caps, and CLI output.

@@ -41,6 +41,35 @@ Files:
 
 This fixture is for exercising the Phase 2 `--mapping-csv` and `--attributes-csv` code path. It is not a real parcel/block planning dataset and should not be interpreted as real block-level evidence.
 
+## External Local Real-Data Source Used by Phase 11
+
+Path on the current workstation:
+
+```text
+D:\test\dem_slope_analysis\output\DLTB_with_slope.gpkg
+```
+
+Role:
+
+- real Bishan DLTB polygon source with slope attributes from previous paper work;
+- read by `experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py`;
+- converted into Phase 2-compatible `block_pixel_mapping.csv` and `block_attributes.csv` artifacts;
+- not committed to ordinary Git because it is a large external geospatial artifact with separate data provenance.
+
+Observed local properties:
+
+| Property | Value |
+|---|---|
+| Layer | `DLTB` |
+| CRS | `EPSG:4326` |
+| Polygon count | 101,657 |
+| File size | approximately 160 MB |
+| Key fields | `BSM`, `DLBM`, `DLMC`, `TBMJ`, `category`, `slope_mean`, `slope_max`, `slope_pixel_count` |
+| Bishan AlphaEarth bbox rows read | 65,146 |
+| Adapter rows exported | 64,984 |
+
+This source enables real Bishan DLTB feature-table experiments. It does not by itself provide parcel-accurate GeoFM overlap, high-standard farmland labels, stable farmland labels, or DRL policy-performance evidence.
+
 ## Deliberately Excluded Large Artifacts
 
 The source workspace also contained larger arrays and trained artifacts, including:

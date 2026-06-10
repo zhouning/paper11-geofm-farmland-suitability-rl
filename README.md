@@ -28,6 +28,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase8_ablation_controls/`: executable Phase 8 ablation-control feature-table generator.
 - `experiments/phase9_proxy_validation/`: executable Phase 9 weak-label proxy-validation report runner.
 - `experiments/phase10_reward_readiness/`: executable Phase 10 suitability reward-readiness gate runner.
+- `experiments/phase11_bishan_dltb_real/`: executable Phase 11 real Bishan DLTB adapter and local real-data workflow.
 - `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
@@ -162,6 +163,17 @@ python experiments\phase10_reward_readiness\run_phase10_reward_readiness.py --ph
 
 This command writes `phase10_reward_readiness_gate.json`. For the included tiny fixture, the expected status is `not_ready_for_suitability_reward` because Phase 9 reports `negative_or_no_alignment` for both weak labels. It does not train, tune, evaluate, or report a DRL policy.
 
+Run the Phase 11 real Bishan DLTB adapter if the local DLTB GeoPackage is available:
+
+```powershell
+python experiments\phase11_bishan_dltb_real\run_phase11_bishan_dltb_adapter.py --dltb-path D:\test\dem_slope_analysis\output\DLTB_with_slope.gpkg --output-dir experiments\phase11_bishan_dltb_real\outputs\adapter
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv experiments\phase11_bishan_dltb_real\outputs\adapter\block_pixel_mapping.csv --attributes-csv experiments\phase11_bishan_dltb_real\outputs\adapter\block_attributes.csv --output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real
+python experiments\phase9_proxy_validation\run_phase9_proxy_validation.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase11_bishan_dltb_real\outputs\phase9_real --label-columns current_farmland_label,low_slope_farmland_label,farmland_or_orchard_label
+python experiments\phase10_reward_readiness\run_phase10_reward_readiness.py --phase9-report experiments\phase11_bishan_dltb_real\outputs\phase9_real\phase9_proxy_validation_report.json --output-dir experiments\phase11_bishan_dltb_real\outputs\phase10_real --required-labels current_farmland_label,low_slope_farmland_label,farmland_or_orchard_label
+```
+
+In the local Bishan run, the adapter exported 64,984 DLTB polygons into Phase 2-compatible inputs. Phase 9 found weak positive alignment for `current_farmland_label` and `farmland_or_orchard_label`, but not for `low_slope_farmland_label`; Phase 10 therefore reported `not_ready_for_suitability_reward`. This is real-data feature-table evidence, not DRL policy-performance evidence.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -180,6 +192,7 @@ This command writes `phase10_reward_readiness_gate.json`. For the included tiny 
 - Phase 8 ablation-control feature-table runner: `experiments/phase8_ablation_controls/run_phase8_ablation_controls.py`
 - Phase 9 proxy-validation report runner: `experiments/phase9_proxy_validation/run_phase9_proxy_validation.py`
 - Phase 10 reward-readiness gate runner: `experiments/phase10_reward_readiness/run_phase10_reward_readiness.py`
+- Phase 11 Bishan DLTB real-data adapter runner: `experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
@@ -188,6 +201,8 @@ This command writes `phase10_reward_readiness_gate.json`. For the included tiny 
 ## Data Policy
 
 This repository includes only the lightweight Bishan sample needed for reviewer smoke tests. Larger village and Heping embedding arrays, model checkpoints, and intervention transition files are documented in `reproducibility/DATA_MANIFEST.md` but are not included in ordinary Git.
+
+The real Bishan DLTB-with-slope GeoPackage used by Phase 11 is an external local source documented in `reproducibility/DATA_MANIFEST.md`. It is not committed to Git; generated Phase 11 outputs under `experiments/phase11_bishan_dltb_real/outputs/` are also ignored.
 
 Use Git LFS or an external archival repository such as Zenodo or OSF before distributing large derived arrays or trained weights.
 

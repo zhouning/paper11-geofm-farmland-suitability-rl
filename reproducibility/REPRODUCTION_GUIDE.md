@@ -288,7 +288,49 @@ does not make a planning-performance claim; it records whether current weak
 label diagnostics are strong enough to permit later bounded suitability-reward
 smoke tests.
 
-## 13. Inspect the Paper11 Design
+## 13. Run the Phase 11 Real Bishan DLTB Adapter
+
+This path uses the local real Bishan DLTB-with-slope GeoPackage from the
+previous paper workspace. The file is not committed because it is a large
+external geospatial artifact with separate provenance.
+
+Run the adapter:
+
+```powershell
+python experiments\phase11_bishan_dltb_real\run_phase11_bishan_dltb_adapter.py --dltb-path D:\test\dem_slope_analysis\output\DLTB_with_slope.gpkg --output-dir experiments\phase11_bishan_dltb_real\outputs\adapter
+```
+
+Expected local outcome for the current Bishan source:
+
+- `block_pixel_mapping.csv` is written;
+- `block_attributes.csv` is written;
+- `phase11_bishan_dltb_adapter_summary.json` is written;
+- `rows_read_in_bbox` is `65146`;
+- `rows_exported` is `64984`;
+- category counts are `Other = 27988`, `Farmland = 25359`, `Forest = 8717`, and `Orchard = 2920`;
+- weak-label positive counts are `current_farmland_label = 25359`, `low_slope_farmland_label = 7443`, and `farmland_or_orchard_label = 28279`.
+
+Then run the real-data Phase 2, Phase 9, and Phase 10 chain:
+
+```powershell
+python experiments\phase2_block_geofm_features\run_phase2.py --mapping-csv experiments\phase11_bishan_dltb_real\outputs\adapter\block_pixel_mapping.csv --attributes-csv experiments\phase11_bishan_dltb_real\outputs\adapter\block_attributes.csv --output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real
+python experiments\phase9_proxy_validation\run_phase9_proxy_validation.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase11_bishan_dltb_real\outputs\phase9_real --label-columns current_farmland_label,low_slope_farmland_label,farmland_or_orchard_label
+python experiments\phase10_reward_readiness\run_phase10_reward_readiness.py --phase9-report experiments\phase11_bishan_dltb_real\outputs\phase9_real\phase9_proxy_validation_report.json --output-dir experiments\phase11_bishan_dltb_real\outputs\phase10_real --required-labels current_farmland_label,low_slope_farmland_label,farmland_or_orchard_label
+```
+
+Observed local Phase 9/10 outcome:
+
+- `current_farmland_label` reports weak positive proxy alignment;
+- `farmland_or_orchard_label` reports weak positive proxy alignment;
+- `low_slope_farmland_label` reports `negative_or_no_alignment`;
+- Phase 10 status is `not_ready_for_suitability_reward`;
+- Phase 10 recommendation is `do_not_enable_suitability_reward`.
+
+This confirms the Bishan DLTB data can drive real Phase 2 feature-table
+experiments. It does not enable a suitability reward under the current strict
+all-label gate, and it does not train, evaluate, or report a DRL policy.
+
+## 14. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -302,7 +344,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 14. Inspect Runtime Code
+## 15. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -389,9 +431,16 @@ experiments/phase10_reward_readiness/run_phase10_reward_readiness.py
 src/paper11_geofm/reward_readiness.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, and Phase 10 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training.
+Phase 11 executable files:
 
-## 15. Regenerate Embeddings
+```text
+experiments/phase11_bishan_dltb_real/run_phase11_bishan_dltb_adapter.py
+src/paper11_geofm/dltb_adapter.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, and Phase 11 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 16. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -408,7 +457,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 16. Large Data and Weights
+## 17. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
