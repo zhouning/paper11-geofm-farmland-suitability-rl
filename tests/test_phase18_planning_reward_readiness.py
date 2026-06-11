@@ -117,7 +117,7 @@ def _artifact_fixture(tmp_path: Path) -> dict[str, Path]:
     }
 
 
-def test_phase18_blocks_performance_experiment_when_base_reward_missing(tmp_path):
+def test_phase18_keeps_performance_blocked_after_base_reward_implementation(tmp_path):
     from paper11_geofm.planning_reward_readiness import (
         PHASE18_CLAIM_BOUNDARY,
         build_phase18_planning_reward_readiness,
@@ -132,22 +132,22 @@ def test_phase18_blocks_performance_experiment_when_base_reward_missing(tmp_path
     )
 
     assert report["phase"] == "phase18_planning_reward_readiness"
-    assert report["base_planning_reward_implemented"] is False
+    assert report["base_planning_reward_implemented"] is True
     assert report["base_reward_modes"] == {
         "B0": "base_planning_reward",
         "B1": "base_planning_reward",
     }
-    assert "returns 0.0" in report["base_planning_reward_evidence"]
+    assert "bounded weighted score" in report["base_planning_reward_evidence"]
     assert report["suitability_reward_allowed"] is False
     assert report["flat_full_scale_training_ready"] is False
     assert report["tiled_maskableppo_api_ready"] is True
     assert report["performance_experiment_ready"] is False
-    assert "base_planning_reward_not_implemented" in report["blocked_reasons"]
+    assert "base_planning_reward_not_implemented" not in report["blocked_reasons"]
     assert "suitability_reward_not_allowed" in report["blocked_reasons"]
     assert "flat_full_scale_training_not_ready" in report["blocked_reasons"]
     assert (
         report["recommended_next_step"]
-        == "implement_real_tiled_planning_reward_before_policy_evaluation"
+        == "resolve_suitability_reward_gate_before_suitability_reward_experiments"
     )
     assert report["claim_boundary"] == PHASE18_CLAIM_BOUNDARY
 
@@ -225,14 +225,14 @@ def test_phase18_cli_writes_report_and_prints_summary(tmp_path, capsys):
 
     stdout = capsys.readouterr().out
     assert exit_code == 0
-    assert "Base planning reward implemented: False" in stdout
+    assert "Base planning reward implemented: True" in stdout
     assert "Suitability reward allowed: False" in stdout
     assert "Flat full-scale training ready: False" in stdout
     assert "Tiled MaskablePPO API ready: True" in stdout
     assert "Performance experiment ready: False" in stdout
     assert (
         "Recommendation: "
-        "implement_real_tiled_planning_reward_before_policy_evaluation"
+        "resolve_suitability_reward_gate_before_suitability_reward_experiments"
     ) in stdout
     assert "phase18_planning_reward_readiness.json" in stdout
     assert "Claim boundary: Phase 18 is a planning-reward readiness audit" in stdout

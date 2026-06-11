@@ -36,7 +36,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase16_tiled_baseline_protocol/`: executable Phase 16 tiled non-learning baseline protocol runner.
 - `experiments/phase17_tiled_maskableppo_readiness/`: executable Phase 17 tiled MaskablePPO readiness smoke runner.
 - `experiments/phase18_planning_reward_readiness/`: executable Phase 18 planning-reward readiness gate runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, artifact export, proxy validation, and reward-readiness gating.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, and reward-readiness gating.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -203,7 +203,7 @@ Run the Phase 14 tile-level smoke environment on the largest real Bishan tile:
 python experiments\phase14_tiled_smoke_env\run_phase14_tiled_smoke.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --tile-id tile_r003_c003 --variant B1 --output-dir experiments\phase14_tiled_smoke_env\outputs\real_bishan_largest_tile
 ```
 
-For the current real Bishan artifacts, Phase 14 loads 2,234 blocks from `tile_r003_c003` into the B1 representation-only contract. The observation shape is 180,957, the action space is `Discrete(2234)`, and the one-step reward is `0.0`. This is a tiled input-contract smoke check, not training or planning-performance evidence.
+For the current real Bishan artifacts, Phase 14 loads 2,234 blocks from `tile_r003_c003` into the B1 representation-only contract. The observation shape is 180,957, the action space is `Discrete(2234)`, and the first selected block receives a deterministic base planning reward of `-0.197259`. This is a tiled input-contract smoke check, not training or planning-performance evidence.
 
 Run the Phase 15 all-tile batch smoke check:
 
@@ -219,7 +219,7 @@ Run the Phase 16 tiled non-learning baseline protocol:
 python experiments\phase16_tiled_baseline_protocol\run_phase16_tiled_baselines.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variant B1 --policies first_valid,seeded_random --max-steps 4 --seed 0 --output-dir experiments\phase16_tiled_baseline_protocol\outputs\real_bishan_b1
 ```
 
-For the current real Bishan artifacts, Phase 16 processes all 54 tiles with two deterministic non-learning policies, writes 108 summary rows, covers 64,984 blocks, and keeps B1 contract reward at `0.0`. It is a tiled masked-rollout protocol check only; it does not train, evaluate, or compare a DRL policy and does not enable suitability reward.
+For the current real Bishan artifacts, Phase 16 processes all 54 tiles with two deterministic non-learning policies, writes 108 summary rows, covers 64,984 blocks, and accumulates the deterministic B1 base planning reward. It is a tiled masked-rollout protocol check only; it does not train, evaluate, or compare a DRL policy and does not enable suitability reward.
 
 Run the Phase 17 tiled MaskablePPO readiness smoke check:
 
@@ -235,7 +235,7 @@ Run the Phase 18 planning-reward readiness gate:
 python experiments\phase18_planning_reward_readiness\run_phase18_planning_reward_readiness.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase10-gate experiments\phase11_bishan_dltb_real\outputs\phase10_real\phase10_reward_readiness_gate.json --phase12-audit experiments\phase12_real_scale_audit\outputs\real_bishan\phase12_real_dltb_scale_audit.json --phase17-readiness experiments\phase17_tiled_maskableppo_readiness\outputs\real_bishan_largest_tile\phase17_tiled_maskableppo_readiness.json --output-dir experiments\phase18_planning_reward_readiness\outputs\real_bishan
 ```
 
-For the current real Bishan artifacts, Phase 18 reports that the tiled MaskablePPO API path is ready, but true planning-performance experiments are not ready. The blocking evidence is that B0/B1 use `base_planning_reward` while the current environment still returns `0.0` for non-suitability reward modes; Phase 10/12 also keep suitability reward disabled and flat full-scale training not ready.
+For the current real Bishan artifacts after Phase 19, Phase 18 reports that `base_planning_reward` is implemented and the tiled MaskablePPO API path is ready, but true planning-performance experiments are still not ready. Phase 10/12 keep suitability reward disabled and flat full-scale training not ready, so the current artifacts remain readiness evidence rather than policy-performance evidence.
 
 ## Key Entry Points
 
@@ -263,6 +263,7 @@ For the current real Bishan artifacts, Phase 18 reports that the tiled MaskableP
 - Phase 16 tiled baseline protocol runner: `experiments/phase16_tiled_baseline_protocol/run_phase16_tiled_baselines.py`
 - Phase 17 tiled MaskablePPO readiness runner: `experiments/phase17_tiled_maskableppo_readiness/run_phase17_tiled_maskableppo_readiness.py`
 - Phase 18 planning-reward readiness gate runner: `experiments/phase18_planning_reward_readiness/run_phase18_planning_reward_readiness.py`
+- Phase 19 base planning reward module: `src/paper11_geofm/planning_reward.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

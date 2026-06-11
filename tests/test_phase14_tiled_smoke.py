@@ -16,7 +16,20 @@ def _complete_phase2_feature_row(block_id):
     for dim in range(64):
         row[f"embedding_mean_{dim:02d}"] = float(dim)
     for idx in range(17):
-        row[f"explicit_feature_{idx:02d}"] = float(idx)
+        row[f"explicit_feature_{idx:02d}"] = 0.0
+    row.update(
+        {
+            "explicit_feature_00": 2.5,
+            "explicit_feature_01": 10.0,
+            "explicit_feature_02": 28.0,
+            "explicit_feature_04": 1.0,
+            "explicit_feature_07": 0.0,
+            "explicit_feature_09": 0.0,
+            "explicit_feature_10": 0.0,
+            "explicit_feature_13": 1.0,
+            "explicit_feature_16": 1.0,
+        }
+    )
     return row
 
 
@@ -117,7 +130,7 @@ def test_phase14_runs_one_step_tiled_b1_smoke(tmp_path):
     assert summary["observation_shape"] == 246
     assert summary["action_space_n"] == 3
     assert summary["selected_block_id"] == "b1"
-    assert summary["step_reward"] == 0.0
+    assert summary["step_reward"] == 0.6
     assert summary["reward_mode"] == "base_planning_reward"
 
 

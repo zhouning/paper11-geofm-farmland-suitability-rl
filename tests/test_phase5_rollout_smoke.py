@@ -13,7 +13,20 @@ def _complete_phase2_feature_row(block_id, suitability):
     for dim in range(64):
         row[f"embedding_mean_{dim:02d}"] = float(dim)
     for idx in range(17):
-        row[f"explicit_feature_{idx:02d}"] = float(idx)
+        row[f"explicit_feature_{idx:02d}"] = 0.0
+    row.update(
+        {
+            "explicit_feature_00": 2.5,
+            "explicit_feature_01": 10.0,
+            "explicit_feature_02": 28.0,
+            "explicit_feature_04": 1.0,
+            "explicit_feature_07": 0.0,
+            "explicit_feature_09": 0.0,
+            "explicit_feature_10": 0.0,
+            "explicit_feature_13": 1.0,
+            "explicit_feature_16": 1.0,
+        }
+    )
     return row
 
 
@@ -81,10 +94,10 @@ def test_phase5_rollout_protocol_runs_all_ready_variants(tmp_path):
         ]
         assert summary["claim_boundary"] == PHASE5_CLAIM_BOUNDARY
 
-    assert summaries["B0"]["total_contract_reward"] == 0.0
-    assert summaries["B1"]["total_contract_reward"] == 0.0
-    assert summaries["B2"]["total_contract_reward"] == 2.5
-    assert summaries["B3"]["total_contract_reward"] == 2.5
+    assert summaries["B0"]["total_contract_reward"] == 2.4
+    assert summaries["B1"]["total_contract_reward"] == 2.4
+    assert summaries["B2"]["total_contract_reward"] == 4.9
+    assert summaries["B3"]["total_contract_reward"] == 4.9
     assert protocol["steps"]["B3"][0]["selected_block_id"] == "sample_block_00"
     assert protocol["steps"]["B3"][0]["valid_actions_before"] == 4
     assert protocol["steps"]["B3"][0]["valid_actions_after"] == 3
@@ -103,7 +116,7 @@ def test_phase5_rollout_respects_max_steps(tmp_path):
     assert summary["episode_steps"] == 2
     assert summary["terminated"] is True
     assert summary["selected_block_ids"] == ["sample_block_00", "sample_block_01"]
-    assert summary["total_contract_reward"] == 0.75
+    assert summary["total_contract_reward"] == 1.95
     assert len(protocol["steps"]["B3"]) == 2
 
 
@@ -179,8 +192,8 @@ def test_phase5_rollout_cli_prints_summary_and_artifacts(tmp_path, capsys):
 
     stdout = capsys.readouterr().out
     assert exit_code == 0
-    assert "Variant B0: steps=4 features=17 total_contract_reward=0.000000" in stdout
-    assert "Variant B3: steps=4 features=82 total_contract_reward=2.500000" in stdout
+    assert "Variant B0: steps=4 features=17 total_contract_reward=2.400000" in stdout
+    assert "Variant B3: steps=4 features=82 total_contract_reward=4.900000" in stdout
     assert "Summary CSV:" in stdout
     assert "Steps JSON:" in stdout
     assert (

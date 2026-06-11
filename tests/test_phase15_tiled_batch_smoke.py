@@ -16,7 +16,20 @@ def _complete_phase2_feature_row(block_id):
     for dim in range(64):
         row[f"embedding_mean_{dim:02d}"] = float(dim)
     for idx in range(17):
-        row[f"explicit_feature_{idx:02d}"] = float(idx)
+        row[f"explicit_feature_{idx:02d}"] = 0.0
+    row.update(
+        {
+            "explicit_feature_00": 2.5,
+            "explicit_feature_01": 10.0,
+            "explicit_feature_02": 28.0,
+            "explicit_feature_04": 1.0,
+            "explicit_feature_07": 0.0,
+            "explicit_feature_09": 0.0,
+            "explicit_feature_10": 0.0,
+            "explicit_feature_13": 1.0,
+            "explicit_feature_16": 1.0,
+        }
+    )
     return row
 
 
@@ -90,7 +103,7 @@ def test_phase15_runs_batch_smoke_for_all_tiles(tmp_path):
     assert report["all_tile_smokes_passed"] is True
     assert report["rows"][0]["tile_id"] == "tile_r000_c000"
     assert report["rows"][0]["selected_block_id"] == "b1"
-    assert report["rows"][0]["step_reward"] == 0.0
+    assert report["rows"][0]["step_reward"] == 0.6
     assert report["claim_boundary"] == PHASE15_CLAIM_BOUNDARY
 
 

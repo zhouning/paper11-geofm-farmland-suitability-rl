@@ -15,7 +15,20 @@ def _complete_phase2_feature_row(block_id):
     for dim in range(64):
         row[f"embedding_mean_{dim:02d}"] = float(dim)
     for idx in range(17):
-        row[f"explicit_feature_{idx:02d}"] = float(idx)
+        row[f"explicit_feature_{idx:02d}"] = 0.0
+    row.update(
+        {
+            "explicit_feature_00": 2.5,
+            "explicit_feature_01": 10.0,
+            "explicit_feature_02": 28.0,
+            "explicit_feature_04": 1.0,
+            "explicit_feature_07": 0.0,
+            "explicit_feature_09": 0.0,
+            "explicit_feature_10": 0.0,
+            "explicit_feature_13": 1.0,
+            "explicit_feature_16": 1.0,
+        }
+    )
     return row
 
 
@@ -82,7 +95,7 @@ def test_phase4_env_wraps_b3_variant_as_gym_contract(tmp_path):
     np.testing.assert_allclose(
         next_obs[-3:], np.array([0.5, 0.5, 0.5], dtype=np.float32)
     )
-    assert reward == 0.75
+    assert reward == 1.35
     assert terminated is False
     assert truncated is False
     assert step_info["action"] == 0
@@ -93,7 +106,7 @@ def test_phase4_env_wraps_b3_variant_as_gym_contract(tmp_path):
     assert env.action_masks().tolist() == [False, True]
 
 
-def test_phase4_env_returns_zero_contract_reward_for_base_reward_variant(tmp_path):
+def test_phase4_env_returns_base_reward_for_base_reward_variant(tmp_path):
     from paper11_geofm.drl_smoke_env import make_phase4_smoke_env
 
     _write_ready_phase2_outputs(tmp_path)
@@ -102,7 +115,7 @@ def test_phase4_env_returns_zero_contract_reward_for_base_reward_variant(tmp_pat
 
     _, reward, _, _, info = env.step(0)
 
-    assert reward == 0.0
+    assert reward == 0.6
     assert info["reward_mode"] == "base_planning_reward"
 
 
@@ -156,5 +169,5 @@ def test_run_phase4_smoke_cli_prints_one_step_summary(tmp_path, capsys):
     assert "Action space: Discrete(4)" in stdout
     assert "Initial valid actions: 4" in stdout
     assert "Selected block: sample_block_00" in stdout
-    assert "Step reward: 0.750000" in stdout
+    assert "Step reward: 1.350000" in stdout
     assert "Claim boundary: Phase 4 is a DRL input-contract smoke environment" in stdout

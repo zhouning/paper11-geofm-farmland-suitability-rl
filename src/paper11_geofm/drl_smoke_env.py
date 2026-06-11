@@ -7,6 +7,10 @@ import numpy as np
 from gymnasium import spaces
 
 from .drl_inputs import VariantInput, load_variant_input
+from .planning_reward import (
+    compute_base_planning_reward_from_matrix_row,
+    has_base_planning_reward_columns,
+)
 
 
 PHASE4_CLAIM_BOUNDARY = (
@@ -104,12 +108,22 @@ class Phase4InputContractEnv(gym.Env):
         )
 
     def _contract_reward(self, action: int) -> float:
-        if (
-            self.reward_mode == "base_plus_suitability_reward"
-            and "suitability_proxy" in self.feature_columns
-        ):
-            column_index = self.feature_columns.index("suitability_proxy")
-            return float(self.state_matrix[action, column_index])
+        if self.reward_mode == "base_planning_reward":
+            return compute_base_planning_reward_from_matrix_row(
+                self.feature_columns,
+                self.state_matrix[action],
+            )
+        if self.reward_mode == "base_plus_suitability_reward":
+            reward = 0.0
+            if has_base_planning_reward_columns(self.feature_columns):
+                reward += compute_base_planning_reward_from_matrix_row(
+                    self.feature_columns,
+                    self.state_matrix[action],
+                )
+            if "suitability_proxy" in self.feature_columns:
+                column_index = self.feature_columns.index("suitability_proxy")
+                reward += float(self.state_matrix[action, column_index])
+            return round(float(reward), 10)
         return 0.0
 
     def _info(self) -> dict[str, object]:

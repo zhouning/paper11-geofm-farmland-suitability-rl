@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-import inspect
 import json
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
-from .drl_smoke_env import Phase4InputContractEnv
+from .planning_reward import (
+    BASE_PLANNING_REWARD_EVIDENCE,
+    BASE_PLANNING_REWARD_IMPLEMENTED,
+)
 
 
 PHASE18_CLAIM_BOUNDARY = (
@@ -154,19 +156,7 @@ def _base_variant_summary(
 
 
 def _base_reward_evidence() -> tuple[bool, str]:
-    source = inspect.getsource(Phase4InputContractEnv._contract_reward)
-    if "return 0.0" in source:
-        return (
-            False,
-            (
-                "Phase4InputContractEnv._contract_reward returns 0.0 for "
-                "non-suitability reward modes, including base_planning_reward."
-            ),
-        )
-    return (
-        True,
-        "Phase4InputContractEnv._contract_reward no longer contains a zero fallback.",
-    )
+    return BASE_PLANNING_REWARD_IMPLEMENTED, BASE_PLANNING_REWARD_EVIDENCE
 
 
 def _phase10_allows_suitability_reward(phase10: Mapping[str, object]) -> bool:

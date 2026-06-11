@@ -397,10 +397,11 @@ Expected current Bishan outcome:
 - observation shape is `180957`;
 - action space is `Discrete(2234)`;
 - reward mode is `base_planning_reward`;
-- one-step reward is `0.0`.
+- one-step reward for the first selected block is `-0.197259`.
 
 Phase 14 verifies that a real Phase 13 tile can be loaded into the existing
-Phase 4 environment contract. It does not train a policy, enable suitability
+Phase 4 environment contract and that the Phase 19 base planning reward can be
+computed on real B1 features. It does not train a policy, enable suitability
 reward, or report planning performance.
 
 ## 17. Run the Phase 15 All-Tile Batch Smoke Check
@@ -443,7 +444,7 @@ Expected current Bishan outcome:
 - total blocks are `64984`;
 - maximum observation shape is `180957`;
 - all rollouts complete;
-- B1 total contract reward remains `0.0`.
+- B1 total contract reward accumulates the deterministic base planning reward.
 
 Phase 16 verifies deterministic non-learning masked rollouts across every real
 Phase 13 tile. It does not train, tune, evaluate, or compare a DRL policy, does
@@ -488,21 +489,35 @@ python experiments\phase18_planning_reward_readiness\run_phase18_planning_reward
 Expected current Bishan outcome:
 
 - `phase18_planning_reward_readiness.json` is written;
-- base planning reward implemented is `False`;
+- base planning reward implemented is `True`;
 - suitability reward allowed is `False`;
 - flat full-scale training ready is `False`;
 - tiled MaskablePPO API ready is `True` when the Phase 17 artifact is supplied;
 - performance experiment ready is `False`;
-- recommendation is `implement_real_tiled_planning_reward_before_policy_evaluation`.
+- recommendation is `resolve_suitability_reward_gate_before_suitability_reward_experiments`.
 
 Phase 18 records that the current repository is not ready for true planning
-performance experiments. The main blocker is that B0/B1 use
-`base_planning_reward`, while the current environment returns `0.0` for
-non-suitability reward modes. Phase 18 does not implement a planning reward,
-train, tune, evaluate, or compare a DRL policy, enable suitability reward, or
-report planning performance.
+performance experiments. After Phase 19, B0/B1 have a deterministic
+`base_planning_reward`, but suitability reward remains disabled and full-scale
+flat training remains blocked. Phase 18 does not train, tune, evaluate, or
+compare a DRL policy, enable suitability reward, or report planning
+performance.
 
-## 21. Inspect the Paper11 Design
+## 21. Inspect the Phase 19 Base Planning Reward
+
+The base planning reward implementation is:
+
+```text
+src/paper11_geofm/planning_reward.py
+```
+
+It is a bounded weighted score over explicit Phase 11 planning features: area,
+mean slope, maximum slope, current farmland/orchard indicators, low-slope
+indicators, built-up, and water. It is the first executable base reward for B0
+and B1 contracts. It is not a calibrated policy objective and is not planning
+performance evidence.
+
+## 22. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -516,7 +531,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 22. Inspect Runtime Code
+## 23. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -659,9 +674,15 @@ experiments/phase18_planning_reward_readiness/run_phase18_planning_reward_readin
 src/paper11_geofm/planning_reward_readiness.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, and Phase 18 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 19 executable files:
 
-## 23. Regenerate Embeddings
+```text
+src/paper11_geofm/planning_reward.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, and Phase 19 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 24. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -678,7 +699,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 24. Large Data and Weights
+## 25. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

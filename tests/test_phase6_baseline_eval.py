@@ -13,7 +13,20 @@ def _complete_phase2_feature_row(block_id, suitability):
     for dim in range(64):
         row[f"embedding_mean_{dim:02d}"] = float(dim)
     for idx in range(17):
-        row[f"explicit_feature_{idx:02d}"] = float(idx)
+        row[f"explicit_feature_{idx:02d}"] = 0.0
+    row.update(
+        {
+            "explicit_feature_00": 2.5,
+            "explicit_feature_01": 10.0,
+            "explicit_feature_02": 28.0,
+            "explicit_feature_04": 1.0,
+            "explicit_feature_07": 0.0,
+            "explicit_feature_09": 0.0,
+            "explicit_feature_10": 0.0,
+            "explicit_feature_13": 1.0,
+            "explicit_feature_16": 1.0,
+        }
+    )
     return row
 
 
@@ -79,10 +92,10 @@ def test_phase6_runs_default_policies_for_all_ready_variants(tmp_path):
         "sample_block_03",
     ]
     assert summaries[("first_valid", "B3")]["selected_block_ids"] == expected_order
-    assert summaries[("first_valid", "B0")]["total_contract_reward"] == 0.0
-    assert summaries[("first_valid", "B1")]["total_contract_reward"] == 0.0
-    assert summaries[("first_valid", "B2")]["total_contract_reward"] == 2.5
-    assert summaries[("first_valid", "B3")]["total_contract_reward"] == 2.5
+    assert summaries[("first_valid", "B0")]["total_contract_reward"] == 2.4
+    assert summaries[("first_valid", "B1")]["total_contract_reward"] == 2.4
+    assert summaries[("first_valid", "B2")]["total_contract_reward"] == 4.9
+    assert summaries[("first_valid", "B3")]["total_contract_reward"] == 4.9
 
     for summary in summaries.values():
         assert summary["seed"] == 0
@@ -162,7 +175,7 @@ def test_phase6_baselines_respect_max_steps(tmp_path):
         "sample_block_00",
         "sample_block_01",
     ]
-    assert summaries[("first_valid", "B3")]["total_contract_reward"] == 0.75
+    assert summaries[("first_valid", "B3")]["total_contract_reward"] == 1.95
 
 
 def test_phase6_rejects_unknown_policy(tmp_path):
@@ -256,7 +269,7 @@ def test_phase6_baseline_cli_prints_summary_and_artifacts(tmp_path, capsys):
     assert exit_code == 0
     assert (
         "Policy first_valid / Variant B0: "
-        "steps=4 features=17 total_contract_reward=0.000000"
+        "steps=4 features=17 total_contract_reward=2.400000"
     ) in stdout
     assert "Policy seeded_random / Variant B3:" in stdout
     assert "Summary CSV:" in stdout

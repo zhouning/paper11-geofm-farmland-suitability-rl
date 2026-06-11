@@ -22,6 +22,7 @@ docs/superpowers/specs/2026-06-10-phase15-tiled-batch-smoke-design.md	design	Pha
 docs/superpowers/specs/2026-06-10-phase16-tiled-baseline-protocol-design.md	design	Phase 16 design for deterministic tiled non-learning baseline rollouts across real Phase 13 tiles.
 docs/superpowers/specs/2026-06-10-phase17-tiled-maskableppo-readiness-design.md	design	Phase 17 design for a tiled MaskablePPO readiness smoke check on real Phase 13 tiles.
 docs/superpowers/specs/2026-06-11-phase18-planning-reward-readiness-design.md	design	Phase 18 design for a planning-reward readiness gate before true DRL performance experiments.
+docs/superpowers/specs/2026-06-11-phase19-base-planning-reward-design.md	design	Phase 19 design for implementing the first deterministic base planning reward.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 docs/superpowers/plans/2026-06-09-phase2-block-geofm-feature-assembly.md	plan	Implementation plan for the Phase 2 block-level GeoFM feature assembly pipeline.
 docs/superpowers/plans/2026-06-09-phase3-drl-input-adapter.md	plan	Implementation plan for the Phase 3 DRL input adapter.
@@ -40,6 +41,7 @@ docs/superpowers/plans/2026-06-10-phase15-tiled-batch-smoke.md	plan	Implementati
 docs/superpowers/plans/2026-06-10-phase16-tiled-baseline-protocol.md	plan	Implementation plan for the Phase 16 tiled baseline protocol.
 docs/superpowers/plans/2026-06-10-phase17-tiled-maskableppo-readiness.md	plan	Implementation plan for the Phase 17 tiled MaskablePPO readiness smoke check.
 docs/superpowers/plans/2026-06-11-phase18-planning-reward-readiness.md	plan	Implementation plan for the Phase 18 planning-reward readiness gate.
+docs/superpowers/plans/2026-06-11-phase19-base-planning-reward.md	plan	Implementation plan for the Phase 19 base planning reward implementation.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
@@ -79,6 +81,7 @@ src/paper11_geofm/tiled_inputs.py	runtime	Phase 14 tile subset loader and one-st
 src/paper11_geofm/tiled_batch_smoke.py	runtime	Phase 15 batch runner for one-step representation-only smoke checks across all Phase 13 tiles.
 src/paper11_geofm/tiled_baseline_protocol.py	runtime	Phase 16 tiled non-learning baseline protocol with deterministic masked rollouts across real Phase 13 tiles.
 src/paper11_geofm/tiled_maskableppo_readiness.py	runtime	Phase 17 tiled MaskablePPO readiness smoke runner for real Phase 13 tile contracts.
+src/paper11_geofm/planning_reward.py	runtime	Phase 19 deterministic base planning reward formula and metadata for B0/B1 contracts.
 src/paper11_geofm/planning_reward_readiness.py	runtime	Phase 18 planning-reward readiness gate for auditing reward and performance-experiment blockers.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
@@ -145,3 +148,4 @@ tests/test_phase15_tiled_batch_smoke.py	verification	Pytest checks for Phase 15 
 tests/test_phase16_tiled_baseline_protocol.py	verification	Pytest checks for Phase 16 tiled baseline summaries, seed behavior, max-tile caps, reward-variant rejection, artifact writing, and CLI output.
 tests/test_phase17_tiled_maskableppo_readiness.py	verification	Pytest checks for Phase 17 largest-tile selection, reward-variant rejection, tiny MaskablePPO smoke, artifact writing, and CLI output.
 tests/test_phase18_planning_reward_readiness.py	verification	Pytest checks for Phase 18 reward-readiness blocking logic, optional Phase 17 handling, artifact writing, and CLI output.
+tests/test_phase19_base_planning_reward.py	verification	Pytest checks for Phase 19 base reward formula, missing-feature validation, environment wiring, and readiness evidence.

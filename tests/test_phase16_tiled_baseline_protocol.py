@@ -16,7 +16,20 @@ def _complete_phase2_feature_row(block_id, suitability=0.75):
     for dim in range(64):
         row[f"embedding_mean_{dim:02d}"] = float(dim)
     for idx in range(17):
-        row[f"explicit_feature_{idx:02d}"] = float(idx)
+        row[f"explicit_feature_{idx:02d}"] = 0.0
+    row.update(
+        {
+            "explicit_feature_00": 2.5,
+            "explicit_feature_01": 10.0,
+            "explicit_feature_02": 28.0,
+            "explicit_feature_04": 1.0,
+            "explicit_feature_07": 0.0,
+            "explicit_feature_09": 0.0,
+            "explicit_feature_10": 0.0,
+            "explicit_feature_13": 1.0,
+            "explicit_feature_16": 1.0,
+        }
+    )
     return row
 
 
@@ -97,7 +110,7 @@ def test_phase16_runs_default_policies_for_all_tiles(tmp_path):
     assert protocol["summaries"][0]["tile_id"] == "tile_r000_c000"
     assert protocol["summaries"][0]["episode_steps"] == 2
     assert protocol["summaries"][0]["selected_block_ids"] == ["b1", "b3"]
-    assert protocol["summaries"][0]["total_contract_reward"] == 0.0
+    assert protocol["summaries"][0]["total_contract_reward"] == 1.2
     assert protocol["claim_boundary"] == PHASE16_CLAIM_BOUNDARY
 
 
