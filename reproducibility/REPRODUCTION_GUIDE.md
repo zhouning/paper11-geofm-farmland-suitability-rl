@@ -546,7 +546,33 @@ blocked until a variable-size, padded, or per-block policy design exists.
 Phase 20 does not enable suitability reward, test transfer, compare final
 policy performance, or support submission-level planning-performance claims.
 
-## 23. Inspect the Paper11 Design
+## 23. Run the Phase 21 Cross-Tile Per-Block Scorer Pilot
+
+After Phase 20 has recorded the flat-observation cross-tile blocker, run the
+dimension-agnostic per-block scorer pilot:
+
+```powershell
+python experiments\phase21_cross_tile_block_scorer\run_phase21_cross_tile_block_scorer.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --ridge-alpha 1e-6 --eval-max-steps 4 --seed 0 --output-dir experiments\phase21_cross_tile_block_scorer\outputs\real_bishan_pilot
+```
+
+Expected current Bishan outcome:
+
+- `phase21_cross_tile_block_scorer_summary.csv` is written;
+- `phase21_cross_tile_block_scorer_traces.json` is written;
+- train tile is `tile_r003_c003`;
+- evaluation tile is the distinct tile `tile_r002_c003`;
+- cross-tile learned-policy status is `executed_distinct_tile`;
+- variants are `B0` and `B1`;
+- summary rows are `6`;
+- all evaluations completed is `True`.
+
+Phase 21 trains a standardized ridge-linear per-block scorer on the train tile
+and evaluates it on a distinct evaluation tile. It verifies that the learned
+policy interface can be made independent of tile block count. It does not
+enable suitability reward, run PPO training, prove cross-region transfer,
+compare final policy performance, or support submission-level planning claims.
+
+## 24. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -560,7 +586,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 24. Inspect Runtime Code
+## 25. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -716,9 +742,16 @@ experiments/phase20_bounded_tiled_training/run_phase20_bounded_tiled_training.py
 src/paper11_geofm/bounded_tiled_training.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, and Phase 20 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 21 executable files:
 
-## 25. Regenerate Embeddings
+```text
+experiments/phase21_cross_tile_block_scorer/run_phase21_cross_tile_block_scorer.py
+src/paper11_geofm/cross_tile_block_scorer.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, and Phase 21 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 26. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -735,7 +768,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 26. Large Data and Weights
+## 27. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
