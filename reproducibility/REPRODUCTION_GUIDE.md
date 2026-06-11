@@ -517,7 +517,36 @@ indicators, built-up, and water. It is the first executable base reward for B0
 and B1 contracts. It is not a calibrated policy objective and is not planning
 performance evidence.
 
-## 22. Inspect the Paper11 Design
+## 22. Run the Phase 20 Bounded Same-Tile B0/B1 Training Pilot
+
+After Phase 13 has produced the real tile index and Phase 19 has provided the
+deterministic base planning reward, run the bounded B0/B1 same-tile pilot:
+
+```powershell
+python experiments\phase20_bounded_tiled_training\run_phase20_bounded_tiled_training.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --total-timesteps 8 --eval-max-steps 4 --seed 0 --output-dir experiments\phase20_bounded_tiled_training\outputs\real_bishan_pilot
+```
+
+Expected current Bishan outcome:
+
+- `phase20_bounded_tiled_training_summary.csv` is written;
+- `phase20_bounded_tiled_training_traces.json` is written;
+- train tile is `tile_r003_c003`;
+- evaluation tile is also `tile_r003_c003`;
+- cross-tile learned-policy status is `blocked_variable_observation_shape`;
+- variants are `B0` and `B1`;
+- summary rows are `6`;
+- training completed is `True`;
+- all evaluations completed is `True`.
+
+Phase 20 verifies that a bounded B0/B1 MaskablePPO training/evaluation protocol
+can execute under the deterministic base planning reward on a real tiled
+episode. It is a same-tile pilot only. The current flat observation and action
+spaces vary with tile block count, so learned-policy cross-tile evaluation is
+blocked until a variable-size, padded, or per-block policy design exists.
+Phase 20 does not enable suitability reward, test transfer, compare final
+policy performance, or support submission-level planning-performance claims.
+
+## 23. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -531,7 +560,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 23. Inspect Runtime Code
+## 24. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -680,9 +709,16 @@ Phase 19 executable files:
 src/paper11_geofm/planning_reward.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, and Phase 19 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 20 executable files:
 
-## 24. Regenerate Embeddings
+```text
+experiments/phase20_bounded_tiled_training/run_phase20_bounded_tiled_training.py
+src/paper11_geofm/bounded_tiled_training.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, and Phase 20 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 25. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -699,7 +735,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 25. Large Data and Weights
+## 26. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

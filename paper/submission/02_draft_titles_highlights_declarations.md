@@ -32,10 +32,11 @@ Current guarded version:
 - Real Bishan DLTB polygons are converted into reproducible block-level inputs.
 - Tiled environment contracts make large real planning instances tractable.
 - A deterministic base planning reward is implemented for B0/B1 experiments.
-- Suitability reward and policy-performance claims remain evidence-gated.
+- A bounded same-tile B0/B1 training pilot executes under this base reward.
+- Suitability reward, cross-tile transfer, and policy-performance claims remain evidence-gated.
 
 After training evidence exists, revise the last two bullets to report the
-actual B0/B1/B2/B3 and transfer findings.
+actual multi-seed B0/B1/B2/B3, ablation, and transfer findings.
 
 ## Abstract Scaffold
 
@@ -52,10 +53,12 @@ B0/B1/B2/B3 representation contracts, and builds tiled environment interfaces
 for large real planning instances. The current repository implements the
 feature pipeline, weak-label diagnostics, real-data tiling, MaskablePPO API
 readiness checks, and a deterministic base planning reward for explicit-feature
-and GeoFM-enhanced base-reward variants.
+and GeoFM-enhanced base-reward variants. It also runs a bounded same-tile B0/B1
+training pilot that records cross-tile learned-policy evaluation as blocked by
+the current tile-size-specific flat observation design.
 
-[Evidence needed: B0/B1/B2/B3 training and evaluation results, ablation results,
-transfer results, and final spatial diagnostics.]
+[Evidence needed: multi-seed B0/B1/B2/B3 training and evaluation results,
+ablation results, transfer results, and final spatial diagnostics.]
 
 The final manuscript should conclude only from completed comparisons. Until
 those results exist, the contribution should be framed as a reproducible
@@ -107,7 +110,7 @@ https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
 The repository commit used for submission should be recorded here:
 
 ```text
-61b518f
+[final release commit or DOI/tag]
 ```
 
 Large derived arrays, trained weights, and any full external data products not
@@ -121,7 +124,7 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-19 workflow is available at:
+Phase 1-20 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
@@ -174,4 +177,5 @@ Current blocked boundary:
 
 > Do not claim learned policy superiority, suitability-reward improvement, or
 > transfer improvement until bounded training, evaluation, ablation, and
-> held-out-region tests have been completed.
+> held-out-region tests have been completed. The current Phase 20 pilot is
+> same-tile only and records cross-tile learned-policy evaluation as blocked.

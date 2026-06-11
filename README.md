@@ -37,7 +37,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase16_tiled_baseline_protocol/`: executable Phase 16 tiled non-learning baseline protocol runner.
 - `experiments/phase17_tiled_maskableppo_readiness/`: executable Phase 17 tiled MaskablePPO readiness smoke runner.
 - `experiments/phase18_planning_reward_readiness/`: executable Phase 18 planning-reward readiness gate runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, and reward-readiness gating.
+- `experiments/phase20_bounded_tiled_training/`: executable Phase 20 bounded same-tile B0/B1 training pilot runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, and bounded tiled training pilots.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -238,6 +239,14 @@ python experiments\phase18_planning_reward_readiness\run_phase18_planning_reward
 
 For the current real Bishan artifacts after Phase 19, Phase 18 reports that `base_planning_reward` is implemented and the tiled MaskablePPO API path is ready, but true planning-performance experiments are still not ready. Phase 10/12 keep suitability reward disabled and flat full-scale training not ready, so the current artifacts remain readiness evidence rather than policy-performance evidence.
 
+Run the Phase 20 bounded same-tile B0/B1 training pilot:
+
+```powershell
+python experiments\phase20_bounded_tiled_training\run_phase20_bounded_tiled_training.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --total-timesteps 8 --eval-max-steps 4 --seed 0 --output-dir experiments\phase20_bounded_tiled_training\outputs\real_bishan_pilot
+```
+
+For the current real Bishan artifacts, Phase 20 selects `tile_r003_c003` as both the train tile and the same-tile learned-policy evaluation tile, writes six B0/B1 trained-policy and baseline summary rows, and records `blocked_variable_observation_shape` for cross-tile learned-policy evaluation. It verifies that a bounded B0/B1 MaskablePPO training/evaluation protocol can execute under the deterministic base planning reward, but it does not enable suitability reward, support cross-tile transfer, or provide final planning-performance evidence.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -265,6 +274,8 @@ For the current real Bishan artifacts after Phase 19, Phase 18 reports that `bas
 - Phase 17 tiled MaskablePPO readiness runner: `experiments/phase17_tiled_maskableppo_readiness/run_phase17_tiled_maskableppo_readiness.py`
 - Phase 18 planning-reward readiness gate runner: `experiments/phase18_planning_reward_readiness/run_phase18_planning_reward_readiness.py`
 - Phase 19 base planning reward module: `src/paper11_geofm/planning_reward.py`
+- Phase 20 bounded same-tile B0/B1 training runner: `experiments/phase20_bounded_tiled_training/run_phase20_bounded_tiled_training.py`
+- Phase 20 bounded training module: `src/paper11_geofm/bounded_tiled_training.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

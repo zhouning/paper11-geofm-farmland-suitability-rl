@@ -29,17 +29,19 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | suitability proxy | weakly supervised latent suitability proxy | suitability score, suitability measurement | Use proxy language unless externally validated. |
 | DLTB | real Bishan DLTB land-use polygons | parcel data, land block data | Define the data source in Methods and avoid parcel-accuracy overclaims. |
 | tiled MaskablePPO readiness | tiled MaskablePPO API readiness smoke check | trained MaskablePPO result | State that this is API readiness, not policy performance. |
+| bounded same-tile B0/B1 pilot | Phase 20 bounded same-tile B0/B1 MaskablePPO pilot | held-out evaluation, transfer result | Use only for pilot execution evidence, not policy superiority. |
 
 ## Readiness Summary
 
 | Item | Status | Evidence or blocker |
 |---|---|---|
-| Repository and code package | Ready | `origin/main` includes Phase 19; `python -m pytest tests -q` reports `116 passed`. |
+| Repository and code package | Ready | `origin/main` includes Phase 20; `python -m pytest tests -q` reports `122 passed`. |
 | Lightweight reproducibility | Ready | `python scripts\smoke_check.py` passes with included Bishan AlphaEarth sample arrays. |
 | Real-data adapter | Ready for local reproduction | Phase 11 exports 64,984 Bishan DLTB polygons into Phase 2-compatible artifacts, using a local external GeoPackage. |
 | Tiled contract | Ready | Phase 13 creates 54 non-empty tiles; largest tile has 2,234 blocks. |
 | Base planning reward | Ready as first implementation | Phase 19 implements a bounded explicit-feature reward; Phase 14 largest-tile B1 one-step reward is `-0.197259`. |
 | MaskablePPO API path | Ready as smoke evidence | Phase 17 passes the tiled MaskablePPO readiness smoke check. |
+| Bounded B0/B1 training pilot | Ready as same-tile pilot evidence | Phase 20 trains and evaluates B0/B1 on `tile_r003_c003`, writes six summary rows, and records `blocked_variable_observation_shape` for cross-tile learned-policy evaluation. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled because weak-label evidence is incomplete. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
 | Full manuscript claims | Not ready | No B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
@@ -55,7 +57,7 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | Main manuscript | Not ready. Results section needs policy-performance evidence before submission. |
 | Figures | Not ready. Need at least method diagram, study area/data flow, main performance, ablation, transfer, and spatial case maps. |
 | Data availability | Draft available; final version needs repository URL, large-data archive, and external DLTB access constraints. |
-| Code availability | Ready once GitHub URL and commit hash are cited. Current main commit is `61b518f`. |
+| Code availability | Ready once GitHub URL and final release commit or tag are cited. Do not use an in-file self-reference as the final commit hash. |
 | Declaration of interests | Draft available; authors must confirm. |
 | Funding statement | Missing. Must be supplied by authors. |
 | Author contributions | Missing. Must be supplied by authors. |
@@ -78,27 +80,35 @@ Safe current claim:
 
 > The repository implements a reproducible GeoFM-enhanced farmland-planning
 > input pipeline, real Bishan DLTB adaptation, tiled environment contracts, and
-> a first deterministic base planning reward, but it does not yet provide
-> planning-performance evidence for learned policy superiority.
+> a first deterministic base planning reward. It also executes a bounded
+> same-tile B0/B1 training pilot, but it does not yet provide
+> planning-performance or transfer evidence for learned policy superiority.
 
 Unsafe current claim:
 
 > The GeoFM-enhanced DRL policy outperforms existing farmland-layout optimization
 > methods.
 
-## Recommended Next Experimental Phase
+## Phase 20 Status and Recommended Next Experimental Phase
 
-Phase 20 should be a bounded tiled training and evaluation protocol for B0/B1
-only. It should avoid suitability reward until Phase 10/12 allow it. Minimum
-outputs should include:
+Phase 20 now provides a bounded same-tile B0/B1 training and evaluation pilot.
+It avoids suitability reward, uses fixed tile selection and seed, runs a short
+MaskablePPO budget, writes deterministic baseline comparisons, and records
+selected-block diagnostics. It does not provide held-out tile or transfer
+evidence because the current flat observation and action spaces are
+tile-size-specific.
 
-- fixed tile selection and seeds;
-- short but nontrivial MaskablePPO training budget;
-- deterministic non-learning baselines from Phase 16;
-- held-out evaluation on unseen tiles;
+The next experimental phase should address the cross-tile learned-policy
+blocker before any transfer claim. Minimum requirements are:
+
+- a variable-size, padded, or per-block policy architecture that can evaluate
+  across tiles with different block counts;
+- multi-tile and multi-seed B0/B1 evaluation under the same base planning
+  reward;
+- deterministic non-learning baselines from Phase 16 for each evaluation tile;
 - total base reward, action validity, selected-block diagnostics, and runtime;
-- explicit claim boundary that this is a bounded pilot, not final policy
-  superiority unless the evidence supports it.
+- explicit claim boundary that this remains pilot evidence until multi-seed,
+  ablation, suitability-reward, and held-out-region tests are complete.
 
 ## Final Upload Risks
 
