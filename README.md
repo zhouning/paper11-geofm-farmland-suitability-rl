@@ -16,6 +16,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 
 - `paper/design/`: Paper11 design package, including system design, experiment plan, manuscript outline, and risk boundaries.
 - `paper/phase1_results/`: interpretation of the executable Phase 1 baseline and the next experiment matrix.
+- `paper/submission/`: IJAEOG submission-readiness audit and guarded submission text drafts.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
 - `experiments/phase1_bishan_baseline/`: executable Phase 1 Bishan GeoFM representation baseline.
