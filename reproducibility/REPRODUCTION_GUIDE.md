@@ -476,7 +476,33 @@ MaskablePPO API for a tiny CPU-only compatibility smoke. It does not train,
 tune, evaluate, or compare a useful DRL policy, does not enable suitability
 reward, and does not report planning performance.
 
-## 20. Inspect the Paper11 Design
+## 20. Run the Phase 18 Planning-Reward Readiness Gate
+
+After Phase 17 has produced the optional tiled MaskablePPO readiness artifact,
+run the planning-reward readiness gate:
+
+```powershell
+python experiments\phase18_planning_reward_readiness\run_phase18_planning_reward_readiness.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase10-gate experiments\phase11_bishan_dltb_real\outputs\phase10_real\phase10_reward_readiness_gate.json --phase12-audit experiments\phase12_real_scale_audit\outputs\real_bishan\phase12_real_dltb_scale_audit.json --phase17-readiness experiments\phase17_tiled_maskableppo_readiness\outputs\real_bishan_largest_tile\phase17_tiled_maskableppo_readiness.json --output-dir experiments\phase18_planning_reward_readiness\outputs\real_bishan
+```
+
+Expected current Bishan outcome:
+
+- `phase18_planning_reward_readiness.json` is written;
+- base planning reward implemented is `False`;
+- suitability reward allowed is `False`;
+- flat full-scale training ready is `False`;
+- tiled MaskablePPO API ready is `True` when the Phase 17 artifact is supplied;
+- performance experiment ready is `False`;
+- recommendation is `implement_real_tiled_planning_reward_before_policy_evaluation`.
+
+Phase 18 records that the current repository is not ready for true planning
+performance experiments. The main blocker is that B0/B1 use
+`base_planning_reward`, while the current environment returns `0.0` for
+non-suitability reward modes. Phase 18 does not implement a planning reward,
+train, tune, evaluate, or compare a DRL policy, enable suitability reward, or
+report planning performance.
+
+## 21. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -490,7 +516,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 21. Inspect Runtime Code
+## 22. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -626,9 +652,16 @@ experiments/phase17_tiled_maskableppo_readiness/run_phase17_tiled_maskableppo_re
 src/paper11_geofm/tiled_maskableppo_readiness.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, and Phase 17 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 18 executable files:
 
-## 22. Regenerate Embeddings
+```text
+experiments/phase18_planning_reward_readiness/run_phase18_planning_reward_readiness.py
+src/paper11_geofm/planning_reward_readiness.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, and Phase 18 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 23. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -645,7 +678,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 23. Large Data and Weights
+## 24. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
