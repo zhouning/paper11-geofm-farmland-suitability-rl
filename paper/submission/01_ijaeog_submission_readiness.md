@@ -1,6 +1,6 @@
 # IJAEOG Submission Readiness Audit
 
-Checked on 2026-06-11. Target journal source:
+Checked on 2026-06-12. Target journal source:
 
 - International Journal of Applied Earth Observation and Geoinformation,
   Guide for Authors:
@@ -31,12 +31,13 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | tiled MaskablePPO readiness | tiled MaskablePPO API readiness smoke check | trained MaskablePPO result | State that this is API readiness, not policy performance. |
 | bounded same-tile B0/B1 pilot | Phase 20 bounded same-tile B0/B1 MaskablePPO pilot | held-out evaluation, transfer result | Use only for pilot execution evidence, not policy superiority. |
 | cross-tile per-block scorer pilot | Phase 21 bounded cross-tile per-block scorer pilot | cross-region transfer result, final policy result | Use only for variable-block-count interface evidence. |
+| multi-tile multi-seed scorer pilot | Phase 22 bounded multi-tile, multi-seed per-block scorer evaluation pilot | transfer result, final multi-seed policy result | Use only for broadened interface-pilot evidence. |
 
 ## Readiness Summary
 
 | Item | Status | Evidence or blocker |
 |---|---|---|
-| Repository and code package | Ready | `origin/main` includes Phase 21; `python -m pytest tests -q` reports `128 passed`. |
+| Repository and code package | Ready | `origin/main` includes Phase 22 after this update; `python -m pytest tests -q` reports `133 passed`. |
 | Lightweight reproducibility | Ready | `python scripts\smoke_check.py` passes with included Bishan AlphaEarth sample arrays. |
 | Real-data adapter | Ready for local reproduction | Phase 11 exports 64,984 Bishan DLTB polygons into Phase 2-compatible artifacts, using a local external GeoPackage. |
 | Tiled contract | Ready | Phase 13 creates 54 non-empty tiles; largest tile has 2,234 blocks. |
@@ -44,6 +45,7 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | MaskablePPO API path | Ready as smoke evidence | Phase 17 passes the tiled MaskablePPO readiness smoke check. |
 | Bounded B0/B1 training pilot | Ready as same-tile pilot evidence | Phase 20 trains and evaluates B0/B1 on `tile_r003_c003`, writes six summary rows, and records `blocked_variable_observation_shape` for cross-tile learned-policy evaluation. |
 | Cross-tile learned-policy interface | Ready as per-block scorer pilot evidence | Phase 21 trains a standardized ridge-linear block scorer on `tile_r003_c003`, evaluates on distinct tile `tile_r002_c003`, writes six summary rows, and reports `executed_distinct_tile`. |
+| Multi-tile scorer evaluation | Ready as broadened interface-pilot evidence | Phase 22 trains the same scorer once per B0/B1 variant on `tile_r003_c003`, evaluates `tile_r002_c003` and `tile_r005_c004` across seeds `0` and `1`, and writes 24 summary rows. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled because weak-label evidence is incomplete. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
 | Full manuscript claims | Not ready | No B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
@@ -85,14 +87,16 @@ Safe current claim:
 > a first deterministic base planning reward. It also executes a bounded
 > same-tile B0/B1 training pilot and a cross-tile per-block scorer pilot, but
 > it does not yet provide final planning-performance, suitability-reward, or
-> transfer evidence for learned policy superiority.
+> transfer evidence for learned policy superiority. Phase 22 broadens the
+> per-block scorer pilot across multiple evaluation tiles and seeds, but remains
+> interface-pilot evidence rather than final policy-performance evidence.
 
 Unsafe current claim:
 
 > The GeoFM-enhanced DRL policy outperforms existing farmland-layout optimization
 > methods.
 
-## Phase 20/21 Status and Recommended Next Experimental Phase
+## Phase 20/21/22 Status and Recommended Next Experimental Phase
 
 Phase 20 now provides a bounded same-tile B0/B1 training and evaluation pilot.
 It avoids suitability reward, uses fixed tile selection and seed, runs a short
@@ -106,9 +110,14 @@ standardized ridge-linear per-block scorer on `tile_r003_c003` and evaluates on
 the distinct tile `tile_r002_c003`. This is cross-tile learned-scorer evidence,
 not final DRL performance evidence.
 
-The next experimental phase should turn the Phase 21 interface pilot into a
-multi-seed, multi-tile policy experiment before any transfer claim. Minimum
-requirements are:
+Phase 22 broadens that interface pilot across multiple distinct evaluation
+tiles and seeds. It still uses a ridge-linear per-block scorer and deterministic
+baseline policies rather than PPO-compatible variable-size policy training, so
+it is not final policy-performance or transfer evidence.
+
+The next experimental phase should move beyond the Phase 22 scorer protocol
+into a true policy experiment before any transfer claim. Minimum requirements
+are:
 
 - a variable-size, padded, or per-block PPO-compatible policy architecture, or
   a clearly justified non-PPO policy protocol;

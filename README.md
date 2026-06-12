@@ -39,7 +39,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase18_planning_reward_readiness/`: executable Phase 18 planning-reward readiness gate runner.
 - `experiments/phase20_bounded_tiled_training/`: executable Phase 20 bounded same-tile B0/B1 training pilot runner.
 - `experiments/phase21_cross_tile_block_scorer/`: executable Phase 21 cross-tile per-block scorer pilot runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, and cross-tile block-scorer pilots.
+- `experiments/phase22_multi_tile_scorer_eval/`: executable Phase 22 multi-tile, multi-seed per-block scorer evaluation runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, and multi-tile scorer evaluation pilots.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -256,6 +257,14 @@ python experiments\phase21_cross_tile_block_scorer\run_phase21_cross_tile_block_
 
 For the current real Bishan artifacts, Phase 21 trains a standardized ridge-linear per-block scorer on `tile_r003_c003` and evaluates the learned scorer on the distinct tile `tile_r002_c003`. It writes six B0/B1 learned-scorer and baseline summary rows and reports `executed_distinct_tile`. This verifies a variable-block-count cross-tile policy interface, but it does not enable suitability reward, prove cross-region transfer, or provide final planning-performance evidence.
 
+Run the Phase 22 multi-tile, multi-seed per-block scorer evaluation pilot:
+
+```powershell
+python experiments\phase22_multi_tile_scorer_eval\run_phase22_multi_tile_scorer_eval.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --ridge-alpha 1e-6 --eval-max-steps 4 --seeds 0,1 --max-eval-tiles 2 --output-dir experiments\phase22_multi_tile_scorer_eval\outputs\real_bishan_pilot
+```
+
+For the current real Bishan artifacts, Phase 22 trains the same standardized ridge-linear per-block scorer once per B0/B1 variant on `tile_r003_c003` and evaluates learned-scorer, first-valid, and seeded-random policies across `tile_r002_c003` and `tile_r005_c004` with seeds `0` and `1`. It writes 24 summary rows. This broadens the Phase 21 interface pilot, but it does not enable suitability reward, run PPO training, prove transfer, or provide final planning-performance evidence.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -287,6 +296,8 @@ For the current real Bishan artifacts, Phase 21 trains a standardized ridge-line
 - Phase 20 bounded training module: `src/paper11_geofm/bounded_tiled_training.py`
 - Phase 21 cross-tile per-block scorer runner: `experiments/phase21_cross_tile_block_scorer/run_phase21_cross_tile_block_scorer.py`
 - Phase 21 cross-tile scorer module: `src/paper11_geofm/cross_tile_block_scorer.py`
+- Phase 22 multi-tile scorer evaluation runner: `experiments/phase22_multi_tile_scorer_eval/run_phase22_multi_tile_scorer_eval.py`
+- Phase 22 multi-tile scorer evaluation module: `src/paper11_geofm/multi_tile_scorer_eval.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

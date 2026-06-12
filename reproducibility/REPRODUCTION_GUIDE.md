@@ -572,7 +572,34 @@ policy interface can be made independent of tile block count. It does not
 enable suitability reward, run PPO training, prove cross-region transfer,
 compare final policy performance, or support submission-level planning claims.
 
-## 24. Inspect the Paper11 Design
+## 24. Run the Phase 22 Multi-Tile Multi-Seed Scorer Evaluation
+
+After Phase 21 has verified a one-train-tile and one-evaluation-tile per-block
+scorer interface, run the bounded multi-tile, multi-seed evaluation pilot:
+
+```powershell
+python experiments\phase22_multi_tile_scorer_eval\run_phase22_multi_tile_scorer_eval.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --ridge-alpha 1e-6 --eval-max-steps 4 --seeds 0,1 --max-eval-tiles 2 --output-dir experiments\phase22_multi_tile_scorer_eval\outputs\real_bishan_pilot
+```
+
+Expected current Bishan outcome:
+
+- `phase22_multi_tile_scorer_eval_summary.csv` is written;
+- `phase22_multi_tile_scorer_eval_traces.json` is written;
+- train tile is `tile_r003_c003`;
+- evaluation tiles are `tile_r002_c003` and `tile_r005_c004`;
+- variants are `B0` and `B1`;
+- seeds are `0` and `1`;
+- summary rows are `24`;
+- all evaluations completed is `True`.
+
+Phase 22 fits the standardized ridge-linear per-block scorer once per variant
+on the selected train tile, then evaluates learned-scorer, first-valid, and
+seeded-random policies across selected evaluation tiles and seeds. It broadens
+the Phase 21 interface pilot, but it does not enable suitability reward, run
+PPO training, prove transfer, compare final policy performance, or support
+submission-level planning claims.
+
+## 25. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -586,7 +613,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 25. Inspect Runtime Code
+## 26. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -749,9 +776,16 @@ experiments/phase21_cross_tile_block_scorer/run_phase21_cross_tile_block_scorer.
 src/paper11_geofm/cross_tile_block_scorer.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, and Phase 21 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 22 executable files:
 
-## 26. Regenerate Embeddings
+```text
+experiments/phase22_multi_tile_scorer_eval/run_phase22_multi_tile_scorer_eval.py
+src/paper11_geofm/multi_tile_scorer_eval.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, and Phase 22 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 27. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -768,7 +802,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 27. Large Data and Weights
+## 28. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

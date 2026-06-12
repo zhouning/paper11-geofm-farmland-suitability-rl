@@ -32,7 +32,7 @@ Current guarded version:
 - Real Bishan DLTB polygons are converted into reproducible block-level inputs.
 - Tiled environment contracts make large real planning instances tractable.
 - A deterministic base planning reward supports bounded B0/B1 pilot protocols.
-- Same-tile and cross-tile B0/B1 pilots execute with evidence-gated claims.
+- Same-tile, cross-tile, and multi-tile B0/B1 pilots execute with evidence-gated claims.
 
 After training evidence exists, revise the last two bullets to report the
 actual multi-seed B0/B1/B2/B3, ablation, and transfer findings.
@@ -57,6 +57,8 @@ training pilot that records cross-tile learned-policy evaluation as blocked by
 the current tile-size-specific flat observation design. A subsequent per-block
 scorer pilot trains on one tile and evaluates on a distinct tile, demonstrating
 a variable-block-count interface without claiming final policy performance.
+The current multi-tile, multi-seed scorer pilot broadens this interface check
+across distinct evaluation tiles and seeds while remaining pilot evidence only.
 
 [Evidence needed: multi-seed B0/B1/B2/B3 training and evaluation results,
 ablation results, transfer results, and final spatial diagnostics.]
@@ -125,7 +127,7 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-21 workflow is available at:
+Phase 1-22 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
@@ -180,4 +182,6 @@ Current blocked boundary:
 > transfer improvement until bounded training, evaluation, ablation, and
 > held-out-region tests have been completed. The current Phase 20 pilot is
 > same-tile only, and Phase 21 is a cross-tile interface pilot rather than
-> final transfer or policy-performance evidence.
+> final transfer or policy-performance evidence. Phase 22 broadens that scorer
+> interface pilot across multiple evaluation tiles and seeds, but still does
+> not provide final transfer or policy-performance evidence.
