@@ -599,7 +599,36 @@ the Phase 21 interface pilot, but it does not enable suitability reward, run
 PPO training, prove transfer, compare final policy performance, or support
 submission-level planning claims.
 
-## 25. Inspect the Paper11 Design
+## 25. Run the Phase 23 Multi-Seed Same-Tile B0/B1 Training Pilot
+
+After Phase 22 has broadened the cross-tile scorer interface pilot, run the
+bounded multi-seed same-tile B0/B1 MaskablePPO training pilot:
+
+```powershell
+python experiments\phase23_multi_seed_training\run_phase23_multi_seed_training.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --total-timesteps 8 --eval-max-steps 4 --seeds 0,1,2 --output-dir experiments\phase23_multi_seed_training\outputs\real_bishan_pilot
+```
+
+Expected current Bishan outcome:
+
+- `phase23_multi_seed_training_summary.csv` is written;
+- `phase23_multi_seed_training_traces.json` is written;
+- `phase23_multi_seed_training_comparison.json` is written;
+- train tile is `tile_r003_c003`;
+- evaluation tile is also `tile_r003_c003`;
+- seeds are `0`, `1`, and `2`;
+- variants are `B0` and `B1`;
+- summary rows are `18`;
+- all evaluations completed is `True`;
+- B1-B0 learned-policy mean reward delta is `0.4273019432` for the short pilot.
+
+Phase 23 strengthens the learned-policy evidence by repeating the bounded
+same-tile B0/B1 MaskablePPO protocol across multiple seeds. It remains a pilot:
+the current flat observation/action spaces still block cross-tile learned-policy
+evaluation, suitability reward remains disabled, and final planning-performance
+or transfer claims still require longer training, ablations, spatial maps, and
+held-out-region tests.
+
+## 26. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -613,7 +642,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 26. Inspect Runtime Code
+## 27. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -783,9 +812,16 @@ experiments/phase22_multi_tile_scorer_eval/run_phase22_multi_tile_scorer_eval.py
 src/paper11_geofm/multi_tile_scorer_eval.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, and Phase 22 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 23 executable files:
 
-## 27. Regenerate Embeddings
+```text
+experiments/phase23_multi_seed_training/run_phase23_multi_seed_training.py
+src/paper11_geofm/multi_seed_training.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, and Phase 23 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 28. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -802,7 +838,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 28. Large Data and Weights
+## 29. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

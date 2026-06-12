@@ -32,7 +32,7 @@ Current guarded version:
 - Real Bishan DLTB polygons are converted into reproducible block-level inputs.
 - Tiled environment contracts make large real planning instances tractable.
 - A deterministic base planning reward supports bounded B0/B1 pilot protocols.
-- Same-tile, cross-tile, and multi-tile B0/B1 pilots execute with evidence-gated claims.
+- Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
 
 After training evidence exists, revise the last two bullets to report the
 actual multi-seed B0/B1/B2/B3, ablation, and transfer findings.
@@ -59,8 +59,12 @@ scorer pilot trains on one tile and evaluates on a distinct tile, demonstrating
 a variable-block-count interface without claiming final policy performance.
 The current multi-tile, multi-seed scorer pilot broadens this interface check
 across distinct evaluation tiles and seeds while remaining pilot evidence only.
+A multi-seed same-tile B0/B1 MaskablePPO pilot reports a positive B1-B0
+learned-policy mean reward delta under a short training budget, but this remains
+preliminary until longer training, ablations, suitability-reward validation, and
+held-out-region transfer tests are complete.
 
-[Evidence needed: multi-seed B0/B1/B2/B3 training and evaluation results,
+[Evidence needed: longer-budget B0/B1/B2/B3 training and evaluation results,
 ablation results, transfer results, and final spatial diagnostics.]
 
 The final manuscript should conclude only from completed comparisons. Until
@@ -127,7 +131,7 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-22 workflow is available at:
+Phase 1-23 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
@@ -184,4 +188,7 @@ Current blocked boundary:
 > same-tile only, and Phase 21 is a cross-tile interface pilot rather than
 > final transfer or policy-performance evidence. Phase 22 broadens that scorer
 > interface pilot across multiple evaluation tiles and seeds, but still does
-> not provide final transfer or policy-performance evidence.
+> not provide final transfer or policy-performance evidence. Phase 23 adds
+> multi-seed same-tile learned-policy evidence, but still does not provide
+> final transfer, suitability-reward, ablation, or submission-level performance
+> evidence.
