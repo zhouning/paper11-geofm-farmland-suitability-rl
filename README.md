@@ -41,7 +41,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase21_cross_tile_block_scorer/`: executable Phase 21 cross-tile per-block scorer pilot runner.
 - `experiments/phase22_multi_tile_scorer_eval/`: executable Phase 22 multi-tile, multi-seed per-block scorer evaluation runner.
 - `experiments/phase23_multi_seed_training/`: executable Phase 23 multi-seed same-tile B0/B1 training pilot runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, and multi-seed training pilots.
+- `experiments/phase24_ijaeog_evidence_package/`: executable Phase 24 IJAEOG evidence-package and claim-readiness runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, and IJAEOG evidence packaging.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -274,6 +275,14 @@ python experiments\phase23_multi_seed_training\run_phase23_multi_seed_training.p
 
 For the current real Bishan artifacts, Phase 23 repeats the bounded same-tile B0/B1 MaskablePPO pilot on `tile_r003_c003` across seeds `0`, `1`, and `2`. It writes 18 summary rows and an aggregate comparison report; the observed B1-B0 learned-policy mean reward delta is `0.4273019432` under the short pilot budget. This strengthens multi-seed learned-policy execution evidence, but it does not solve cross-tile learned-policy evaluation, enable suitability reward, prove transfer, or provide final planning-performance evidence.
 
+Build the Phase 24 IJAEOG evidence package from Phase 22 and Phase 23 pilot outputs:
+
+```powershell
+python experiments\phase24_ijaeog_evidence_package\run_phase24_ijaeog_evidence_package.py --phase22-summary-csv experiments\phase22_multi_tile_scorer_eval\outputs\real_bishan_pilot\phase22_multi_tile_scorer_eval_summary.csv --phase23-summary-csv experiments\phase23_multi_seed_training\outputs\real_bishan_pilot\phase23_multi_seed_training_summary.csv --phase23-comparison-json experiments\phase23_multi_seed_training\outputs\real_bishan_pilot\phase23_multi_seed_training_comparison.json --output-dir experiments\phase24_ijaeog_evidence_package\outputs\real_bishan
+```
+
+For the current real Bishan artifacts, Phase 24 reports 24 Phase 22 rows, 18 Phase 23 rows, a B1-B0 learned-policy mean reward delta of `0.4273019432`, and `submission_ready: not_ready`. It writes `phase24_ijaeog_evidence_table.csv`, `phase24_ijaeog_evidence_summary.json`, and `phase24_ijaeog_claim_readiness.md`. This is a synthesis and claim-readiness package only; it does not create new policy-performance, transfer, or suitability-reward evidence.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -309,6 +318,8 @@ For the current real Bishan artifacts, Phase 23 repeats the bounded same-tile B0
 - Phase 22 multi-tile scorer evaluation module: `src/paper11_geofm/multi_tile_scorer_eval.py`
 - Phase 23 multi-seed training runner: `experiments/phase23_multi_seed_training/run_phase23_multi_seed_training.py`
 - Phase 23 multi-seed training module: `src/paper11_geofm/multi_seed_training.py`
+- Phase 24 IJAEOG evidence-package runner: `experiments/phase24_ijaeog_evidence_package/run_phase24_ijaeog_evidence_package.py`
+- Phase 24 IJAEOG evidence-package module: `src/paper11_geofm/ijaeog_evidence_package.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

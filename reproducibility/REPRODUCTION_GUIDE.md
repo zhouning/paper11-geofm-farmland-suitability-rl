@@ -628,7 +628,34 @@ evaluation, suitability reward remains disabled, and final planning-performance
 or transfer claims still require longer training, ablations, spatial maps, and
 held-out-region tests.
 
-## 26. Inspect the Paper11 Design
+## 26. Build the Phase 24 IJAEOG Evidence Package
+
+After Phase 22 and Phase 23 outputs exist, build the IJAEOG claim-readiness
+evidence package:
+
+```powershell
+python experiments\phase24_ijaeog_evidence_package\run_phase24_ijaeog_evidence_package.py --phase22-summary-csv experiments\phase22_multi_tile_scorer_eval\outputs\real_bishan_pilot\phase22_multi_tile_scorer_eval_summary.csv --phase23-summary-csv experiments\phase23_multi_seed_training\outputs\real_bishan_pilot\phase23_multi_seed_training_summary.csv --phase23-comparison-json experiments\phase23_multi_seed_training\outputs\real_bishan_pilot\phase23_multi_seed_training_comparison.json --output-dir experiments\phase24_ijaeog_evidence_package\outputs\real_bishan
+```
+
+Expected current Bishan outcome:
+
+- `phase24_ijaeog_evidence_table.csv` is written;
+- `phase24_ijaeog_evidence_summary.json` is written;
+- `phase24_ijaeog_claim_readiness.md` is written;
+- Phase 22 summary rows are `24`;
+- Phase 23 summary rows are `18`;
+- B1-B0 learned-policy mean reward delta is `0.4273019432`;
+- same-tile B0/B1 training pilot readiness is `pilot_supported`;
+- multi-tile scorer interface readiness is `pilot_supported`;
+- suitability reward readiness is `not_ready`;
+- transfer readiness is `not_ready`;
+- submission readiness is `not_ready`.
+
+Phase 24 is a synthesis and claim-readiness package. It summarizes current
+Phase 22/23 pilot evidence and remaining gaps, but it does not create new
+policy-performance, transfer, or suitability-reward evidence.
+
+## 27. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -642,7 +669,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 27. Inspect Runtime Code
+## 28. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -819,9 +846,16 @@ experiments/phase23_multi_seed_training/run_phase23_multi_seed_training.py
 src/paper11_geofm/multi_seed_training.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, and Phase 23 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 24 executable files:
 
-## 28. Regenerate Embeddings
+```text
+experiments/phase24_ijaeog_evidence_package/run_phase24_ijaeog_evidence_package.py
+src/paper11_geofm/ijaeog_evidence_package.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, and Phase 24 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 29. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 

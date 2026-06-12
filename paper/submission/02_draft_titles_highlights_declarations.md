@@ -33,6 +33,7 @@ Current guarded version:
 - Tiled environment contracts make large real planning instances tractable.
 - A deterministic base planning reward supports bounded B0/B1 pilot protocols.
 - Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
+- Claim-readiness artifacts separate pilot evidence from unsupported claims.
 
 After training evidence exists, revise the last two bullets to report the
 actual multi-seed B0/B1/B2/B3, ablation, and transfer findings.
@@ -62,7 +63,9 @@ across distinct evaluation tiles and seeds while remaining pilot evidence only.
 A multi-seed same-tile B0/B1 MaskablePPO pilot reports a positive B1-B0
 learned-policy mean reward delta under a short training budget, but this remains
 preliminary until longer training, ablations, suitability-reward validation, and
-held-out-region transfer tests are complete.
+held-out-region transfer tests are complete. The current IJAEOG evidence
+package summarizes these pilot outputs and remaining gaps without creating new
+policy-performance, transfer, or suitability-reward evidence.
 
 [Evidence needed: longer-budget B0/B1/B2/B3 training and evaluation results,
 ablation results, transfer results, and final spatial diagnostics.]
@@ -131,7 +134,7 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-23 workflow is available at:
+Phase 1-24 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
@@ -191,4 +194,6 @@ Current blocked boundary:
 > not provide final transfer or policy-performance evidence. Phase 23 adds
 > multi-seed same-tile learned-policy evidence, but still does not provide
 > final transfer, suitability-reward, ablation, or submission-level performance
-> evidence.
+> evidence. Phase 24 is a synthesis and claim-readiness package only; it
+> records current pilot evidence and remaining gaps, but does not create new
+> policy-performance, transfer, or suitability-reward evidence.
