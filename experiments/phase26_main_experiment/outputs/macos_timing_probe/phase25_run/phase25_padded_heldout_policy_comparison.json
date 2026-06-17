@@ -1,0 +1,94 @@
+{
+  "baselines": {
+    "first_valid": {
+      "B1_minus_B0_mean_reward": 0.0,
+      "heldout_tile_B1_minus_B0_mean_reward": {
+        "tile_r002_c003": 0.0
+      },
+      "mean_reward_by_variant": {
+        "B0": -0.1721689918,
+        "B1": -0.1721689918
+      }
+    },
+    "seeded_random": {
+      "B1_minus_B0_mean_reward": 0.2873095321,
+      "heldout_tile_B1_minus_B0_mean_reward": {
+        "tile_r002_c003": 0.2873095321
+      },
+      "mean_reward_by_variant": {
+        "B0": -0.2100023559,
+        "B1": 0.0773071762
+      }
+    }
+  },
+  "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+  "eval_max_steps": 4,
+  "eval_tile_ids": [
+    "tile_r002_c003"
+  ],
+  "learned_policy": {
+    "B1_minus_B0_mean_reward": 0.5539567153,
+    "heldout_tile_B1_minus_B0_mean_reward": {
+      "tile_r002_c003": 0.5539567153
+    },
+    "mean_reward_by_variant": {
+      "B0": -0.6525977819,
+      "B1": -0.0986410666
+    }
+  },
+  "max_blocks": 2234,
+  "mean_reward_by_row_type_variant_eval_tile": {
+    "first_valid": {
+      "B0": {
+        "tile_r002_c003": -0.1721689918
+      },
+      "B1": {
+        "tile_r002_c003": -0.1721689918
+      }
+    },
+    "seeded_random": {
+      "B0": {
+        "tile_r002_c003": -0.2100023559
+      },
+      "B1": {
+        "tile_r002_c003": 0.0773071762
+      }
+    },
+    "trained_policy": {
+      "B0": {
+        "tile_r002_c003": -0.6525977819
+      },
+      "B1": {
+        "tile_r002_c003": -0.0986410666
+      }
+    }
+  },
+  "phase": "phase25_padded_heldout_policy_comparison",
+  "pilot_result_status": "B1_improves_B0",
+  "policies": [
+    "trained_policy",
+    "first_valid",
+    "seeded_random"
+  ],
+  "remaining_evidence_gaps": [
+    "longer_training_budget_and_hyperparameter_sensitivity",
+    "suitability_reward_validation_before_B2_B3",
+    "held_out_region_transfer_evaluation",
+    "spatial_case_maps_and_uncertainty",
+    "submission_level_ablation_and_robustness_package"
+  ],
+  "seed_count": 1,
+  "seeds": [
+    0
+  ],
+  "summary_count": 6,
+  "total_timesteps": 128,
+  "train_tile_id": "tile_r003_c003",
+  "train_tile_ids": [
+    "tile_r003_c003"
+  ],
+  "variants": [
+    "B0",
+    "B1"
+  ]
+}

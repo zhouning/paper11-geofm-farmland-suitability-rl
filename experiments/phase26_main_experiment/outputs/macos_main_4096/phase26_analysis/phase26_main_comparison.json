@@ -1,0 +1,423 @@
+{
+  "baselines": {
+    "first_valid": {
+      "B1_minus_B0_mean_reward": 0.0,
+      "B1_minus_B0_std_reward": 0.0,
+      "mean_reward_by_variant": {
+        "B0": 1.3654779239,
+        "B1": 1.3654779239
+      },
+      "paired_tile_seed_count": 9,
+      "per_seed_mean_delta": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.0
+      },
+      "per_tile_mean_delta": {
+        "tile_r002_c003": 0.0,
+        "tile_r005_c003": 0.0,
+        "tile_r005_c004": 0.0
+      }
+    },
+    "seeded_random": {
+      "B1_minus_B0_mean_reward": 0.2696076041,
+      "B1_minus_B0_std_reward": 0.6123175469,
+      "mean_reward_by_variant": {
+        "B0": 0.0143533766,
+        "B1": 0.2839609807
+      },
+      "paired_tile_seed_count": 9,
+      "per_seed_mean_delta": {
+        "0": -0.1054353074,
+        "1": 0.2649512256,
+        "2": 0.6493068942
+      },
+      "per_tile_mean_delta": {
+        "tile_r002_c003": 0.2516629556,
+        "tile_r005_c003": 0.6935694157,
+        "tile_r005_c004": -0.1364095589
+      }
+    }
+  },
+  "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+  "eval_max_steps": 8,
+  "eval_tile_ids": [
+    "tile_r002_c003",
+    "tile_r005_c004",
+    "tile_r005_c003"
+  ],
+  "learned_policy": {
+    "B1_minus_B0_mean_reward": -0.1318712688,
+    "B1_minus_B0_std_reward": 0.9409834893,
+    "coverage_issues": {
+      "duplicate_variant_rows": [],
+      "missing_tile_seed_pairs": [],
+      "unexpected_tile_seed_pairs": []
+    },
+    "per_seed_mean_delta": {
+      "0": 0.1514064251,
+      "1": -0.6264623535,
+      "2": 0.0794421219
+    },
+    "per_tile_mean_delta": {
+      "tile_r002_c003": -0.8076728914,
+      "tile_r005_c003": 0.5639282214,
+      "tile_r005_c004": -0.1518691365
+    },
+    "positive_fraction": 0.3333333333,
+    "positive_tile_seed_count": 3,
+    "total_tile_seed_count": 9
+  },
+  "main_summary_rows": [
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "max_total_contract_reward": 0.4326720773,
+      "mean_total_contract_reward": 0.3163776204,
+      "min_total_contract_reward": 0.1623026941,
+      "row_type": "trained_policy",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.1135647356,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "max_total_contract_reward": 0.0968319885,
+      "mean_total_contract_reward": 0.0968319885,
+      "min_total_contract_reward": 0.0968319885,
+      "row_type": "first_valid",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.0,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "max_total_contract_reward": -0.1889744771,
+      "mean_total_contract_reward": -0.3282624541,
+      "min_total_contract_reward": -0.5561665136,
+      "row_type": "seeded_random",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.1624748298,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "max_total_contract_reward": 0.9324058106,
+      "mean_total_contract_reward": 0.7236152803,
+      "min_total_contract_reward": 0.4062438082,
+      "row_type": "trained_policy",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.2281139757,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "max_total_contract_reward": 1.6167537795,
+      "mean_total_contract_reward": 1.6167537795,
+      "min_total_contract_reward": 1.6167537795,
+      "row_type": "first_valid",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.0,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "max_total_contract_reward": 1.1175810204,
+      "mean_total_contract_reward": 0.1809036214,
+      "min_total_contract_reward": -0.5093404254,
+      "row_type": "seeded_random",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.6866660496,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "max_total_contract_reward": 1.5515450811,
+      "mean_total_contract_reward": 0.4075287504,
+      "min_total_contract_reward": -0.480347579,
+      "row_type": "trained_policy",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.84905937,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "max_total_contract_reward": 2.3828480037,
+      "mean_total_contract_reward": 2.3828480037,
+      "min_total_contract_reward": 2.3828480037,
+      "row_type": "first_valid",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.0,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "max_total_contract_reward": 0.4684570032,
+      "mean_total_contract_reward": 0.1904189624,
+      "min_total_contract_reward": -0.1372513038,
+      "row_type": "seeded_random",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.2497574245,
+      "train_timesteps": 4096,
+      "variant_id": "B0"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "max_total_contract_reward": 0.0684752446,
+      "mean_total_contract_reward": -0.491295271,
+      "min_total_contract_reward": -1.0745858731,
+      "row_type": "trained_policy",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.4669490162,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "max_total_contract_reward": 0.0968319885,
+      "mean_total_contract_reward": 0.0968319885,
+      "min_total_contract_reward": 0.0968319885,
+      "row_type": "first_valid",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.0,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "max_total_contract_reward": 0.2478189155,
+      "mean_total_contract_reward": -0.0765994984,
+      "min_total_contract_reward": -0.5078187855,
+      "row_type": "seeded_random",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.3175971281,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "max_total_contract_reward": 1.0252803424,
+      "mean_total_contract_reward": 0.5717461438,
+      "min_total_contract_reward": 0.2501920734,
+      "row_type": "trained_policy",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.3299035433,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "max_total_contract_reward": 1.6167537795,
+      "mean_total_contract_reward": 1.6167537795,
+      "min_total_contract_reward": 1.6167537795,
+      "row_type": "first_valid",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.0,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "max_total_contract_reward": 0.3507408773,
+      "mean_total_contract_reward": 0.0444940625,
+      "min_total_contract_reward": -0.2628510818,
+      "row_type": "seeded_random",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.2504990723,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "max_total_contract_reward": 1.2465517427,
+      "mean_total_contract_reward": 0.9714569718,
+      "min_total_contract_reward": 0.4582876338,
+      "row_type": "trained_policy",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.3631801215,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "max_total_contract_reward": 2.3828480037,
+      "mean_total_contract_reward": 2.3828480037,
+      "min_total_contract_reward": 2.3828480037,
+      "row_type": "first_valid",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.0,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    },
+    {
+      "claim_boundary": "Phase 26 is a main empirical analysis package for B0/B1 padded held-out Bishan tile learned-policy results under the deterministic base planning reward; it does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or final submission-level claims.",
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "max_total_contract_reward": 1.9517593496,
+      "mean_total_contract_reward": 0.8839883781,
+      "min_total_contract_reward": 0.18163801,
+      "row_type": "seeded_random",
+      "seed_count": 3,
+      "std_total_contract_reward": 0.7674553417,
+      "train_timesteps": 4096,
+      "variant_id": "B1"
+    }
+  ],
+  "phase": "phase26_main_empirical_experiment",
+  "phase26_claim_status": "not_supported",
+  "remaining_evidence_gaps": [
+    "longer_budget_replication_if_1024_steps_is_used",
+    "suitability_reward_validation_before_B2_B3",
+    "held_out_region_transfer_evaluation",
+    "spatial_case_maps_and_uncertainty",
+    "submission_level_ablation_and_robustness_package"
+  ],
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "source_phase25": {
+    "comparison_json": "experiments/phase26_main_experiment/outputs/macos_main_4096/phase25_run/phase25_padded_heldout_policy_comparison.json",
+    "summary_csv": "experiments/phase26_main_experiment/outputs/macos_main_4096/phase25_run/phase25_padded_heldout_policy_summary.csv"
+  },
+  "tile_seed_delta_rows": [
+    {
+      "b0_reward": 0.3541580899,
+      "b1_improves_b0": false,
+      "b1_minus_b0_reward": -1.428743963,
+      "b1_reward": -1.0745858731,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "seed": 0,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": 0.832196222,
+      "b1_improves_b0": true,
+      "b1_minus_b0_reward": 0.1930841204,
+      "b1_reward": 1.0252803424,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "seed": 0,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": -0.480347579,
+      "b1_improves_b0": true,
+      "b1_minus_b0_reward": 1.689879118,
+      "b1_reward": 1.209531539,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "seed": 0,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": 0.1623026941,
+      "b1_improves_b0": false,
+      "b1_minus_b0_reward": -0.6300778785,
+      "b1_reward": -0.4677751844,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "seed": 1,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": 0.4062438082,
+      "b1_improves_b0": false,
+      "b1_minus_b0_reward": -0.1560517348,
+      "b1_reward": 0.2501920734,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "seed": 1,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": 1.5515450811,
+      "b1_improves_b0": false,
+      "b1_minus_b0_reward": -1.0932574473,
+      "b1_reward": 0.4582876338,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "seed": 1,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": 0.4326720773,
+      "b1_improves_b0": false,
+      "b1_minus_b0_reward": -0.3641968327,
+      "b1_reward": 0.0684752446,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r002_c003",
+      "seed": 2,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": 0.9324058106,
+      "b1_improves_b0": false,
+      "b1_minus_b0_reward": -0.492639795,
+      "b1_reward": 0.4397660156,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c004",
+      "seed": 2,
+      "train_timesteps": 4096
+    },
+    {
+      "b0_reward": 0.1513887492,
+      "b1_improves_b0": true,
+      "b1_minus_b0_reward": 1.0951629935,
+      "b1_reward": 1.2465517427,
+      "eval_max_steps": 8,
+      "eval_tile_id": "tile_r005_c003",
+      "seed": 2,
+      "train_timesteps": 4096
+    }
+  ],
+  "train_tile_id": "tile_r003_c003",
+  "train_timesteps": 4096,
+  "variants": [
+    "B0",
+    "B1"
+  ]
+}

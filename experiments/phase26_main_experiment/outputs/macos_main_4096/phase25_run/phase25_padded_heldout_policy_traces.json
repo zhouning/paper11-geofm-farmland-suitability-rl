@@ -1,0 +1,5643 @@
+{
+  "all_evaluations_completed": true,
+  "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+  "comparison": {
+    "baselines": {
+      "first_valid": {
+        "B1_minus_B0_mean_reward": 0.0,
+        "heldout_tile_B1_minus_B0_mean_reward": {
+          "tile_r002_c003": 0.0,
+          "tile_r005_c003": 0.0,
+          "tile_r005_c004": 0.0
+        },
+        "mean_reward_by_variant": {
+          "B0": 1.3654779239,
+          "B1": 1.3654779239
+        }
+      },
+      "seeded_random": {
+        "B1_minus_B0_mean_reward": 0.2696076041,
+        "heldout_tile_B1_minus_B0_mean_reward": {
+          "tile_r002_c003": 0.2516629556,
+          "tile_r005_c003": 0.6935694157,
+          "tile_r005_c004": -0.1364095589
+        },
+        "mean_reward_by_variant": {
+          "B0": 0.0143533766,
+          "B1": 0.2839609807
+        }
+      }
+    },
+    "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+    "eval_max_steps": 8,
+    "eval_tile_ids": [
+      "tile_r002_c003",
+      "tile_r005_c004",
+      "tile_r005_c003"
+    ],
+    "learned_policy": {
+      "B1_minus_B0_mean_reward": -0.1318712688,
+      "heldout_tile_B1_minus_B0_mean_reward": {
+        "tile_r002_c003": -0.8076728914,
+        "tile_r005_c003": 0.5639282214,
+        "tile_r005_c004": -0.1518691365
+      },
+      "mean_reward_by_variant": {
+        "B0": 0.482507217,
+        "B1": 0.3506359482
+      }
+    },
+    "max_blocks": 2234,
+    "mean_reward_by_row_type_variant_eval_tile": {
+      "first_valid": {
+        "B0": {
+          "tile_r002_c003": 0.0968319885,
+          "tile_r005_c003": 2.3828480037,
+          "tile_r005_c004": 1.6167537795
+        },
+        "B1": {
+          "tile_r002_c003": 0.0968319885,
+          "tile_r005_c003": 2.3828480037,
+          "tile_r005_c004": 1.6167537795
+        }
+      },
+      "seeded_random": {
+        "B0": {
+          "tile_r002_c003": -0.3282624541,
+          "tile_r005_c003": 0.1904189624,
+          "tile_r005_c004": 0.1809036214
+        },
+        "B1": {
+          "tile_r002_c003": -0.0765994984,
+          "tile_r005_c003": 0.8839883781,
+          "tile_r005_c004": 0.0444940625
+        }
+      },
+      "trained_policy": {
+        "B0": {
+          "tile_r002_c003": 0.3163776204,
+          "tile_r005_c003": 0.4075287504,
+          "tile_r005_c004": 0.7236152803
+        },
+        "B1": {
+          "tile_r002_c003": -0.491295271,
+          "tile_r005_c003": 0.9714569718,
+          "tile_r005_c004": 0.5717461438
+        }
+      }
+    },
+    "phase": "phase25_padded_heldout_policy_comparison",
+    "pilot_result_status": "B1_underperforms_B0",
+    "policies": [
+      "trained_policy",
+      "first_valid",
+      "seeded_random"
+    ],
+    "remaining_evidence_gaps": [
+      "longer_training_budget_and_hyperparameter_sensitivity",
+      "suitability_reward_validation_before_B2_B3",
+      "held_out_region_transfer_evaluation",
+      "spatial_case_maps_and_uncertainty",
+      "submission_level_ablation_and_robustness_package"
+    ],
+    "seed_count": 3,
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "summary_count": 54,
+    "total_timesteps": 4096,
+    "train_tile_id": "tile_r003_c003",
+    "train_tile_ids": [
+      "tile_r003_c003"
+    ],
+    "variants": [
+      "B0",
+      "B1"
+    ]
+  },
+  "dependencies": {
+    "sb3_contrib": {
+      "available": true,
+      "version": "2.2.1"
+    },
+    "stable_baselines3": {
+      "available": true,
+      "version": "2.2.1"
+    }
+  },
+  "eval_max_steps": 8,
+  "eval_tile_count": 3,
+  "eval_tile_ids": [
+    "tile_r002_c003",
+    "tile_r005_c004",
+    "tile_r005_c003"
+  ],
+  "eval_tile_ranks": {
+    "tile_r002_c003": 1,
+    "tile_r005_c003": 3,
+    "tile_r005_c004": 2
+  },
+  "eval_tile_selection": "largest_distinct",
+  "learned_policy_evaluation_scope": "padded_variable_size_heldout_tile_b0_b1_training_pilot",
+  "max_blocks": 2234,
+  "padded_policy_status": "enabled_distinct_heldout_tiles",
+  "phase": "phase25_padded_heldout_policy",
+  "phase2_output_dir": "experiments/phase11_bishan_dltb_real/outputs/phase2_real",
+  "remaining_evidence_gaps": [
+    "longer_training_budget_and_hyperparameter_sensitivity",
+    "suitability_reward_validation_before_B2_B3",
+    "held_out_region_transfer_evaluation",
+    "spatial_case_maps_and_uncertainty",
+    "submission_level_ablation_and_robustness_package"
+  ],
+  "seed_count": 3,
+  "seed_ranks": {
+    "0": 1,
+    "1": 2,
+    "2": 3
+  },
+  "seeds": [
+    0,
+    1,
+    2
+  ],
+  "selected_tile_block_counts": {
+    "tile_r002_c003": 2188,
+    "tile_r003_c003": 2234,
+    "tile_r005_c003": 2128,
+    "tile_r005_c004": 2140
+  },
+  "summaries": [
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "trained_policy",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_5341407",
+        "dltb_819136",
+        "dltb_823240",
+        "dltb_821360",
+        "dltb_818274",
+        "dltb_820222",
+        "dltb_822698",
+        "dltb_819992"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.3541580899,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "first_valid",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_1000812",
+        "dltb_1497530",
+        "dltb_1497532",
+        "dltb_1858642",
+        "dltb_1858643",
+        "dltb_2160382",
+        "dltb_2160383",
+        "dltb_2160391"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0968319885,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "seeded_random",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_820949",
+        "dltb_823411",
+        "dltb_819614",
+        "dltb_821191",
+        "dltb_820893",
+        "dltb_2162083",
+        "dltb_5314586",
+        "dltb_819706"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.1889744771,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "trained_policy",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_5303184",
+        "dltb_837121",
+        "dltb_841015",
+        "dltb_844015",
+        "dltb_5379105",
+        "dltb_839144",
+        "dltb_843172",
+        "dltb_838725"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.832196222,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "first_valid",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_1000134",
+        "dltb_10410",
+        "dltb_10411",
+        "dltb_10412",
+        "dltb_10413",
+        "dltb_10429",
+        "dltb_10430",
+        "dltb_10431"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.6167537795,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "seeded_random",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_837631",
+        "dltb_5321129",
+        "dltb_839415",
+        "dltb_843407",
+        "dltb_1693828",
+        "dltb_839683",
+        "dltb_5380571",
+        "dltb_5302185"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.1175810204,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "trained_policy",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_5346365",
+        "dltb_837934",
+        "dltb_841322",
+        "dltb_844238",
+        "dltb_5380902",
+        "dltb_839604",
+        "dltb_843435",
+        "dltb_839292"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.480347579,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "first_valid",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_10524",
+        "dltb_10525",
+        "dltb_10526",
+        "dltb_10534",
+        "dltb_10535",
+        "dltb_10536",
+        "dltb_10537",
+        "dltb_10538"
+      ],
+      "terminated": true,
+      "total_contract_reward": 2.3828480037,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 1,
+      "row_type": "seeded_random",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_5380010",
+        "dltb_5345912",
+        "dltb_838340",
+        "dltb_839289",
+        "dltb_841615",
+        "dltb_839037",
+        "dltb_841996",
+        "dltb_838836"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.1372513038,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "trained_policy",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_818305",
+        "dltb_820866",
+        "dltb_5322459",
+        "dltb_823148",
+        "dltb_821493",
+        "dltb_5372912",
+        "dltb_818204",
+        "dltb_820171"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.1623026941,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "first_valid",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_1000812",
+        "dltb_1497530",
+        "dltb_1497532",
+        "dltb_1858642",
+        "dltb_1858643",
+        "dltb_2160382",
+        "dltb_2160383",
+        "dltb_2160391"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0968319885,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "seeded_random",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_821973",
+        "dltb_820290",
+        "dltb_819546",
+        "dltb_819185",
+        "dltb_822567",
+        "dltb_3871361",
+        "dltb_819671",
+        "dltb_821755"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.2396463715,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "trained_policy",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_5379311",
+        "dltb_5302385",
+        "dltb_840266",
+        "dltb_843761",
+        "dltb_841224",
+        "dltb_5377951",
+        "dltb_5378212",
+        "dltb_842614"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.4062438082,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "first_valid",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_1000134",
+        "dltb_10410",
+        "dltb_10411",
+        "dltb_10412",
+        "dltb_10413",
+        "dltb_10429",
+        "dltb_10430",
+        "dltb_10431"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.6167537795,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "seeded_random",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_839204",
+        "dltb_5380344",
+        "dltb_838502",
+        "dltb_838567",
+        "dltb_5312490",
+        "dltb_842647",
+        "dltb_838539",
+        "dltb_5379675"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.5093404254,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "trained_policy",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_5381167",
+        "dltb_840610",
+        "dltb_5320895",
+        "dltb_841475",
+        "dltb_844057",
+        "dltb_839544",
+        "dltb_5380435",
+        "dltb_5380098"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.5515450811,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "first_valid",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_10524",
+        "dltb_10525",
+        "dltb_10526",
+        "dltb_10534",
+        "dltb_10535",
+        "dltb_10536",
+        "dltb_10537",
+        "dltb_10538"
+      ],
+      "terminated": true,
+      "total_contract_reward": 2.3828480037,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 2,
+      "row_type": "seeded_random",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_3874526",
+        "dltb_839664",
+        "dltb_5321014",
+        "dltb_843797",
+        "dltb_840407",
+        "dltb_843534",
+        "dltb_839125",
+        "dltb_843025"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.2400511879,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "trained_policy",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_821744",
+        "dltb_821907",
+        "dltb_823173",
+        "dltb_5372637",
+        "dltb_2162146",
+        "dltb_818882",
+        "dltb_5312267",
+        "dltb_5372664"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.4326720773,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "first_valid",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_1000812",
+        "dltb_1497530",
+        "dltb_1497532",
+        "dltb_1858642",
+        "dltb_1858643",
+        "dltb_2160382",
+        "dltb_2160383",
+        "dltb_2160391"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0968319885,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "seeded_random",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_821751",
+        "dltb_821636",
+        "dltb_5372938",
+        "dltb_823143",
+        "dltb_822969",
+        "dltb_819363",
+        "dltb_5372130",
+        "dltb_818928"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.5561665136,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "trained_policy",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_841755",
+        "dltb_842047",
+        "dltb_5377399",
+        "dltb_843814",
+        "dltb_1694148",
+        "dltb_836705",
+        "dltb_840726",
+        "dltb_5302550"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.9324058106,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "first_valid",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_1000134",
+        "dltb_10410",
+        "dltb_10411",
+        "dltb_10412",
+        "dltb_10413",
+        "dltb_10429",
+        "dltb_10430",
+        "dltb_10431"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.6167537795,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "seeded_random",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_838124",
+        "dltb_843557",
+        "dltb_842352",
+        "dltb_837440",
+        "dltb_5346513",
+        "dltb_5380135",
+        "dltb_843183",
+        "dltb_1693806"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.0655297308,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "trained_policy",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_5379114",
+        "dltb_842163",
+        "dltb_2159754",
+        "dltb_837495",
+        "dltb_5320635",
+        "dltb_2154729",
+        "dltb_836693",
+        "dltb_841087"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.1513887492,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "first_valid",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_10524",
+        "dltb_10525",
+        "dltb_10526",
+        "dltb_10534",
+        "dltb_10535",
+        "dltb_10536",
+        "dltb_10537",
+        "dltb_10538"
+      ],
+      "terminated": true,
+      "total_contract_reward": 2.3828480037,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 17,
+      "observation_shape": 42451,
+      "phase25_seed_rank": 3,
+      "row_type": "seeded_random",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_5377574",
+        "dltb_842292",
+        "dltb_837019",
+        "dltb_838347",
+        "dltb_841648",
+        "dltb_838296",
+        "dltb_3874799",
+        "dltb_838360"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.4684570032,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B0"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "trained_policy",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_821907",
+        "dltb_821838",
+        "dltb_821144",
+        "dltb_822286",
+        "dltb_818811",
+        "dltb_5322353",
+        "dltb_5322413",
+        "dltb_822320"
+      ],
+      "terminated": true,
+      "total_contract_reward": -1.0745858731,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "first_valid",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_1000812",
+        "dltb_1497530",
+        "dltb_1497532",
+        "dltb_1858642",
+        "dltb_1858643",
+        "dltb_2160382",
+        "dltb_2160383",
+        "dltb_2160391"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0968319885,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "seeded_random",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_5371562",
+        "dltb_822583",
+        "dltb_822840",
+        "dltb_821759",
+        "dltb_2161894",
+        "dltb_821858",
+        "dltb_822054",
+        "dltb_2162172"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.2478189155,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "trained_policy",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_842047",
+        "dltb_841950",
+        "dltb_840683",
+        "dltb_842715",
+        "dltb_836539",
+        "dltb_5302313",
+        "dltb_842774",
+        "dltb_5302357"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.0252803424,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "first_valid",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_1000134",
+        "dltb_10410",
+        "dltb_10411",
+        "dltb_10412",
+        "dltb_10413",
+        "dltb_10429",
+        "dltb_10430",
+        "dltb_10431"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.6167537795,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "seeded_random",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_5302741",
+        "dltb_839873",
+        "dltb_841171",
+        "dltb_2153739",
+        "dltb_5302858",
+        "dltb_5378507",
+        "dltb_841707",
+        "dltb_837715"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0455923919,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "trained_policy",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_842163",
+        "dltb_842064",
+        "dltb_841056",
+        "dltb_842789",
+        "dltb_837357",
+        "dltb_5320854",
+        "dltb_5320869",
+        "dltb_842844"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.209531539,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "first_valid",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_10524",
+        "dltb_10525",
+        "dltb_10526",
+        "dltb_10534",
+        "dltb_10535",
+        "dltb_10536",
+        "dltb_10537",
+        "dltb_10538"
+      ],
+      "terminated": true,
+      "total_contract_reward": 2.3828480037,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 1,
+      "row_type": "seeded_random",
+      "seed": 0,
+      "selected_block_ids": [
+        "dltb_5344891",
+        "dltb_2154763",
+        "dltb_842483",
+        "dltb_5346170",
+        "dltb_837993",
+        "dltb_841999",
+        "dltb_5381731",
+        "dltb_5378739"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.18163801,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "trained_policy",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_820891",
+        "dltb_821590",
+        "dltb_5340733",
+        "dltb_5372894",
+        "dltb_818619",
+        "dltb_2162354",
+        "dltb_3871646",
+        "dltb_821803"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.4677751844,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "first_valid",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_1000812",
+        "dltb_1497530",
+        "dltb_1497532",
+        "dltb_1858642",
+        "dltb_1858643",
+        "dltb_2160382",
+        "dltb_2160383",
+        "dltb_2160391"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0968319885,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "seeded_random",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_823124",
+        "dltb_818461",
+        "dltb_818622",
+        "dltb_818972",
+        "dltb_822159",
+        "dltb_5313981",
+        "dltb_818807",
+        "dltb_3871389"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0302013747,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "trained_policy",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_840305",
+        "dltb_841436",
+        "dltb_5302760",
+        "dltb_5377877",
+        "dltb_5380676",
+        "dltb_2153737",
+        "dltb_3874694",
+        "dltb_841871"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.2501920734,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "first_valid",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_1000134",
+        "dltb_10410",
+        "dltb_10411",
+        "dltb_10412",
+        "dltb_10413",
+        "dltb_10429",
+        "dltb_10430",
+        "dltb_10431"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.6167537795,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "seeded_random",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_839103",
+        "dltb_5381341",
+        "dltb_839858",
+        "dltb_5321302",
+        "dltb_2153353",
+        "dltb_839491",
+        "dltb_840422",
+        "dltb_840307"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.2628510818,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "trained_policy",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_840689",
+        "dltb_841664",
+        "dltb_5380017",
+        "dltb_5344762",
+        "dltb_836977",
+        "dltb_3874498",
+        "dltb_5309813",
+        "dltb_5302572"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.4582876338,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "first_valid",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_10524",
+        "dltb_10525",
+        "dltb_10526",
+        "dltb_10534",
+        "dltb_10535",
+        "dltb_10536",
+        "dltb_10537",
+        "dltb_10538"
+      ],
+      "terminated": true,
+      "total_contract_reward": 2.3828480037,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 2,
+      "row_type": "seeded_random",
+      "seed": 1,
+      "selected_block_ids": [
+        "dltb_3874671",
+        "dltb_2154753",
+        "dltb_5379231",
+        "dltb_839502",
+        "dltb_843324",
+        "dltb_840352",
+        "dltb_2159759",
+        "dltb_5320583"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.5185677748,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "trained_policy",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_5372912",
+        "dltb_822221",
+        "dltb_3871952",
+        "dltb_822156",
+        "dltb_5316709",
+        "dltb_819715",
+        "dltb_821395",
+        "dltb_822482"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0684752446,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "first_valid",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_1000812",
+        "dltb_1497530",
+        "dltb_1497532",
+        "dltb_1858642",
+        "dltb_1858643",
+        "dltb_2160382",
+        "dltb_2160383",
+        "dltb_2160391"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.0968319885,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2188,
+      "eval_tile_id": "tile_r002_c003",
+      "eval_tile_rank": 1,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "seeded_random",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_5372503",
+        "dltb_821323",
+        "dltb_5341633",
+        "dltb_819970",
+        "dltb_819586",
+        "dltb_823172",
+        "dltb_5372139",
+        "dltb_5340733"
+      ],
+      "terminated": true,
+      "total_contract_reward": -0.5078187855,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "trained_policy",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_5377951",
+        "dltb_842659",
+        "dltb_842535",
+        "dltb_5302264",
+        "dltb_3874926",
+        "dltb_838143",
+        "dltb_5302357",
+        "dltb_841105"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.4397660156,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "first_valid",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_1000134",
+        "dltb_10410",
+        "dltb_10411",
+        "dltb_10412",
+        "dltb_10413",
+        "dltb_10429",
+        "dltb_10430",
+        "dltb_10431"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.6167537795,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2140,
+      "eval_tile_id": "tile_r005_c004",
+      "eval_tile_rank": 2,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "seeded_random",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_837383",
+        "dltb_5321110",
+        "dltb_5381225",
+        "dltb_840281",
+        "dltb_843256",
+        "dltb_842957",
+        "dltb_1497937",
+        "dltb_5378275"
+      ],
+      "terminated": true,
+      "total_contract_reward": 0.3507408773,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "trained_policy",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_5380098",
+        "dltb_5309476",
+        "dltb_843100",
+        "dltb_2652",
+        "dltb_3875021",
+        "dltb_841370",
+        "dltb_842597",
+        "dltb_842726"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.2465517427,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "first_valid",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_10524",
+        "dltb_10525",
+        "dltb_10526",
+        "dltb_10534",
+        "dltb_10535",
+        "dltb_10536",
+        "dltb_10537",
+        "dltb_10538"
+      ],
+      "terminated": true,
+      "total_contract_reward": 2.3828480037,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    },
+    {
+      "action_space_n": 2234,
+      "all_actions_valid": true,
+      "claim_boundary": "Phase 25 is a bounded padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy pilot under the deterministic base planning reward; it tests distinct Bishan tiles, does not enable suitability reward, does not test B2/B3, and does not support cross-region transfer or submission-level planning-performance claims.",
+      "episode_steps": 8,
+      "eval_max_steps": 8,
+      "eval_n_blocks": 2128,
+      "eval_tile_id": "tile_r005_c003",
+      "eval_tile_rank": 3,
+      "invalid_action_count": 0,
+      "max_blocks": 2234,
+      "n_features": 81,
+      "observation_shape": 185427,
+      "phase25_seed_rank": 3,
+      "row_type": "seeded_random",
+      "seed": 2,
+      "selected_block_ids": [
+        "dltb_836911",
+        "dltb_5377928",
+        "dltb_839801",
+        "dltb_843985",
+        "dltb_843849",
+        "dltb_842398",
+        "dltb_843514",
+        "dltb_5378216"
+      ],
+      "terminated": true,
+      "total_contract_reward": 1.9517593496,
+      "train_n_blocks": 2234,
+      "train_tile_id": "tile_r003_c003",
+      "train_timesteps": 4096,
+      "truncated": false,
+      "variant_id": "B1"
+    }
+  ],
+  "summary_count": 54,
+  "tile_index_csv": "experiments/phase13_tiled_real_contract/outputs/real_bishan/phase13_tile_index.csv",
+  "total_timesteps": 4096,
+  "traces": {
+    "first_valid": {
+      "B0": {
+        "tile_r002_c003": {
+          "0": [
+            {
+              "action": 0,
+              "reward": -0.24323205,
+              "selected_block_id": "dltb_1000812",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1,
+              "reward": -0.1766654614,
+              "selected_block_id": "dltb_1497530",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2,
+              "reward": 0.1307519622,
+              "selected_block_id": "dltb_1497532",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 3,
+              "reward": 0.1169765574,
+              "selected_block_id": "dltb_1858642",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 4,
+              "reward": -0.1728919996,
+              "selected_block_id": "dltb_1858643",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 5,
+              "reward": -0.0175685267,
+              "selected_block_id": "dltb_2160382",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 6,
+              "reward": 0.6155846692,
+              "selected_block_id": "dltb_2160383",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 7,
+              "reward": -0.1561231626,
+              "selected_block_id": "dltb_2160391",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "1": [
+            {
+              "action": 0,
+              "reward": -0.24323205,
+              "selected_block_id": "dltb_1000812",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1,
+              "reward": -0.1766654614,
+              "selected_block_id": "dltb_1497530",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2,
+              "reward": 0.1307519622,
+              "selected_block_id": "dltb_1497532",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 3,
+              "reward": 0.1169765574,
+              "selected_block_id": "dltb_1858642",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 4,
+              "reward": -0.1728919996,
+              "selected_block_id": "dltb_1858643",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 5,
+              "reward": -0.0175685267,
+              "selected_block_id": "dltb_2160382",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 6,
+              "reward": 0.6155846692,
+              "selected_block_id": "dltb_2160383",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 7,
+              "reward": -0.1561231626,
+              "selected_block_id": "dltb_2160391",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "2": [
+            {
+              "action": 0,
+              "reward": -0.24323205,
+              "selected_block_id": "dltb_1000812",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1,
+              "reward": -0.1766654614,
+              "selected_block_id": "dltb_1497530",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2,
+              "reward": 0.1307519622,
+              "selected_block_id": "dltb_1497532",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 3,
+              "reward": 0.1169765574,
+              "selected_block_id": "dltb_1858642",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 4,
+              "reward": -0.1728919996,
+              "selected_block_id": "dltb_1858643",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 5,
+              "reward": -0.0175685267,
+              "selected_block_id": "dltb_2160382",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 6,
+              "reward": 0.6155846692,
+              "selected_block_id": "dltb_2160383",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 7,
+              "reward": -0.1561231626,
+              "selected_block_id": "dltb_2160391",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ]
+        },
+        "tile_r005_c003": {
+          "0": [
+            {
+              "action": 0,
+              "reward": 0.6464408834,
+              "selected_block_id": "dltb_10524",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1,
+              "reward": 0.0999900091,
+              "selected_block_id": "dltb_10525",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 2,
+              "reward": -0.1636299618,
+              "selected_block_id": "dltb_10526",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 3,
+              "reward": 0.6238305804,
+              "selected_block_id": "dltb_10534",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 4,
+              "reward": -0.0458295784,
+              "selected_block_id": "dltb_10535",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 5,
+              "reward": 0.6107976648,
+              "selected_block_id": "dltb_10536",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 6,
+              "reward": 0.6338270014,
+              "selected_block_id": "dltb_10537",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 7,
+              "reward": -0.0225785952,
+              "selected_block_id": "dltb_10538",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "1": [
+            {
+              "action": 0,
+              "reward": 0.6464408834,
+              "selected_block_id": "dltb_10524",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1,
+              "reward": 0.0999900091,
+              "selected_block_id": "dltb_10525",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 2,
+              "reward": -0.1636299618,
+              "selected_block_id": "dltb_10526",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 3,
+              "reward": 0.6238305804,
+              "selected_block_id": "dltb_10534",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 4,
+              "reward": -0.0458295784,
+              "selected_block_id": "dltb_10535",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 5,
+              "reward": 0.6107976648,
+              "selected_block_id": "dltb_10536",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 6,
+              "reward": 0.6338270014,
+              "selected_block_id": "dltb_10537",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 7,
+              "reward": -0.0225785952,
+              "selected_block_id": "dltb_10538",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "2": [
+            {
+              "action": 0,
+              "reward": 0.6464408834,
+              "selected_block_id": "dltb_10524",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1,
+              "reward": 0.0999900091,
+              "selected_block_id": "dltb_10525",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 2,
+              "reward": -0.1636299618,
+              "selected_block_id": "dltb_10526",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 3,
+              "reward": 0.6238305804,
+              "selected_block_id": "dltb_10534",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 4,
+              "reward": -0.0458295784,
+              "selected_block_id": "dltb_10535",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 5,
+              "reward": 0.6107976648,
+              "selected_block_id": "dltb_10536",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 6,
+              "reward": 0.6338270014,
+              "selected_block_id": "dltb_10537",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 7,
+              "reward": -0.0225785952,
+              "selected_block_id": "dltb_10538",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ]
+        },
+        "tile_r005_c004": {
+          "0": [
+            {
+              "action": 0,
+              "reward": -0.1749074383,
+              "selected_block_id": "dltb_1000134",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1,
+              "reward": 0.1497510569,
+              "selected_block_id": "dltb_10410",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 2,
+              "reward": 0.091016082,
+              "selected_block_id": "dltb_10411",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 3,
+              "reward": 0.6190102002,
+              "selected_block_id": "dltb_10412",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 4,
+              "reward": -0.1552808818,
+              "selected_block_id": "dltb_10413",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 5,
+              "reward": 0.6163068525,
+              "selected_block_id": "dltb_10429",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 6,
+              "reward": 0.6281327469,
+              "selected_block_id": "dltb_10430",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 7,
+              "reward": -0.1572748389,
+              "selected_block_id": "dltb_10431",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "1": [
+            {
+              "action": 0,
+              "reward": -0.1749074383,
+              "selected_block_id": "dltb_1000134",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1,
+              "reward": 0.1497510569,
+              "selected_block_id": "dltb_10410",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 2,
+              "reward": 0.091016082,
+              "selected_block_id": "dltb_10411",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 3,
+              "reward": 0.6190102002,
+              "selected_block_id": "dltb_10412",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 4,
+              "reward": -0.1552808818,
+              "selected_block_id": "dltb_10413",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 5,
+              "reward": 0.6163068525,
+              "selected_block_id": "dltb_10429",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 6,
+              "reward": 0.6281327469,
+              "selected_block_id": "dltb_10430",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 7,
+              "reward": -0.1572748389,
+              "selected_block_id": "dltb_10431",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "2": [
+            {
+              "action": 0,
+              "reward": -0.1749074383,
+              "selected_block_id": "dltb_1000134",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1,
+              "reward": 0.1497510569,
+              "selected_block_id": "dltb_10410",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 2,
+              "reward": 0.091016082,
+              "selected_block_id": "dltb_10411",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 3,
+              "reward": 0.6190102002,
+              "selected_block_id": "dltb_10412",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 4,
+              "reward": -0.1552808818,
+              "selected_block_id": "dltb_10413",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 5,
+              "reward": 0.6163068525,
+              "selected_block_id": "dltb_10429",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 6,
+              "reward": 0.6281327469,
+              "selected_block_id": "dltb_10430",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 7,
+              "reward": -0.1572748389,
+              "selected_block_id": "dltb_10431",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ]
+        }
+      },
+      "B1": {
+        "tile_r002_c003": {
+          "0": [
+            {
+              "action": 0,
+              "reward": -0.24323205,
+              "selected_block_id": "dltb_1000812",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1,
+              "reward": -0.1766654614,
+              "selected_block_id": "dltb_1497530",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2,
+              "reward": 0.1307519622,
+              "selected_block_id": "dltb_1497532",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 3,
+              "reward": 0.1169765574,
+              "selected_block_id": "dltb_1858642",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 4,
+              "reward": -0.1728919996,
+              "selected_block_id": "dltb_1858643",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 5,
+              "reward": -0.0175685267,
+              "selected_block_id": "dltb_2160382",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 6,
+              "reward": 0.6155846692,
+              "selected_block_id": "dltb_2160383",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 7,
+              "reward": -0.1561231626,
+              "selected_block_id": "dltb_2160391",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "1": [
+            {
+              "action": 0,
+              "reward": -0.24323205,
+              "selected_block_id": "dltb_1000812",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1,
+              "reward": -0.1766654614,
+              "selected_block_id": "dltb_1497530",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2,
+              "reward": 0.1307519622,
+              "selected_block_id": "dltb_1497532",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 3,
+              "reward": 0.1169765574,
+              "selected_block_id": "dltb_1858642",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 4,
+              "reward": -0.1728919996,
+              "selected_block_id": "dltb_1858643",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 5,
+              "reward": -0.0175685267,
+              "selected_block_id": "dltb_2160382",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 6,
+              "reward": 0.6155846692,
+              "selected_block_id": "dltb_2160383",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 7,
+              "reward": -0.1561231626,
+              "selected_block_id": "dltb_2160391",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "2": [
+            {
+              "action": 0,
+              "reward": -0.24323205,
+              "selected_block_id": "dltb_1000812",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1,
+              "reward": -0.1766654614,
+              "selected_block_id": "dltb_1497530",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2,
+              "reward": 0.1307519622,
+              "selected_block_id": "dltb_1497532",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 3,
+              "reward": 0.1169765574,
+              "selected_block_id": "dltb_1858642",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 4,
+              "reward": -0.1728919996,
+              "selected_block_id": "dltb_1858643",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 5,
+              "reward": -0.0175685267,
+              "selected_block_id": "dltb_2160382",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 6,
+              "reward": 0.6155846692,
+              "selected_block_id": "dltb_2160383",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 7,
+              "reward": -0.1561231626,
+              "selected_block_id": "dltb_2160391",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ]
+        },
+        "tile_r005_c003": {
+          "0": [
+            {
+              "action": 0,
+              "reward": 0.6464408834,
+              "selected_block_id": "dltb_10524",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1,
+              "reward": 0.0999900091,
+              "selected_block_id": "dltb_10525",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 2,
+              "reward": -0.1636299618,
+              "selected_block_id": "dltb_10526",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 3,
+              "reward": 0.6238305804,
+              "selected_block_id": "dltb_10534",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 4,
+              "reward": -0.0458295784,
+              "selected_block_id": "dltb_10535",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 5,
+              "reward": 0.6107976648,
+              "selected_block_id": "dltb_10536",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 6,
+              "reward": 0.6338270014,
+              "selected_block_id": "dltb_10537",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 7,
+              "reward": -0.0225785952,
+              "selected_block_id": "dltb_10538",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "1": [
+            {
+              "action": 0,
+              "reward": 0.6464408834,
+              "selected_block_id": "dltb_10524",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1,
+              "reward": 0.0999900091,
+              "selected_block_id": "dltb_10525",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 2,
+              "reward": -0.1636299618,
+              "selected_block_id": "dltb_10526",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 3,
+              "reward": 0.6238305804,
+              "selected_block_id": "dltb_10534",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 4,
+              "reward": -0.0458295784,
+              "selected_block_id": "dltb_10535",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 5,
+              "reward": 0.6107976648,
+              "selected_block_id": "dltb_10536",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 6,
+              "reward": 0.6338270014,
+              "selected_block_id": "dltb_10537",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 7,
+              "reward": -0.0225785952,
+              "selected_block_id": "dltb_10538",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "2": [
+            {
+              "action": 0,
+              "reward": 0.6464408834,
+              "selected_block_id": "dltb_10524",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1,
+              "reward": 0.0999900091,
+              "selected_block_id": "dltb_10525",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 2,
+              "reward": -0.1636299618,
+              "selected_block_id": "dltb_10526",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 3,
+              "reward": 0.6238305804,
+              "selected_block_id": "dltb_10534",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 4,
+              "reward": -0.0458295784,
+              "selected_block_id": "dltb_10535",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 5,
+              "reward": 0.6107976648,
+              "selected_block_id": "dltb_10536",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 6,
+              "reward": 0.6338270014,
+              "selected_block_id": "dltb_10537",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 7,
+              "reward": -0.0225785952,
+              "selected_block_id": "dltb_10538",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ]
+        },
+        "tile_r005_c004": {
+          "0": [
+            {
+              "action": 0,
+              "reward": -0.1749074383,
+              "selected_block_id": "dltb_1000134",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1,
+              "reward": 0.1497510569,
+              "selected_block_id": "dltb_10410",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 2,
+              "reward": 0.091016082,
+              "selected_block_id": "dltb_10411",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 3,
+              "reward": 0.6190102002,
+              "selected_block_id": "dltb_10412",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 4,
+              "reward": -0.1552808818,
+              "selected_block_id": "dltb_10413",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 5,
+              "reward": 0.6163068525,
+              "selected_block_id": "dltb_10429",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 6,
+              "reward": 0.6281327469,
+              "selected_block_id": "dltb_10430",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 7,
+              "reward": -0.1572748389,
+              "selected_block_id": "dltb_10431",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "1": [
+            {
+              "action": 0,
+              "reward": -0.1749074383,
+              "selected_block_id": "dltb_1000134",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1,
+              "reward": 0.1497510569,
+              "selected_block_id": "dltb_10410",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 2,
+              "reward": 0.091016082,
+              "selected_block_id": "dltb_10411",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 3,
+              "reward": 0.6190102002,
+              "selected_block_id": "dltb_10412",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 4,
+              "reward": -0.1552808818,
+              "selected_block_id": "dltb_10413",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 5,
+              "reward": 0.6163068525,
+              "selected_block_id": "dltb_10429",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 6,
+              "reward": 0.6281327469,
+              "selected_block_id": "dltb_10430",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 7,
+              "reward": -0.1572748389,
+              "selected_block_id": "dltb_10431",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "2": [
+            {
+              "action": 0,
+              "reward": -0.1749074383,
+              "selected_block_id": "dltb_1000134",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1,
+              "reward": 0.1497510569,
+              "selected_block_id": "dltb_10410",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 2,
+              "reward": 0.091016082,
+              "selected_block_id": "dltb_10411",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 3,
+              "reward": 0.6190102002,
+              "selected_block_id": "dltb_10412",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 4,
+              "reward": -0.1552808818,
+              "selected_block_id": "dltb_10413",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 5,
+              "reward": 0.6163068525,
+              "selected_block_id": "dltb_10429",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 6,
+              "reward": 0.6281327469,
+              "selected_block_id": "dltb_10430",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 7,
+              "reward": -0.1572748389,
+              "selected_block_id": "dltb_10431",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ]
+        }
+      }
+    },
+    "seeded_random": {
+      "B0": {
+        "tile_r002_c003": {
+          "0": [
+            {
+              "action": 1483,
+              "reward": 0.1324720118,
+              "selected_block_id": "dltb_820949",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 2173,
+              "reward": -0.0221082143,
+              "selected_block_id": "dltb_823411",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 1096,
+              "reward": -0.2069895081,
+              "selected_block_id": "dltb_819614",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 1544,
+              "reward": -0.1133766453,
+              "selected_block_id": "dltb_821191",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 1469,
+              "reward": -0.1693356843,
+              "selected_block_id": "dltb_820893",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 74,
+              "reward": -0.1951377116,
+              "selected_block_id": "dltb_2162083",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 334,
+              "reward": 0.1902219214,
+              "selected_block_id": "dltb_5314586",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 1129,
+              "reward": 0.1952793533,
+              "selected_block_id": "dltb_819706",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "1": [
+            {
+              "action": 1784,
+              "reward": 0.1149961227,
+              "selected_block_id": "dltb_821973",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1295,
+              "reward": 0.0101088489,
+              "selected_block_id": "dltb_820290",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 1077,
+              "reward": 0.1219460073,
+              "selected_block_id": "dltb_819546",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 968,
+              "reward": -0.103009745,
+              "selected_block_id": "dltb_819185",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 1945,
+              "reward": -0.2069679194,
+              "selected_block_id": "dltb_822567",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 192,
+              "reward": 0.1111076765,
+              "selected_block_id": "dltb_3871361",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 1116,
+              "reward": -0.1884887024,
+              "selected_block_id": "dltb_819671",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 1721,
+              "reward": -0.0993386601,
+              "selected_block_id": "dltb_821755",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "2": [
+            {
+              "action": 1718,
+              "reward": -0.1942470381,
+              "selected_block_id": "dltb_821751",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1678,
+              "reward": -0.2078251615,
+              "selected_block_id": "dltb_821636",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 615,
+              "reward": -0.0728882821,
+              "selected_block_id": "dltb_5372938",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 2085,
+              "reward": 0.0514889801,
+              "selected_block_id": "dltb_823143",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 2052,
+              "reward": 0.0672206004,
+              "selected_block_id": "dltb_822969",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 1029,
+              "reward": 0.1539505316,
+              "selected_block_id": "dltb_819363",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 542,
+              "reward": -0.1510804048,
+              "selected_block_id": "dltb_5372130",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 882,
+              "reward": -0.2027857392,
+              "selected_block_id": "dltb_818928",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ]
+        },
+        "tile_r005_c003": {
+          "0": [
+            {
+              "action": 607,
+              "reward": -0.0317633334,
+              "selected_block_id": "dltb_5380010",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 425,
+              "reward": 0.1478177364,
+              "selected_block_id": "dltb_5345912",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 1035,
+              "reward": -0.1861393623,
+              "selected_block_id": "dltb_838340",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 1215,
+              "reward": -0.1769651815,
+              "selected_block_id": "dltb_839289",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 1653,
+              "reward": -0.1872678401,
+              "selected_block_id": "dltb_841615",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1166,
+              "reward": 0.1059029297,
+              "selected_block_id": "dltb_839037",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 1729,
+              "reward": 0.1229563446,
+              "selected_block_id": "dltb_841996",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 1123,
+              "reward": 0.0682074028,
+              "selected_block_id": "dltb_838836",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "1": [
+            {
+              "action": 135,
+              "reward": 0.1144155461,
+              "selected_block_id": "dltb_3874526",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1290,
+              "reward": -0.0364472651,
+              "selected_block_id": "dltb_839664",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 375,
+              "reward": -0.288743118,
+              "selected_block_id": "dltb_5321014",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 2038,
+              "reward": -0.0317652307,
+              "selected_block_id": "dltb_843797",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 1418,
+              "reward": -0.1973384249,
+              "selected_block_id": "dltb_840407",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1992,
+              "reward": 0.1679222001,
+              "selected_block_id": "dltb_843534",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 1181,
+              "reward": 0.6154639378,
+              "selected_block_id": "dltb_839125",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 1905,
+              "reward": -0.1034564574,
+              "selected_block_id": "dltb_843025",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "2": [
+            {
+              "action": 488,
+              "reward": -0.0396637417,
+              "selected_block_id": "dltb_5377574",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1786,
+              "reward": -0.0346520663,
+              "selected_block_id": "dltb_842292",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 776,
+              "reward": 0.0877490292,
+              "selected_block_id": "dltb_837019",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 1039,
+              "reward": -0.0288528478,
+              "selected_block_id": "dltb_838347",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 1658,
+              "reward": -0.167069758,
+              "selected_block_id": "dltb_841648",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1025,
+              "reward": -0.1509717292,
+              "selected_block_id": "dltb_838296",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 167,
+              "reward": 0.6169500215,
+              "selected_block_id": "dltb_3874799",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 1042,
+              "reward": 0.1849680955,
+              "selected_block_id": "dltb_838360",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ]
+        },
+        "tile_r005_c004": {
+          "0": [
+            {
+              "action": 1040,
+              "reward": -0.0243955415,
+              "selected_block_id": "dltb_837631",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 519,
+              "reward": -0.0779400649,
+              "selected_block_id": "dltb_5321129",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1315,
+              "reward": 0.6350712847,
+              "selected_block_id": "dltb_839415",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 2024,
+              "reward": -0.1214761827,
+              "selected_block_id": "dltb_843407",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 46,
+              "reward": 0.0801365156,
+              "selected_block_id": "dltb_1693828",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 1347,
+              "reward": 0.6337955382,
+              "selected_block_id": "dltb_839683",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 757,
+              "reward": -0.1454099945,
+              "selected_block_id": "dltb_5380571",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 334,
+              "reward": 0.1377994655,
+              "selected_block_id": "dltb_5302185",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "1": [
+            {
+              "action": 1284,
+              "reward": -0.0395858342,
+              "selected_block_id": "dltb_839204",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 745,
+              "reward": -0.0898966009,
+              "selected_block_id": "dltb_5380344",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1180,
+              "reward": -0.070628061,
+              "selected_block_id": "dltb_838502",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 1190,
+              "reward": -0.1714365088,
+              "selected_block_id": "dltb_838567",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 498,
+              "reward": -0.1059646569,
+              "selected_block_id": "dltb_5312490",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 1858,
+              "reward": -0.0330454137,
+              "selected_block_id": "dltb_842647",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 1184,
+              "reward": -0.1732671816,
+              "selected_block_id": "dltb_838539",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 696,
+              "reward": 0.1744838317,
+              "selected_block_id": "dltb_5379675",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "2": [
+            {
+              "action": 1124,
+              "reward": -0.1825808823,
+              "selected_block_id": "dltb_838124",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 2049,
+              "reward": -0.2504978561,
+              "selected_block_id": "dltb_843557",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1810,
+              "reward": -0.1584296084,
+              "selected_block_id": "dltb_842352",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 1006,
+              "reward": 0.0680275128,
+              "selected_block_id": "dltb_837440",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 569,
+              "reward": 0.6397145749,
+              "selected_block_id": "dltb_5346513",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 722,
+              "reward": -0.0389861057,
+              "selected_block_id": "dltb_5380135",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 1981,
+              "reward": -0.1838704334,
+              "selected_block_id": "dltb_843183",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 29,
+              "reward": 0.0410930674,
+              "selected_block_id": "dltb_1693806",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ]
+        }
+      },
+      "B1": {
+        "tile_r002_c003": {
+          "0": [
+            {
+              "action": 489,
+              "reward": 0.179836934,
+              "selected_block_id": "dltb_5371562",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1948,
+              "reward": 0.134543574,
+              "selected_block_id": "dltb_822583",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2017,
+              "reward": -0.1001853896,
+              "selected_block_id": "dltb_822840",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 1722,
+              "reward": -0.1368879422,
+              "selected_block_id": "dltb_821759",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 67,
+              "reward": 0.1474996198,
+              "selected_block_id": "dltb_2161894",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 1750,
+              "reward": 0.0718932853,
+              "selected_block_id": "dltb_821858",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 1810,
+              "reward": 0.1310865235,
+              "selected_block_id": "dltb_822054",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 94,
+              "reward": -0.1799676893,
+              "selected_block_id": "dltb_2162172",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "1": [
+            {
+              "action": 2080,
+              "reward": 0.1026439651,
+              "selected_block_id": "dltb_823124",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 718,
+              "reward": -0.2754869648,
+              "selected_block_id": "dltb_818461",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 768,
+              "reward": -0.1777785673,
+              "selected_block_id": "dltb_818622",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 900,
+              "reward": 0.1583153546,
+              "selected_block_id": "dltb_818972",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 1839,
+              "reward": 0.1165766818,
+              "selected_block_id": "dltb_822159",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 331,
+              "reward": 0.2024779162,
+              "selected_block_id": "dltb_5313981",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 841,
+              "reward": 0.0907372866,
+              "selected_block_id": "dltb_818807",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 193,
+              "reward": -0.1872842975,
+              "selected_block_id": "dltb_3871389",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "2": [
+            {
+              "action": 566,
+              "reward": -0.1824782094,
+              "selected_block_id": "dltb_5372503",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1575,
+              "reward": 0.1525427213,
+              "selected_block_id": "dltb_821323",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 469,
+              "reward": 0.0730230764,
+              "selected_block_id": "dltb_5341633",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 1209,
+              "reward": 0.0777448697,
+              "selected_block_id": "dltb_819970",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 1089,
+              "reward": -0.1778297833,
+              "selected_block_id": "dltb_819586",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 2097,
+              "reward": -0.2896562608,
+              "selected_block_id": "dltb_823172",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 543,
+              "reward": -0.2902851758,
+              "selected_block_id": "dltb_5372139",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 400,
+              "reward": 0.1291199764,
+              "selected_block_id": "dltb_5340733",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ]
+        },
+        "tile_r005_c003": {
+          "0": [
+            {
+              "action": 402,
+              "reward": 0.1088338644,
+              "selected_block_id": "dltb_5344891",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 60,
+              "reward": -0.0381140135,
+              "selected_block_id": "dltb_2154763",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 1819,
+              "reward": -0.0420893317,
+              "selected_block_id": "dltb_842483",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 437,
+              "reward": 0.1485132955,
+              "selected_block_id": "dltb_5346170",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 966,
+              "reward": -0.0579263771,
+              "selected_block_id": "dltb_837993",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1731,
+              "reward": 0.1549436209,
+              "selected_block_id": "dltb_841999",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 693,
+              "reward": -0.05852211,
+              "selected_block_id": "dltb_5381731",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 563,
+              "reward": -0.0340009385,
+              "selected_block_id": "dltb_5378739",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "1": [
+            {
+              "action": 156,
+              "reward": 0.1309169994,
+              "selected_block_id": "dltb_3874671",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 51,
+              "reward": 0.1456303843,
+              "selected_block_id": "dltb_2154753",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 579,
+              "reward": 0.0551337709,
+              "selected_block_id": "dltb_5379231",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 1258,
+              "reward": -0.2060076827,
+              "selected_block_id": "dltb_839502",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 1963,
+              "reward": -0.016907641,
+              "selected_block_id": "dltb_843324",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1410,
+              "reward": -0.0216169093,
+              "selected_block_id": "dltb_840352",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 90,
+              "reward": -0.1946623411,
+              "selected_block_id": "dltb_2159759",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 325,
+              "reward": 0.6260811943,
+              "selected_block_id": "dltb_5320583",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "2": [
+            {
+              "action": 753,
+              "reward": 0.0210179075,
+              "selected_block_id": "dltb_836911",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 506,
+              "reward": 0.6296976754,
+              "selected_block_id": "dltb_5377928",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 1318,
+              "reward": -0.1509628082,
+              "selected_block_id": "dltb_839801",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 2072,
+              "reward": 0.6262335493,
+              "selected_block_id": "dltb_843985",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 2050,
+              "reward": -0.2502111584,
+              "selected_block_id": "dltb_843849",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1804,
+              "reward": -0.1682444393,
+              "selected_block_id": "dltb_842398",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 1989,
+              "reward": 0.626646324,
+              "selected_block_id": "dltb_843514",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 519,
+              "reward": 0.6175822993,
+              "selected_block_id": "dltb_5378216",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ]
+        },
+        "tile_r005_c004": {
+          "0": [
+            {
+              "action": 398,
+              "reward": 0.084833781,
+              "selected_block_id": "dltb_5302741",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1386,
+              "reward": 0.1439435903,
+              "selected_block_id": "dltb_839873",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1612,
+              "reward": -0.2088421485,
+              "selected_block_id": "dltb_841171",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 134,
+              "reward": -0.1780366985,
+              "selected_block_id": "dltb_2153739",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 411,
+              "reward": 0.1058508724,
+              "selected_block_id": "dltb_5302858",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 640,
+              "reward": 0.2213208666,
+              "selected_block_id": "dltb_5378507",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 1704,
+              "reward": -0.0343926738,
+              "selected_block_id": "dltb_841707",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 1057,
+              "reward": -0.0890851976,
+              "selected_block_id": "dltb_837715",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "1": [
+            {
+              "action": 1273,
+              "reward": -0.0725191183,
+              "selected_block_id": "dltb_839103",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 811,
+              "reward": 0.166691721,
+              "selected_block_id": "dltb_5381341",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1382,
+              "reward": 0.1208864978,
+              "selected_block_id": "dltb_839858",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 537,
+              "reward": -0.0747967153,
+              "selected_block_id": "dltb_5321302",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 112,
+              "reward": -0.0279690672,
+              "selected_block_id": "dltb_2153353",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 1326,
+              "reward": -0.1477819489,
+              "selected_block_id": "dltb_839491",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 1492,
+              "reward": -0.1468099043,
+              "selected_block_id": "dltb_840422",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 1469,
+              "reward": -0.0805525466,
+              "selected_block_id": "dltb_840307",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "2": [
+            {
+              "action": 1001,
+              "reward": -0.053400344,
+              "selected_block_id": "dltb_837383",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 514,
+              "reward": -0.1122769781,
+              "selected_block_id": "dltb_5321110",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 805,
+              "reward": 0.6273148945,
+              "selected_block_id": "dltb_5381225",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 1462,
+              "reward": 0.0662040448,
+              "selected_block_id": "dltb_840281",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 1991,
+              "reward": 0.1414697793,
+              "selected_block_id": "dltb_843256",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 1927,
+              "reward": -0.197621626,
+              "selected_block_id": "dltb_842957",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 11,
+              "reward": -0.0539050951,
+              "selected_block_id": "dltb_1497937",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 633,
+              "reward": -0.0670437981,
+              "selected_block_id": "dltb_5378275",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ]
+        }
+      }
+    },
+    "trained_policy": {
+      "B0": {
+        "tile_r002_c003": {
+          "0": [
+            {
+              "action": 454,
+              "reward": 0.14115227,
+              "selected_block_id": "dltb_5341407",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 950,
+              "reward": 0.6137120866,
+              "selected_block_id": "dltb_819136",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2121,
+              "reward": -0.1575870174,
+              "selected_block_id": "dltb_823240",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 1586,
+              "reward": -0.1574098133,
+              "selected_block_id": "dltb_821360",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 657,
+              "reward": -0.1688655429,
+              "selected_block_id": "dltb_818274",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 1280,
+              "reward": 0.1332119355,
+              "selected_block_id": "dltb_820222",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 1977,
+              "reward": 0.1059939668,
+              "selected_block_id": "dltb_822698",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 1217,
+              "reward": -0.1560497954,
+              "selected_block_id": "dltb_819992",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "1": [
+            {
+              "action": 667,
+              "reward": 0.1059529959,
+              "selected_block_id": "dltb_818305",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1460,
+              "reward": -0.0415782747,
+              "selected_block_id": "dltb_820866",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 362,
+              "reward": -0.2258908357,
+              "selected_block_id": "dltb_5322459",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 2088,
+              "reward": -0.0243647309,
+              "selected_block_id": "dltb_823148",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 1624,
+              "reward": -0.080122825,
+              "selected_block_id": "dltb_821493",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 610,
+              "reward": 0.1454961872,
+              "selected_block_id": "dltb_5372912",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 630,
+              "reward": 0.134145847,
+              "selected_block_id": "dltb_818204",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 1270,
+              "reward": 0.1486643303,
+              "selected_block_id": "dltb_820171",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "2": [
+            {
+              "action": 1716,
+              "reward": 0.140161636,
+              "selected_block_id": "dltb_821744",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1765,
+              "reward": 0.1354102295,
+              "selected_block_id": "dltb_821907",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 2098,
+              "reward": 0.1493844567,
+              "selected_block_id": "dltb_823173",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 576,
+              "reward": 0.1519879676,
+              "selected_block_id": "dltb_5372637",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 88,
+              "reward": -0.1731561641,
+              "selected_block_id": "dltb_2162146",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 868,
+              "reward": -0.0240727715,
+              "selected_block_id": "dltb_818882",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 288,
+              "reward": 0.1579404274,
+              "selected_block_id": "dltb_5312267",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 580,
+              "reward": -0.1049837043,
+              "selected_block_id": "dltb_5372664",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ]
+        },
+        "tile_r005_c003": {
+          "0": [
+            {
+              "action": 454,
+              "reward": -0.0554190238,
+              "selected_block_id": "dltb_5346365",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 950,
+              "reward": -0.1822569959,
+              "selected_block_id": "dltb_837934",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 1586,
+              "reward": 0.1277870663,
+              "selected_block_id": "dltb_841322",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 2121,
+              "reward": -0.0427359868,
+              "selected_block_id": "dltb_844238",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 657,
+              "reward": -0.055912794,
+              "selected_block_id": "dltb_5380902",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1280,
+              "reward": 0.0658897702,
+              "selected_block_id": "dltb_839604",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 1977,
+              "reward": -0.1699145507,
+              "selected_block_id": "dltb_843435",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 1217,
+              "reward": -0.1677850643,
+              "selected_block_id": "dltb_839292",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "1": [
+            {
+              "action": 667,
+              "reward": 0.6399222094,
+              "selected_block_id": "dltb_5381167",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1460,
+              "reward": -0.1470140398,
+              "selected_block_id": "dltb_840610",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 362,
+              "reward": 0.2176259527,
+              "selected_block_id": "dltb_5320895",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 1624,
+              "reward": 0.1350271023,
+              "selected_block_id": "dltb_841475",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 2088,
+              "reward": -0.0344325277,
+              "selected_block_id": "dltb_844057",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1270,
+              "reward": -0.0927785334,
+              "selected_block_id": "dltb_839544",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 630,
+              "reward": 0.1333123306,
+              "selected_block_id": "dltb_5380435",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 610,
+              "reward": 0.699882587,
+              "selected_block_id": "dltb_5380098",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "2": [
+            {
+              "action": 576,
+              "reward": 0.1213716418,
+              "selected_block_id": "dltb_5379114",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1765,
+              "reward": 0.6250564717,
+              "selected_block_id": "dltb_842163",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 88,
+              "reward": -0.2415687694,
+              "selected_block_id": "dltb_2159754",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 868,
+              "reward": -0.1717703401,
+              "selected_block_id": "dltb_837495",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 329,
+              "reward": -0.035515747,
+              "selected_block_id": "dltb_5320635",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 30,
+              "reward": -0.0132545604,
+              "selected_block_id": "dltb_2154729",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 712,
+              "reward": 0.1112180313,
+              "selected_block_id": "dltb_836693",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 1538,
+              "reward": -0.2441479787,
+              "selected_block_id": "dltb_841087",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ]
+        },
+        "tile_r005_c004": {
+          "0": [
+            {
+              "action": 454,
+              "reward": 0.0622446819,
+              "selected_block_id": "dltb_5303184",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 950,
+              "reward": -0.1441213465,
+              "selected_block_id": "dltb_837121",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1586,
+              "reward": 0.1219029991,
+              "selected_block_id": "dltb_841015",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 2121,
+              "reward": 0.0656786364,
+              "selected_block_id": "dltb_844015",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 657,
+              "reward": 0.6180214524,
+              "selected_block_id": "dltb_5379105",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 1280,
+              "reward": 0.0646522191,
+              "selected_block_id": "dltb_839144",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 1977,
+              "reward": 0.0938518374,
+              "selected_block_id": "dltb_843172",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 1217,
+              "reward": -0.0500342578,
+              "selected_block_id": "dltb_838725",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "1": [
+            {
+              "action": 667,
+              "reward": -0.1915677861,
+              "selected_block_id": "dltb_5379311",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 362,
+              "reward": 0.1715926921,
+              "selected_block_id": "dltb_5302385",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1460,
+              "reward": -0.0444295949,
+              "selected_block_id": "dltb_840266",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 2088,
+              "reward": 0.0702126796,
+              "selected_block_id": "dltb_843761",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 1624,
+              "reward": -0.1687616648,
+              "selected_block_id": "dltb_841224",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 610,
+              "reward": -0.0420266713,
+              "selected_block_id": "dltb_5377951",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 630,
+              "reward": -0.0328553619,
+              "selected_block_id": "dltb_5378212",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 1852,
+              "reward": 0.6440795155,
+              "selected_block_id": "dltb_842614",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "2": [
+            {
+              "action": 1716,
+              "reward": -0.0307293939,
+              "selected_block_id": "dltb_841755",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1765,
+              "reward": 0.6173601186,
+              "selected_block_id": "dltb_842047",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 576,
+              "reward": 0.6187669147,
+              "selected_block_id": "dltb_5377399",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 2098,
+              "reward": -0.1737664272,
+              "selected_block_id": "dltb_843814",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 88,
+              "reward": -0.0381856938,
+              "selected_block_id": "dltb_1694148",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 868,
+              "reward": -0.062684917,
+              "selected_block_id": "dltb_836705",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 1538,
+              "reward": -0.1349638236,
+              "selected_block_id": "dltb_840726",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 385,
+              "reward": 0.1366090328,
+              "selected_block_id": "dltb_5302550",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ]
+        }
+      },
+      "B1": {
+        "tile_r002_c003": {
+          "0": [
+            {
+              "action": 1765,
+              "reward": 0.1354102295,
+              "selected_block_id": "dltb_821907",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1746,
+              "reward": -0.1894906894,
+              "selected_block_id": "dltb_821838",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 1532,
+              "reward": -0.1712017088,
+              "selected_block_id": "dltb_821144",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 1874,
+              "reward": -0.0376591672,
+              "selected_block_id": "dltb_822286",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 844,
+              "reward": -0.2146867918,
+              "selected_block_id": "dltb_818811",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 353,
+              "reward": -0.1642757211,
+              "selected_block_id": "dltb_5322353",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 357,
+              "reward": -0.2379672223,
+              "selected_block_id": "dltb_5322413",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 1883,
+              "reward": -0.194714802,
+              "selected_block_id": "dltb_822320",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "1": [
+            {
+              "action": 1467,
+              "reward": -0.2475178233,
+              "selected_block_id": "dltb_820891",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1664,
+              "reward": -0.1768976568,
+              "selected_block_id": "dltb_821590",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 400,
+              "reward": 0.1291199764,
+              "selected_block_id": "dltb_5340733",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 608,
+              "reward": 0.0955237182,
+              "selected_block_id": "dltb_5372894",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 767,
+              "reward": 0.1454013278,
+              "selected_block_id": "dltb_818619",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 132,
+              "reward": -0.2004027427,
+              "selected_block_id": "dltb_2162354",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 223,
+              "reward": -0.026549317,
+              "selected_block_id": "dltb_3871646",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 1736,
+              "reward": -0.186452667,
+              "selected_block_id": "dltb_821803",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ],
+          "2": [
+            {
+              "action": 610,
+              "reward": 0.1454961872,
+              "selected_block_id": "dltb_5372912",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2187
+            },
+            {
+              "action": 1860,
+              "reward": -0.1449670182,
+              "selected_block_id": "dltb_822221",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2186
+            },
+            {
+              "action": 243,
+              "reward": -0.1649708927,
+              "selected_block_id": "dltb_3871952",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2185
+            },
+            {
+              "action": 1838,
+              "reward": 0.1113151755,
+              "selected_block_id": "dltb_822156",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2184
+            },
+            {
+              "action": 346,
+              "reward": 0.1412180185,
+              "selected_block_id": "dltb_5316709",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2183
+            },
+            {
+              "action": 1132,
+              "reward": -0.105597003,
+              "selected_block_id": "dltb_819715",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2182
+            },
+            {
+              "action": 1600,
+              "reward": -0.0400528815,
+              "selected_block_id": "dltb_821395",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2181
+            },
+            {
+              "action": 1921,
+              "reward": 0.1260336588,
+              "selected_block_id": "dltb_822482",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2180
+            }
+          ]
+        },
+        "tile_r005_c003": {
+          "0": [
+            {
+              "action": 1765,
+              "reward": 0.6250564717,
+              "selected_block_id": "dltb_842163",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1746,
+              "reward": 0.1162772327,
+              "selected_block_id": "dltb_842064",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 1532,
+              "reward": -0.1539336629,
+              "selected_block_id": "dltb_841056",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 1874,
+              "reward": 0.1067253202,
+              "selected_block_id": "dltb_842789",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 844,
+              "reward": 0.1191952897,
+              "selected_block_id": "dltb_837357",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 353,
+              "reward": 0.1564914936,
+              "selected_block_id": "dltb_5320854",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 357,
+              "reward": 0.14707336,
+              "selected_block_id": "dltb_5320869",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 1883,
+              "reward": 0.092646034,
+              "selected_block_id": "dltb_842844",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "1": [
+            {
+              "action": 1467,
+              "reward": 0.1584108191,
+              "selected_block_id": "dltb_840689",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 1664,
+              "reward": 0.1414345545,
+              "selected_block_id": "dltb_841664",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 608,
+              "reward": 0.1832819524,
+              "selected_block_id": "dltb_5380017",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 400,
+              "reward": 0.1415409336,
+              "selected_block_id": "dltb_5344762",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 767,
+              "reward": -0.0443459082,
+              "selected_block_id": "dltb_836977",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 132,
+              "reward": -0.1494513974,
+              "selected_block_id": "dltb_3874498",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 249,
+              "reward": 0.1403026076,
+              "selected_block_id": "dltb_5309813",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 223,
+              "reward": -0.1128859278,
+              "selected_block_id": "dltb_5302572",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ],
+          "2": [
+            {
+              "action": 610,
+              "reward": 0.699882587,
+              "selected_block_id": "dltb_5380098",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2127
+            },
+            {
+              "action": 243,
+              "reward": -0.1554596371,
+              "selected_block_id": "dltb_5309476",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2126
+            },
+            {
+              "action": 1921,
+              "reward": 0.6339284922,
+              "selected_block_id": "dltb_843100",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2125
+            },
+            {
+              "action": 99,
+              "reward": -0.0034617755,
+              "selected_block_id": "dltb_2652",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2124
+            },
+            {
+              "action": 193,
+              "reward": -0.1705001556,
+              "selected_block_id": "dltb_3875021",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2123
+            },
+            {
+              "action": 1600,
+              "reward": 0.0698908041,
+              "selected_block_id": "dltb_841370",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2122
+            },
+            {
+              "action": 1838,
+              "reward": 0.0468257421,
+              "selected_block_id": "dltb_842597",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2121
+            },
+            {
+              "action": 1860,
+              "reward": 0.1254456855,
+              "selected_block_id": "dltb_842726",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2120
+            }
+          ]
+        },
+        "tile_r005_c004": {
+          "0": [
+            {
+              "action": 1765,
+              "reward": 0.6173601186,
+              "selected_block_id": "dltb_842047",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1746,
+              "reward": 0.1427818039,
+              "selected_block_id": "dltb_841950",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1532,
+              "reward": -0.0419674132,
+              "selected_block_id": "dltb_840683",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 1874,
+              "reward": -0.1808042775,
+              "selected_block_id": "dltb_842715",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 844,
+              "reward": 0.1292524806,
+              "selected_block_id": "dltb_836539",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 353,
+              "reward": 0.1588676724,
+              "selected_block_id": "dltb_5302313",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 1883,
+              "reward": 0.0703620935,
+              "selected_block_id": "dltb_842774",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 357,
+              "reward": 0.1294278641,
+              "selected_block_id": "dltb_5302357",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "1": [
+            {
+              "action": 1467,
+              "reward": 0.1477441057,
+              "selected_block_id": "dltb_840305",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1664,
+              "reward": 0.1398071829,
+              "selected_block_id": "dltb_841436",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 400,
+              "reward": 0.6438052559,
+              "selected_block_id": "dltb_5302760",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 608,
+              "reward": -0.2201337489,
+              "selected_block_id": "dltb_5377877",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 767,
+              "reward": -0.1529742006,
+              "selected_block_id": "dltb_5380676",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 132,
+              "reward": -0.0895849478,
+              "selected_block_id": "dltb_2153737",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 223,
+              "reward": -0.1931316776,
+              "selected_block_id": "dltb_3874694",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 1736,
+              "reward": -0.0253398962,
+              "selected_block_id": "dltb_841871",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ],
+          "2": [
+            {
+              "action": 610,
+              "reward": -0.0420266713,
+              "selected_block_id": "dltb_5377951",
+              "step": 1,
+              "terminated": false,
+              "valid_actions_after": 2139
+            },
+            {
+              "action": 1860,
+              "reward": -0.040258713,
+              "selected_block_id": "dltb_842659",
+              "step": 2,
+              "terminated": false,
+              "valid_actions_after": 2138
+            },
+            {
+              "action": 1838,
+              "reward": 0.1173448808,
+              "selected_block_id": "dltb_842535",
+              "step": 3,
+              "terminated": false,
+              "valid_actions_after": 2137
+            },
+            {
+              "action": 346,
+              "reward": 0.0733652919,
+              "selected_block_id": "dltb_5302264",
+              "step": 4,
+              "terminated": false,
+              "valid_actions_after": 2136
+            },
+            {
+              "action": 243,
+              "reward": 0.1161022289,
+              "selected_block_id": "dltb_3874926",
+              "step": 5,
+              "terminated": false,
+              "valid_actions_after": 2135
+            },
+            {
+              "action": 1132,
+              "reward": 0.1268158025,
+              "selected_block_id": "dltb_838143",
+              "step": 6,
+              "terminated": false,
+              "valid_actions_after": 2134
+            },
+            {
+              "action": 357,
+              "reward": 0.1294278641,
+              "selected_block_id": "dltb_5302357",
+              "step": 7,
+              "terminated": false,
+              "valid_actions_after": 2133
+            },
+            {
+              "action": 1600,
+              "reward": -0.0410046683,
+              "selected_block_id": "dltb_841105",
+              "step": 8,
+              "terminated": true,
+              "valid_actions_after": 2132
+            }
+          ]
+        }
+      }
+    }
+  },
+  "train_tile_id": "tile_r003_c003",
+  "train_tile_ids": [
+    "tile_r003_c003"
+  ],
+  "train_tile_selection": "largest",
+  "training_completed": true,
+  "variants": [
+    "B0",
+    "B1"
+  ]
+}
