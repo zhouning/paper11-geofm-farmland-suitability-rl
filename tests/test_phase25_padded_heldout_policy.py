@@ -185,3 +185,211 @@ def test_phase25_padded_env_rejects_padded_and_repeated_actions(tmp_path):
 
     with pytest.raises(ValueError, match="already selected"):
         env.step(0)
+
+
+def test_phase25_contract_selects_largest_train_and_distinct_eval_tiles(tmp_path):
+    from paper11_geofm.padded_heldout_policy import (
+        PHASE25_CLAIM_BOUNDARY,
+        build_phase25_padded_heldout_policy_contract,
+    )
+
+    _write_ready_phase2_outputs(tmp_path / "phase2")
+    contract = build_phase25_padded_heldout_policy_contract(
+        tmp_path / "phase2",
+        _write_tile_index(tmp_path / "phase13_tile_index.csv"),
+        variants=("B0", "B1"),
+        total_timesteps=8,
+        eval_max_steps=2,
+        seeds="0,1",
+        max_eval_tiles=2,
+    )
+
+    assert contract["phase"] == "phase25_padded_heldout_policy"
+    assert contract["variants"] == ["B0", "B1"]
+    assert contract["train_tile_id"] == "tile_r000_c001"
+    assert contract["eval_tile_ids"] == ["tile_r000_c002", "tile_r000_c000"]
+    assert contract["eval_tile_ranks"] == {
+        "tile_r000_c002": 1,
+        "tile_r000_c000": 2,
+    }
+    assert contract["train_tile_selection"] == "largest"
+    assert contract["eval_tile_selection"] == "largest_distinct"
+    assert contract["padded_policy_status"] == "enabled_distinct_heldout_tiles"
+    assert contract["max_blocks"] == 3
+    assert contract["total_timesteps"] == 8
+    assert contract["eval_max_steps"] == 2
+    assert contract["seeds"] == [0, 1]
+    assert contract["claim_boundary"] == PHASE25_CLAIM_BOUNDARY
+
+
+def test_phase25_contract_rejects_suitability_variants_and_train_eval_overlap(tmp_path):
+    from paper11_geofm.padded_heldout_policy import (
+        build_phase25_padded_heldout_policy_contract,
+    )
+
+    _write_ready_phase2_outputs(tmp_path / "phase2")
+    tile_index = _write_tile_index(tmp_path / "phase13_tile_index.csv")
+    with pytest.raises(ValueError, match="B0/B1"):
+        build_phase25_padded_heldout_policy_contract(
+            tmp_path / "phase2",
+            tile_index,
+            variants=("B3",),
+        )
+
+    with pytest.raises(ValueError, match="must be distinct"):
+        build_phase25_padded_heldout_policy_contract(
+            tmp_path / "phase2",
+            tile_index,
+            train_tile_id="tile_r000_c001",
+            eval_tile_ids=["tile_r000_c001"],
+        )
+
+
+def test_phase25_runs_padded_heldout_policy_training_and_comparison(tmp_path):
+    _require_maskableppo_dependencies()
+    from paper11_geofm.padded_heldout_policy import (
+        PHASE25_CLAIM_BOUNDARY,
+        run_phase25_padded_heldout_policy,
+    )
+
+    _write_ready_phase2_outputs(tmp_path / "phase2")
+    with _torch_windows_faulthandler_guard():
+        protocol = run_phase25_padded_heldout_policy(
+            tmp_path / "phase2",
+            _write_tile_index(tmp_path / "phase13_tile_index.csv"),
+            variants=("B0", "B1"),
+            total_timesteps=8,
+            eval_max_steps=2,
+            seeds=(0, 1),
+            max_eval_tiles=2,
+        )
+
+    assert protocol["phase"] == "phase25_padded_heldout_policy"
+    assert protocol["train_tile_id"] == "tile_r000_c001"
+    assert protocol["eval_tile_ids"] == ["tile_r000_c002", "tile_r000_c000"]
+    assert protocol["training_completed"] is True
+    assert protocol["all_evaluations_completed"] is True
+    assert protocol["summary_count"] == 24
+    assert len(protocol["summaries"]) == 24
+    assert all(row["max_blocks"] == 3 for row in protocol["summaries"])
+    assert all(row["action_space_n"] == 3 for row in protocol["summaries"])
+    assert all(row["all_actions_valid"] is True for row in protocol["summaries"])
+    assert all(row["invalid_action_count"] == 0 for row in protocol["summaries"])
+    assert all(row["claim_boundary"] == PHASE25_CLAIM_BOUNDARY for row in protocol["summaries"])
+    assert protocol["comparison"]["learned_policy"]["B1_minus_B0_mean_reward"] is not None
+    assert protocol["comparison"]["learned_policy"][
+        "heldout_tile_B1_minus_B0_mean_reward"
+    ]
+    assert protocol["comparison"]["pilot_result_status"] in {
+        "B1_improves_B0",
+        "B1_matches_B0",
+        "B1_underperforms_B0",
+    }
+    assert protocol["traces"]["trained_policy"]["B0"]["tile_r000_c002"]["0"]
+    assert protocol["traces"]["seeded_random"]["B1"]["tile_r000_c000"]["1"]
+
+
+def test_phase25_writer_outputs_summary_trace_and_comparison(tmp_path):
+    from paper11_geofm.padded_heldout_policy import (
+        PHASE25_CLAIM_BOUNDARY,
+        write_phase25_padded_heldout_policy_artifacts,
+    )
+
+    protocol = {
+        "phase": "phase25_padded_heldout_policy",
+        "summaries": [
+            {
+                "row_type": "trained_policy",
+                "variant_id": "B0",
+                "train_tile_id": "tile_r000_c001",
+                "eval_tile_id": "tile_r000_c002",
+                "eval_tile_rank": 1,
+                "seed": 0,
+                "max_blocks": 3,
+                "eval_max_steps": 2,
+                "n_blocks": 3,
+                "n_features": 17,
+                "observation_shape": 62,
+                "action_space_n": 3,
+                "episode_steps": 2,
+                "terminated": True,
+                "truncated": False,
+                "total_contract_reward": 1.2,
+                "selected_block_ids": ["b2", "b4"],
+                "all_actions_valid": True,
+                "invalid_action_count": 0,
+                "claim_boundary": PHASE25_CLAIM_BOUNDARY,
+            }
+        ],
+        "traces": {"trained_policy": {"B0": {"tile_r000_c002": {"0": []}}}},
+        "comparison": {
+            "learned_policy": {"B1_minus_B0_mean_reward": None},
+            "pilot_result_status": "B1_matches_B0",
+            "claim_boundary": PHASE25_CLAIM_BOUNDARY,
+        },
+        "claim_boundary": PHASE25_CLAIM_BOUNDARY,
+    }
+
+    paths = write_phase25_padded_heldout_policy_artifacts(
+        protocol,
+        tmp_path / "outputs",
+    )
+
+    assert paths["summary_csv"].name == "phase25_padded_heldout_policy_summary.csv"
+    assert paths["traces_json"].name == "phase25_padded_heldout_policy_traces.json"
+    assert paths["comparison_json"].name == "phase25_padded_heldout_policy_comparison.json"
+    rows = list(csv.DictReader(paths["summary_csv"].open("r", encoding="utf-8")))
+    assert rows[0]["selected_block_ids"] == "b2;b4"
+    saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
+    assert saved["pilot_result_status"] == "B1_matches_B0"
+
+
+def test_phase25_cli_writes_outputs_and_prints_summary(tmp_path, capsys):
+    _require_maskableppo_dependencies()
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase25_padded_heldout_policy"
+        / "run_phase25_padded_heldout_policy.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase25_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    _write_ready_phase2_outputs(tmp_path / "phase2")
+    with _torch_windows_faulthandler_guard():
+        exit_code = module.main(
+            [
+                "--phase2-output-dir",
+                str(tmp_path / "phase2"),
+                "--tile-index-csv",
+                str(_write_tile_index(tmp_path / "phase13_tile_index.csv")),
+                "--variants",
+                "B0,B1",
+                "--total-timesteps",
+                "8",
+                "--eval-max-steps",
+                "2",
+                "--seeds",
+                "0,1",
+                "--max-eval-tiles",
+                "2",
+                "--output-dir",
+                str(tmp_path / "outputs"),
+            ]
+        )
+
+    stdout = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Train tile: tile_r000_c001" in stdout
+    assert "Held-out evaluation tiles: tile_r000_c002, tile_r000_c000" in stdout
+    assert "Padded max blocks: 3" in stdout
+    assert "Seeds: 0, 1" in stdout
+    assert "Variants: B0, B1" in stdout
+    assert "Summary rows: 24" in stdout
+    assert "B1-B0 held-out learned-policy mean reward delta:" in stdout
+    assert "phase25_padded_heldout_policy_comparison.json" in stdout
+    assert (
+        "Claim boundary: Phase 25 is a bounded padded variable-size held-out-tile"
+    ) in stdout
