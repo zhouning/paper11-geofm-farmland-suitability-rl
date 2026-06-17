@@ -277,9 +277,11 @@ def test_phase25_runs_padded_heldout_policy_training_and_comparison(tmp_path):
     assert all(row["invalid_action_count"] == 0 for row in protocol["summaries"])
     assert all(row["claim_boundary"] == PHASE25_CLAIM_BOUNDARY for row in protocol["summaries"])
     assert protocol["comparison"]["learned_policy"]["B1_minus_B0_mean_reward"] is not None
-    assert protocol["comparison"]["learned_policy"][
+    tile_deltas = protocol["comparison"]["learned_policy"][
         "heldout_tile_B1_minus_B0_mean_reward"
     ]
+    assert "tile_r000_c002" in tile_deltas
+    assert tile_deltas["tile_r000_c002"] is not None
     assert protocol["comparison"]["pilot_result_status"] in {
         "B1_improves_B0",
         "B1_matches_B0",
@@ -390,6 +392,4 @@ def test_phase25_cli_writes_outputs_and_prints_summary(tmp_path, capsys):
     assert "Summary rows: 24" in stdout
     assert "B1-B0 held-out learned-policy mean reward delta:" in stdout
     assert "phase25_padded_heldout_policy_comparison.json" in stdout
-    assert (
-        "Claim boundary: Phase 25 is a bounded padded variable-size held-out-tile"
-    ) in stdout
+    assert f"Claim boundary: {PHASE25_CLAIM_BOUNDARY}" in stdout
