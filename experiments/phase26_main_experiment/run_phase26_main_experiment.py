@@ -10,10 +10,6 @@ SRC = ROOT / "src"
 if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
-from paper11_geofm.padded_heldout_policy import (
-    run_phase25_padded_heldout_policy,
-    write_phase25_padded_heldout_policy_artifacts,
-)
 from paper11_geofm.phase26_main_experiment import (
     build_phase26_main_empirical_analysis,
     write_phase26_main_empirical_artifacts,
@@ -127,6 +123,22 @@ def _was_provided(provided_args: set[str], flag: str) -> bool:
     return flag in provided_args or any(
         item.startswith(f"{flag}=") for item in provided_args
     )
+
+
+def run_phase25_padded_heldout_policy(*args, **kwargs):
+    from paper11_geofm.padded_heldout_policy import (
+        run_phase25_padded_heldout_policy as _run_phase25,
+    )
+
+    return _run_phase25(*args, **kwargs)
+
+
+def write_phase25_padded_heldout_policy_artifacts(*args, **kwargs):
+    from paper11_geofm.padded_heldout_policy import (
+        write_phase25_padded_heldout_policy_artifacts as _write_phase25,
+    )
+
+    return _write_phase25(*args, **kwargs)
 
 
 if __name__ == "__main__":

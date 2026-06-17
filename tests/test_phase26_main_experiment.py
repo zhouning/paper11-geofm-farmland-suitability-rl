@@ -187,6 +187,81 @@ def test_phase26_reports_insufficient_when_b1_rows_are_missing(tmp_path):
     assert analysis["phase26_claim_status"] == "insufficient"
 
 
+def test_phase26_reports_insufficient_for_missing_expected_and_extra_unexpected_pair(
+    tmp_path,
+):
+    from paper11_geofm.phase26_main_experiment import build_phase26_main_empirical_analysis
+
+    phase25_dir = _write_phase25_fixture(tmp_path / "phase25", "supported")
+    summary_path = phase25_dir / "phase25_padded_heldout_policy_summary.csv"
+    rows = list(csv.DictReader(summary_path.open("r", encoding="utf-8")))
+    kept_rows = [
+        row
+        for row in rows
+        if not (
+            row["row_type"] == "trained_policy"
+            and row["eval_tile_id"] == "tile_eval_b"
+            and row["seed"] == "1"
+        )
+    ]
+    extra_rows = [
+        {
+            **row,
+            "eval_tile_id": "tile_unexpected",
+            "eval_tile_rank": 99,
+            "seed": 99,
+            "phase25_seed_rank": 99,
+        }
+        for row in rows
+        if row["row_type"] == "trained_policy"
+        and row["eval_tile_id"] == "tile_eval_a"
+        and row["seed"] == "0"
+    ]
+    with summary_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(kept_rows + extra_rows)
+
+    analysis = build_phase26_main_empirical_analysis(phase25_dir)
+
+    assert analysis["phase26_claim_status"] == "insufficient"
+    assert analysis["learned_policy"]["coverage_issues"]["missing_tile_seed_pairs"] == [
+        {"eval_tile_id": "tile_eval_b", "seed": 1}
+    ]
+    assert analysis["learned_policy"]["coverage_issues"]["unexpected_tile_seed_pairs"] == [
+        {"eval_tile_id": "tile_unexpected", "seed": 99}
+    ]
+
+
+def test_phase26_reports_insufficient_for_duplicate_trained_policy_variant_rows(
+    tmp_path,
+):
+    from paper11_geofm.phase26_main_experiment import build_phase26_main_empirical_analysis
+
+    phase25_dir = _write_phase25_fixture(tmp_path / "phase25", "supported")
+    summary_path = phase25_dir / "phase25_padded_heldout_policy_summary.csv"
+    rows = list(csv.DictReader(summary_path.open("r", encoding="utf-8")))
+    duplicate = next(
+        row
+        for row in rows
+        if row["row_type"] == "trained_policy"
+        and row["variant_id"] == "B0"
+        and row["eval_tile_id"] == "tile_eval_a"
+        and row["seed"] == "0"
+    )
+    with summary_path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(rows[0].keys()))
+        writer.writeheader()
+        writer.writerows(rows + [{**duplicate, "total_contract_reward": "999"}])
+
+    analysis = build_phase26_main_empirical_analysis(phase25_dir)
+
+    assert analysis["phase26_claim_status"] == "insufficient"
+    assert analysis["learned_policy"]["coverage_issues"]["duplicate_variant_rows"] == [
+        {"eval_tile_id": "tile_eval_a", "seed": 0, "variant_id": "B0"}
+    ]
+
+
 def test_phase26_writer_outputs_csv_json_and_markdown(tmp_path):
     from paper11_geofm.phase26_main_experiment import (
         build_phase26_main_empirical_analysis,

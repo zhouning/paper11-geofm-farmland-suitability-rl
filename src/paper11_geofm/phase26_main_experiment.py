@@ -81,8 +81,9 @@ def build_phase26_main_empirical_analysis(
     )
 
     main_rows = _main_summary_rows(rows)
-    delta_rows = _tile_seed_delta_rows(rows)
-    learned = _learned_policy_summary(delta_rows)
+    coverage_issues = _coverage_issues(rows, eval_tile_ids, seeds)
+    delta_rows = _tile_seed_delta_rows(rows, coverage_issues)
+    learned = _learned_policy_summary(delta_rows, coverage_issues)
     expected_total = len(eval_tile_ids) * len(seeds)
 
     return {
@@ -217,7 +218,22 @@ def _main_summary_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]
     return summary_rows
 
 
-def _tile_seed_delta_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
+def _tile_seed_delta_rows(
+    rows: list[dict[str, object]],
+    coverage_issues: Mapping[str, object] | None = None,
+) -> list[dict[str, object]]:
+    duplicate_keys = set()
+    if isinstance(coverage_issues, Mapping):
+        duplicate_keys = {
+            (
+                str(item.get("eval_tile_id", "")),
+                int(item.get("seed", 0)),
+                str(item.get("variant_id", "")),
+            )
+            for item in coverage_issues.get("duplicate_variant_rows", [])
+            if isinstance(item, Mapping)
+        }
+
     paired: dict[tuple[str, int], dict[str, object]] = {}
     order: list[tuple[str, int]] = []
     for row in rows:
@@ -225,6 +241,9 @@ def _tile_seed_delta_rows(rows: list[dict[str, object]]) -> list[dict[str, objec
             continue
         eval_tile_id = str(row.get("eval_tile_id", ""))
         seed = _int_value(row, "seed")
+        variant_id = str(row.get("variant_id", ""))
+        if (eval_tile_id, seed, variant_id) in duplicate_keys:
+            continue
         key = (eval_tile_id, seed)
         if key not in paired:
             paired[key] = {
@@ -237,7 +256,7 @@ def _tile_seed_delta_rows(rows: list[dict[str, object]]) -> list[dict[str, objec
             order.append(key)
         rewards = paired[key]["rewards"]
         if isinstance(rewards, dict):
-            rewards[str(row.get("variant_id", ""))] = _float_value(
+            rewards[variant_id] = _float_value(
                 row,
                 "total_contract_reward",
             )
@@ -268,6 +287,7 @@ def _tile_seed_delta_rows(rows: list[dict[str, object]]) -> list[dict[str, objec
 
 def _learned_policy_summary(
     delta_rows: list[dict[str, object]],
+    coverage_issues: Mapping[str, object] | None = None,
 ) -> dict[str, object]:
     deltas = [_float_value(row, "b1_minus_b0_reward") for row in delta_rows]
     positive_count = sum(1 for row in delta_rows if bool(row.get("b1_improves_b0")))
@@ -288,6 +308,9 @@ def _learned_policy_summary(
         ),
         "per_tile_mean_delta": _mean_delta_by_field(delta_rows, "eval_tile_id"),
         "per_seed_mean_delta": _mean_delta_by_field(delta_rows, "seed"),
+        "coverage_issues": _empty_coverage_issues()
+        if coverage_issues is None
+        else dict(coverage_issues),
     }
 
 
@@ -302,6 +325,16 @@ def _phase26_claim_status(learned: Mapping[str, object], expected_total: int) ->
     total = int(learned.get("total_tile_seed_count") or 0)
     delta = learned.get("B1_minus_B0_mean_reward")
     positive_fraction = learned.get("positive_fraction")
+    coverage_issues = learned.get("coverage_issues")
+    if isinstance(coverage_issues, Mapping) and any(
+        bool(coverage_issues.get(key))
+        for key in (
+            "missing_tile_seed_pairs",
+            "unexpected_tile_seed_pairs",
+            "duplicate_variant_rows",
+        )
+    ):
+        return "insufficient"
     if (
         total <= 0
         or total < int(expected_total)
@@ -353,6 +386,60 @@ def _variant_delta_rows(rows: list[dict[str, object]]) -> list[dict[str, object]
         patched["row_type"] = "trained_policy"
         patched_rows.append(patched)
     return _tile_seed_delta_rows(patched_rows)
+
+
+def _coverage_issues(
+    rows: list[dict[str, object]],
+    eval_tile_ids: list[str],
+    seeds: list[int],
+) -> dict[str, object]:
+    expected_pairs = {(str(tile_id), int(seed)) for tile_id in eval_tile_ids for seed in seeds}
+    observed_pairs: set[tuple[str, int]] = set()
+    seen_variant_keys: set[tuple[str, int, str]] = set()
+    duplicate_variant_keys: set[tuple[str, int, str]] = set()
+
+    for row in rows:
+        if row.get("row_type") != "trained_policy":
+            continue
+        eval_tile_id = str(row.get("eval_tile_id", ""))
+        seed = _int_value(row, "seed")
+        variant_id = str(row.get("variant_id", ""))
+        observed_pairs.add((eval_tile_id, seed))
+        variant_key = (eval_tile_id, seed, variant_id)
+        if variant_key in seen_variant_keys:
+            duplicate_variant_keys.add(variant_key)
+        seen_variant_keys.add(variant_key)
+
+    return {
+        "missing_tile_seed_pairs": _pair_dicts(expected_pairs - observed_pairs),
+        "unexpected_tile_seed_pairs": _pair_dicts(observed_pairs - expected_pairs),
+        "duplicate_variant_rows": _variant_key_dicts(duplicate_variant_keys),
+    }
+
+
+def _empty_coverage_issues() -> dict[str, object]:
+    return {
+        "missing_tile_seed_pairs": [],
+        "unexpected_tile_seed_pairs": [],
+        "duplicate_variant_rows": [],
+    }
+
+
+def _pair_dicts(pairs: set[tuple[str, int]]) -> list[dict[str, object]]:
+    return [
+        {"eval_tile_id": eval_tile_id, "seed": seed}
+        for eval_tile_id, seed in sorted(pairs, key=lambda item: (item[0], item[1]))
+    ]
+
+
+def _variant_key_dicts(keys: set[tuple[str, int, str]]) -> list[dict[str, object]]:
+    return [
+        {"eval_tile_id": eval_tile_id, "seed": seed, "variant_id": variant_id}
+        for eval_tile_id, seed, variant_id in sorted(
+            keys,
+            key=lambda item: (item[0], item[1], item[2]),
+        )
+    ]
 
 
 def _mean_delta_by_field(

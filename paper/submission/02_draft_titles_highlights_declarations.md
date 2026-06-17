@@ -34,7 +34,7 @@ Current guarded version:
 - A deterministic base planning reward supports bounded B0/B1 pilot protocols.
 - Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
 - A padded variable-size policy contract enables a bounded held-out Bishan tile learned-policy pilot for B0/B1 under a deterministic planning reward.
-- A main empirical analysis reports B1-B0 learned-policy deltas across held-out Bishan tiles and random seeds under a deterministic base planning reward.
+- A main empirical analysis package is ready to report B1-B0 learned-policy deltas across held-out Bishan tiles and random seeds under a deterministic base planning reward.
 - Claim-readiness artifacts separate pilot evidence from unsupported claims.
 
 After training evidence exists, revise the last two bullets to report the
