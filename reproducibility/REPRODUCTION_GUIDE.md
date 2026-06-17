@@ -701,7 +701,52 @@ readiness is resolved. The padded variable-size contract removes the Phase
 but Phase 25 remains a bounded B0/B1 pilot and does not support cross-region
 transfer or submission-level planning-performance claims.
 
-## 28. Inspect the Paper11 Design
+## 28. Run the Phase 26 Main Empirical Analysis Package
+
+Phase 26 turns Phase 25 padded held-out B0/B1 outputs into manuscript-facing
+multi-seed, multi-held-out-tile tables. Unit tests use synthetic fixtures and
+do not run long RL training.
+
+For a local Windows timing probe, use:
+
+```powershell
+python experiments\phase26_main_experiment\run_phase26_main_experiment.py --mode run-and-analyze --phase25-output-dir experiments\phase26_main_experiment\outputs\windows_timing_probe\phase25_run --output-dir experiments\phase26_main_experiment\outputs\windows_timing_probe\phase26_analysis --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --total-timesteps 128 --eval-max-steps 4 --seeds 0 --max-eval-tiles 1
+```
+
+The timing probe requires existing real Phase 11/13 outputs. In the isolated
+implementation worktree used for Phase 26, those generated real-data outputs
+were not present, so the local timing probe was skipped and only synthetic
+tests were run.
+
+For the Colab Pro+ main Phase 25 run, use:
+
+```bash
+python experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py --phase2-output-dir experiments/phase11_bishan_dltb_real/outputs/phase2_real --tile-index-csv experiments/phase13_tiled_real_contract/outputs/real_bishan/phase13_tile_index.csv --variants B0,B1 --total-timesteps 1024 --eval-max-steps 8 --seeds 0,1,2 --max-eval-tiles 3 --output-dir experiments/phase26_main_experiment/outputs/colab_main/phase25_run
+```
+
+If the timing probe is stable and runtime allows, repeat the Colab command with
+`--total-timesteps 4096`.
+
+After Phase 25 outputs have been produced or copied back, run analysis-only:
+
+```powershell
+python experiments\phase26_main_experiment\run_phase26_main_experiment.py --mode analyze-only --phase25-output-dir experiments\phase26_main_experiment\outputs\colab_main\phase25_run --output-dir experiments\phase26_main_experiment\outputs\colab_main\phase26_analysis
+```
+
+Expected Phase 26 artifacts:
+
+- `phase26_main_summary.csv`;
+- `phase26_tile_seed_delta_table.csv`;
+- `phase26_main_comparison.json`;
+- `phase26_claim_readiness.md`.
+
+Phase 26 reports B1-B0 learned-policy deltas across held-out Bishan tiles and
+random seeds under the deterministic base planning reward. It does not enable
+suitability reward, test B2/B3, demonstrate cross-region transfer, or support
+submission-level planning-performance claims without the actual main-run
+artifacts, figures, uncertainty checks, and robustness package.
+
+## 29. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -715,7 +760,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 29. Inspect Runtime Code
+## 30. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -906,9 +951,16 @@ experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py
 src/paper11_geofm/padded_heldout_policy.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, and Phase 25 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 26 executable files:
 
-## 30. Regenerate Embeddings
+```text
+experiments/phase26_main_experiment/run_phase26_main_experiment.py
+src/paper11_geofm/phase26_main_experiment.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, and Phase 26 analysis-only reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26 run-and-analyze mode requires the real Phase 11/13 outputs plus the RL stack.
+
+## 31. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -925,7 +977,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 31. Large Data and Weights
+## 32. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

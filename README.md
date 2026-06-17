@@ -43,7 +43,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase23_multi_seed_training/`: executable Phase 23 multi-seed same-tile B0/B1 training pilot runner.
 - `experiments/phase24_ijaeog_evidence_package/`: executable Phase 24 IJAEOG evidence-package and claim-readiness runner.
 - `experiments/phase25_padded_heldout_policy/`: executable Phase 25 padded variable-size held-out-tile B0/B1 policy pilot runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, and padded held-out policy pilots.
+- `experiments/phase26_main_experiment/`: executable Phase 26 main empirical analysis runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, and Phase 26 empirical analysis.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -294,6 +295,14 @@ For the current real Bishan artifacts, Phase 25 trains on `tile_r003_c003` and e
 
 Phase 25 adds a padded variable-size held-out-tile MaskablePPO pilot for B0/B1 under the deterministic `base_planning_reward`. It removes the Phase 20/23 flat observation/action shape blocker for held-out Bishan tile evaluation, but it remains a bounded pilot: no suitability reward, no B2/B3, no cross-region transfer, and no submission-level planning-performance claims.
 
+Run the Phase 26 main empirical analysis package after Phase 25 outputs exist:
+
+```powershell
+python experiments\phase26_main_experiment\run_phase26_main_experiment.py --mode analyze-only --phase25-output-dir experiments\phase26_main_experiment\outputs\colab_main\phase25_run --output-dir experiments\phase26_main_experiment\outputs\colab_main\phase26_analysis
+```
+
+Phase 26 analyzes Phase 25 padded held-out B0/B1 outputs into manuscript-facing empirical tables. It reports B1-B0 learned-policy deltas by held-out tile and seed, assigns a conservative claim status, and keeps suitability reward, B2/B3, and cross-region transfer out of scope.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -333,6 +342,8 @@ Phase 25 adds a padded variable-size held-out-tile MaskablePPO pilot for B0/B1 u
 - Phase 24 IJAEOG evidence-package module: `src/paper11_geofm/ijaeog_evidence_package.py`
 - Phase 25 padded held-out policy runner: `experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py`
 - Phase 25 padded held-out policy module: `src/paper11_geofm/padded_heldout_policy.py`
+- Phase 26 main empirical analysis runner: `experiments/phase26_main_experiment/run_phase26_main_experiment.py`
+- Phase 26 main empirical analysis module: `src/paper11_geofm/phase26_main_experiment.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

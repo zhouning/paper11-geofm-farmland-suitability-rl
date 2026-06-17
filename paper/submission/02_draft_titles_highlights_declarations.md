@@ -34,6 +34,7 @@ Current guarded version:
 - A deterministic base planning reward supports bounded B0/B1 pilot protocols.
 - Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
 - A padded variable-size policy contract enables a bounded held-out Bishan tile learned-policy pilot for B0/B1 under a deterministic planning reward.
+- A main empirical analysis reports B1-B0 learned-policy deltas across held-out Bishan tiles and random seeds under a deterministic base planning reward.
 - Claim-readiness artifacts separate pilot evidence from unsupported claims.
 
 After training evidence exists, revise the last two bullets to report the
@@ -71,7 +72,10 @@ variable-size held-out Bishan tile B0/B1 learned-policy pilot further shows that
 the learned policy can be trained on one Bishan tile and evaluated on a distinct
 held-out Bishan tile under the deterministic base planning reward, while still
 excluding suitability reward, B2/B3, cross-region transfer, and submission-level
-performance claims.
+performance claims. The Phase 26 analysis package converts Phase 25 outputs
+into main empirical tables, including B1-B0 learned-policy deltas by held-out
+Bishan tile and random seed, and assigns a conservative claim status without
+enabling suitability reward, B2/B3, or cross-region transfer claims.
 
 [Evidence needed: longer-budget B0/B1/B2/B3 training and evaluation results,
 ablation results, suitability-reward validation, cross-region transfer results,
@@ -141,7 +145,7 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-25 workflow is available at:
+Phase 1-26 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
@@ -207,4 +211,7 @@ Current blocked boundary:
 > a padded variable-size held-out Bishan tile B0/B1 learned-policy pilot under
 > deterministic base planning reward, but it still does not enable suitability
 > reward, test B2/B3, demonstrate cross-region transfer, or support
-> submission-level performance claims.
+> submission-level performance claims. Phase 26 adds the main B0/B1 held-out
+> analysis package and can report tile-seed B1-B0 deltas from real Phase 25
+> outputs, but it must not be used to claim positive multi-tile results unless
+> the actual Phase 26 artifacts support that statement.
