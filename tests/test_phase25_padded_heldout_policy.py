@@ -348,6 +348,8 @@ def test_phase25_writer_outputs_summary_trace_and_comparison(tmp_path):
 
 def test_phase25_cli_writes_outputs_and_prints_summary(tmp_path, capsys):
     _require_maskableppo_dependencies()
+    from paper11_geofm.padded_heldout_policy import PHASE25_CLAIM_BOUNDARY
+
     runner_path = (
         ROOT
         / "experiments"
