@@ -179,10 +179,9 @@ def test_phase25_padded_env_rejects_padded_and_repeated_actions(tmp_path):
     assert next_info["selected_block_id"] == "b2"
     assert next_info["action_valid"] is True
     assert env.action_masks().tolist() == [False, True, False]
-    np.testing.assert_array_equal(
-        next_info["selected_block_mask"],
-        np.array([1, 0, 0]),
-    )
+    selected_mask_start = 3 * 17
+    selected_mask = next_obs[selected_mask_start : selected_mask_start + 3]
+    np.testing.assert_allclose(selected_mask, [1.0, 0.0, 0.0])
 
     with pytest.raises(ValueError, match="already selected"):
         env.step(0)
