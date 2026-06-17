@@ -207,6 +207,7 @@ def test_phase26_writer_outputs_csv_json_and_markdown(tmp_path):
     assert saved["phase26_claim_status"] == "pilot_supported"
     markdown = paths["claim_readiness_md"].read_text(encoding="utf-8")
     assert "pilot_supported" in markdown
+    assert "Positive tile-seed count: 3 / 4" in markdown
     assert "suitability reward" in markdown
 
 

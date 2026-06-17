@@ -406,6 +406,11 @@ def _phase26_claim_readiness_markdown(analysis: Mapping[str, object]) -> str:
             "B1-B0 learned-policy mean reward delta: "
             f"{learned.get('B1_minus_B0_mean_reward')}"
         ),
+        (
+            "Positive tile-seed count: "
+            f"{learned.get('positive_tile_seed_count')} / "
+            f"{learned.get('total_tile_seed_count')}"
+        ),
         "",
         str(analysis.get("claim_boundary", PHASE26_CLAIM_BOUNDARY)),
         "",
