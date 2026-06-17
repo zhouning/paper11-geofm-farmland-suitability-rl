@@ -23,10 +23,11 @@ from paper11_geofm.phase26_main_experiment import (
 def main(argv: list[str] | None = None) -> int:
     parser = _build_parser()
     args = parser.parse_args(argv)
+    provided_args = set(argv or sys.argv[1:])
 
     try:
         if args.mode == "run-and-analyze":
-            _validate_run_and_analyze_args(args)
+            _validate_run_and_analyze_args(args, provided_args)
             protocol = run_phase25_padded_heldout_policy(
                 args.phase2_output_dir,
                 args.tile_index_csv,
@@ -47,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
 
         analysis = build_phase26_main_empirical_analysis(args.phase25_output_dir)
         paths = write_phase26_main_empirical_artifacts(analysis, args.output_dir)
-    except (FileNotFoundError, RuntimeError, ValueError) as exc:
+    except (OSError, RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
 
@@ -96,12 +97,25 @@ def _build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def _validate_run_and_analyze_args(args: argparse.Namespace) -> None:
+def _validate_run_and_analyze_args(
+    args: argparse.Namespace,
+    provided_args: set[str],
+) -> None:
     missing = []
     if args.phase2_output_dir is None:
         missing.append("--phase2-output-dir")
     if args.tile_index_csv is None:
         missing.append("--tile-index-csv")
+    for flag in (
+        "--variants",
+        "--total-timesteps",
+        "--eval-max-steps",
+        "--seeds",
+    ):
+        if flag not in provided_args:
+            missing.append(flag)
+    if "--max-eval-tiles" not in provided_args and "--eval-tile-ids" not in provided_args:
+        missing.append("--max-eval-tiles or --eval-tile-ids")
     if missing:
         raise ValueError("run-and-analyze requires " + ", ".join(missing))
 

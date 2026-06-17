@@ -268,3 +268,81 @@ def test_phase26_cli_run_and_analyze_requires_phase25_run_inputs(tmp_path, capsy
     stderr = capsys.readouterr().err
     assert exit_code == 1
     assert "run-and-analyze requires" in stderr
+
+
+def test_phase26_cli_run_and_analyze_requires_explicit_training_settings(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase26_main_experiment"
+        / "run_phase26_main_experiment.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase26_runner_explicit", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    monkeypatch.setattr(
+        module,
+        "run_phase25_padded_heldout_policy",
+        lambda *args, **kwargs: pytest.fail("Phase 25 should not run before validation"),
+    )
+
+    exit_code = module.main(
+        [
+            "--mode",
+            "run-and-analyze",
+            "--phase25-output-dir",
+            str(tmp_path / "phase25"),
+            "--output-dir",
+            str(tmp_path / "outputs"),
+            "--phase2-output-dir",
+            str(tmp_path / "phase2"),
+            "--tile-index-csv",
+            str(tmp_path / "phase13_tile_index.csv"),
+        ]
+    )
+
+    stderr = capsys.readouterr().err
+    assert exit_code == 1
+    assert "run-and-analyze requires" in stderr
+    assert "--total-timesteps" in stderr
+    assert "--seeds" in stderr
+
+
+def test_phase26_cli_reports_output_write_errors(tmp_path, capsys, monkeypatch):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase26_main_experiment"
+        / "run_phase26_main_experiment.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase26_runner_write_error", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    phase25_dir = _write_phase25_fixture(tmp_path / "phase25", "supported")
+    monkeypatch.setattr(
+        module,
+        "write_phase26_main_empirical_artifacts",
+        lambda *args, **kwargs: (_ for _ in ()).throw(PermissionError("blocked output")),
+    )
+
+    exit_code = module.main(
+        [
+            "--mode",
+            "analyze-only",
+            "--phase25-output-dir",
+            str(phase25_dir),
+            "--output-dir",
+            str(tmp_path / "outputs"),
+        ]
+    )
+
+    stderr = capsys.readouterr().err
+    assert exit_code == 1
+    assert "Error: blocked output" in stderr
