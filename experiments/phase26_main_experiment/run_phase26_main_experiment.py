@@ -112,12 +112,21 @@ def _validate_run_and_analyze_args(
         "--eval-max-steps",
         "--seeds",
     ):
-        if flag not in provided_args:
+        if not _was_provided(provided_args, flag):
             missing.append(flag)
-    if "--max-eval-tiles" not in provided_args and "--eval-tile-ids" not in provided_args:
+    if not _was_provided(provided_args, "--max-eval-tiles") and not _was_provided(
+        provided_args,
+        "--eval-tile-ids",
+    ):
         missing.append("--max-eval-tiles or --eval-tile-ids")
     if missing:
         raise ValueError("run-and-analyze requires " + ", ".join(missing))
+
+
+def _was_provided(provided_args: set[str], flag: str) -> bool:
+    return flag in provided_args or any(
+        item.startswith(f"{flag}=") for item in provided_args
+    )
 
 
 if __name__ == "__main__":

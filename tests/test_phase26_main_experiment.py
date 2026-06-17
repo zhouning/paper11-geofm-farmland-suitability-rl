@@ -346,3 +346,62 @@ def test_phase26_cli_reports_output_write_errors(tmp_path, capsys, monkeypatch):
     stderr = capsys.readouterr().err
     assert exit_code == 1
     assert "Error: blocked output" in stderr
+
+
+def test_phase26_cli_run_and_analyze_accepts_equals_style_explicit_flags(
+    tmp_path,
+    capsys,
+    monkeypatch,
+):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase26_main_experiment"
+        / "run_phase26_main_experiment.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase26_runner_run_path", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    calls = {"run": 0, "write": 0}
+
+    def _fake_run_phase25(*args, **kwargs):
+        calls["run"] += 1
+        assert kwargs["total_timesteps"] == 128
+        assert kwargs["eval_max_steps"] == 4
+        assert kwargs["seeds"] == "0,1"
+        return {"phase": "fake_phase25_protocol"}
+
+    def _fake_write_phase25(protocol, output_dir):
+        calls["write"] += 1
+        assert protocol["phase"] == "fake_phase25_protocol"
+        fixture_dir = _write_phase25_fixture(Path(output_dir), "supported")
+        return {
+            "summary_csv": fixture_dir / "phase25_padded_heldout_policy_summary.csv",
+            "comparison_json": fixture_dir / "phase25_padded_heldout_policy_comparison.json",
+        }
+
+    monkeypatch.setattr(module, "run_phase25_padded_heldout_policy", _fake_run_phase25)
+    monkeypatch.setattr(module, "write_phase25_padded_heldout_policy_artifacts", _fake_write_phase25)
+
+    exit_code = module.main(
+        [
+            "--mode=run-and-analyze",
+            f"--phase25-output-dir={tmp_path / 'phase25'}",
+            f"--output-dir={tmp_path / 'outputs'}",
+            f"--phase2-output-dir={tmp_path / 'phase2'}",
+            f"--tile-index-csv={tmp_path / 'phase13_tile_index.csv'}",
+            "--variants=B0,B1",
+            "--total-timesteps=128",
+            "--eval-max-steps=4",
+            "--seeds=0,1",
+            "--max-eval-tiles=1",
+        ]
+    )
+
+    stdout = capsys.readouterr().out
+    assert exit_code == 0
+    assert calls == {"run": 1, "write": 1}
+    assert "Mode: run-and-analyze" in stdout
+    assert "Phase 26 claim status: pilot_supported" in stdout
