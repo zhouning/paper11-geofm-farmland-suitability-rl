@@ -28,6 +28,7 @@ docs/superpowers/specs/2026-06-11-phase21-cross-tile-per-block-scorer-design.md	
 docs/superpowers/specs/2026-06-11-phase22-multi-tile-seed-scorer-eval-design.md	design	Phase 22 design for bounded multi-tile, multi-seed per-block scorer evaluation pilots.
 docs/superpowers/specs/2026-06-12-phase23-multi-seed-b0-b1-training-design.md	design	Phase 23 design for bounded multi-seed same-tile B0/B1 training pilots.
 docs/superpowers/specs/2026-06-12-phase24-ijaeog-evidence-package-design.md	design	Phase 24 design for IJAEOG evidence packaging and claim-readiness synthesis.
+docs/superpowers/specs/2026-06-12-phase25-padded-heldout-policy-design.md	design	Phase 25 design for padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy evidence.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 docs/superpowers/plans/2026-06-09-phase2-block-geofm-feature-assembly.md	plan	Implementation plan for the Phase 2 block-level GeoFM feature assembly pipeline.
 docs/superpowers/plans/2026-06-09-phase3-drl-input-adapter.md	plan	Implementation plan for the Phase 3 DRL input adapter.
@@ -52,6 +53,7 @@ docs/superpowers/plans/2026-06-11-phase21-cross-tile-per-block-scorer.md	plan	Im
 docs/superpowers/plans/2026-06-12-phase22-multi-tile-seed-scorer-eval.md	plan	Implementation plan for the Phase 22 multi-tile, multi-seed scorer evaluation pilot.
 docs/superpowers/plans/2026-06-12-phase23-multi-seed-b0-b1-training.md	plan	Implementation plan for the Phase 23 multi-seed same-tile B0/B1 training pilot.
 docs/superpowers/plans/2026-06-12-phase24-ijaeog-evidence-package.md	plan	Implementation plan for the Phase 24 IJAEOG evidence package.
+docs/superpowers/plans/2026-06-12-phase25-padded-heldout-policy.md	plan	Implementation plan for the Phase 25 padded held-out-tile B0/B1 learned-policy pilot.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
@@ -101,6 +103,7 @@ src/paper11_geofm/cross_tile_block_scorer.py	runtime	Phase 21 cross-tile per-blo
 src/paper11_geofm/multi_tile_scorer_eval.py	runtime	Phase 22 multi-tile, multi-seed per-block scorer evaluation pilot, deterministic baselines, artifact writer, and claim-boundary metadata.
 src/paper11_geofm/multi_seed_training.py	runtime	Phase 23 multi-seed same-tile B0/B1 MaskablePPO training pilot, aggregate comparison, artifact writer, and claim-boundary metadata.
 src/paper11_geofm/ijaeog_evidence_package.py	runtime	Phase 24 IJAEOG evidence-package aggregation, claim-readiness table construction, and artifact writer.
+src/paper11_geofm/padded_heldout_policy.py	runtime	Phase 25 padded variable-size tile environment, MaskablePPO held-out evaluation runner, baselines, comparison aggregation, and artifact writer.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -124,6 +127,7 @@ experiments/phase21_cross_tile_block_scorer/run_phase21_cross_tile_block_scorer.
 experiments/phase22_multi_tile_scorer_eval/run_phase22_multi_tile_scorer_eval.py	experiment	Executable Phase 22 multi-tile, multi-seed per-block scorer evaluation runner for real tiled Bishan artifacts.
 experiments/phase23_multi_seed_training/run_phase23_multi_seed_training.py	experiment	Executable Phase 23 multi-seed same-tile B0/B1 training runner for real tiled Bishan artifacts.
 experiments/phase24_ijaeog_evidence_package/run_phase24_ijaeog_evidence_package.py	experiment	Executable Phase 24 IJAEOG evidence-package runner for Phase 22/23 pilot outputs.
+experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py	experiment	Executable Phase 25 padded held-out-tile B0/B1 learned-policy runner for real Bishan tiled artifacts.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -177,3 +181,4 @@ tests/test_phase21_cross_tile_block_scorer.py	verification	Pytest checks for Pha
 tests/test_phase22_multi_tile_scorer_eval.py	verification	Pytest checks for Phase 22 multi-tile selection, seed normalization, B0/B1 scorer rollout aggregation, artifact writing, and CLI output.
 tests/test_phase23_multi_seed_training.py	verification	Pytest checks for Phase 23 multi-seed B0/B1 training aggregation, artifact writing, comparison report, and CLI output.
 tests/test_phase24_ijaeog_evidence_package.py	verification	Pytest checks for Phase 24 evidence aggregation, claim-readiness artifact writing, and CLI output.
+tests/test_phase25_padded_heldout_policy.py	verification	Pytest checks for Phase 25 padded environment masks, held-out tile selection, tiny MaskablePPO run, artifact writing, and CLI output.

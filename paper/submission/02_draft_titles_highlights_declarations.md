@@ -33,6 +33,7 @@ Current guarded version:
 - Tiled environment contracts make large real planning instances tractable.
 - A deterministic base planning reward supports bounded B0/B1 pilot protocols.
 - Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
+- A padded variable-size policy contract enables a bounded held-out Bishan tile learned-policy pilot for B0/B1 under a deterministic planning reward.
 - Claim-readiness artifacts separate pilot evidence from unsupported claims.
 
 After training evidence exists, revise the last two bullets to report the
@@ -65,10 +66,16 @@ learned-policy mean reward delta under a short training budget, but this remains
 preliminary until longer training, ablations, suitability-reward validation, and
 held-out-region transfer tests are complete. The current IJAEOG evidence
 package summarizes these pilot outputs and remaining gaps without creating new
-policy-performance, transfer, or suitability-reward evidence.
+policy-performance, transfer, or suitability-reward evidence. A padded
+variable-size held-out Bishan tile B0/B1 learned-policy pilot further shows that
+the learned policy can be trained on one Bishan tile and evaluated on a distinct
+held-out Bishan tile under the deterministic base planning reward, while still
+excluding suitability reward, B2/B3, cross-region transfer, and submission-level
+performance claims.
 
 [Evidence needed: longer-budget B0/B1/B2/B3 training and evaluation results,
-ablation results, transfer results, and final spatial diagnostics.]
+ablation results, suitability-reward validation, cross-region transfer results,
+and final spatial diagnostics.]
 
 The final manuscript should conclude only from completed comparisons. Until
 those results exist, the contribution should be framed as a reproducible
@@ -134,7 +141,7 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-24 workflow is available at:
+Phase 1-25 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
@@ -196,4 +203,8 @@ Current blocked boundary:
 > final transfer, suitability-reward, ablation, or submission-level performance
 > evidence. Phase 24 is a synthesis and claim-readiness package only; it
 > records current pilot evidence and remaining gaps, but does not create new
-> policy-performance, transfer, or suitability-reward evidence.
+> policy-performance, transfer, or suitability-reward evidence. Phase 25 adds
+> a padded variable-size held-out Bishan tile B0/B1 learned-policy pilot under
+> deterministic base planning reward, but it still does not enable suitability
+> reward, test B2/B3, demonstrate cross-region transfer, or support
+> submission-level performance claims.

@@ -42,7 +42,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase22_multi_tile_scorer_eval/`: executable Phase 22 multi-tile, multi-seed per-block scorer evaluation runner.
 - `experiments/phase23_multi_seed_training/`: executable Phase 23 multi-seed same-tile B0/B1 training pilot runner.
 - `experiments/phase24_ijaeog_evidence_package/`: executable Phase 24 IJAEOG evidence-package and claim-readiness runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, and IJAEOG evidence packaging.
+- `experiments/phase25_padded_heldout_policy/`: executable Phase 25 padded variable-size held-out-tile B0/B1 policy pilot runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, and padded held-out policy pilots.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -283,6 +284,16 @@ python experiments\phase24_ijaeog_evidence_package\run_phase24_ijaeog_evidence_p
 
 For the current real Bishan artifacts, Phase 24 reports 24 Phase 22 rows, 18 Phase 23 rows, a B1-B0 learned-policy mean reward delta of `0.4273019432`, and `submission_ready: not_ready`. It writes `phase24_ijaeog_evidence_table.csv`, `phase24_ijaeog_evidence_summary.json`, and `phase24_ijaeog_claim_readiness.md`. This is a synthesis and claim-readiness package only; it does not create new policy-performance, transfer, or suitability-reward evidence.
 
+Run the Phase 25 padded held-out-tile B0/B1 policy pilot smoke:
+
+```powershell
+python experiments\phase25_padded_heldout_policy\run_phase25_padded_heldout_policy.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --total-timesteps 32 --eval-max-steps 4 --seeds 0 --max-eval-tiles 1 --output-dir experiments\phase25_padded_heldout_policy\outputs\real_bishan_smoke
+```
+
+For the current real Bishan artifacts, Phase 25 trains on `tile_r003_c003` and evaluates on the distinct held-out tile `tile_r002_c003` with padded maximum blocks `2234`, variants `B0,B1`, seed `0`, total timesteps `32`, and evaluation max steps `4`. It writes six summary rows, reports `all_evaluations_completed: True`, records a B1-B0 held-out learned-policy mean reward delta of `1.3314600457`, and sets `pilot_result_status: B1_improves_B0`. Expected artifacts are `phase25_padded_heldout_policy_summary.csv`, `phase25_padded_heldout_policy_traces.json`, and `phase25_padded_heldout_policy_comparison.json`; the comparison JSON keeps `suitability_reward_validation_before_B2_B3` in the remaining evidence gaps.
+
+Phase 25 adds a padded variable-size held-out-tile MaskablePPO pilot for B0/B1 under the deterministic `base_planning_reward`. It removes the Phase 20/23 flat observation/action shape blocker for held-out Bishan tile evaluation, but it remains a bounded pilot: no suitability reward, no B2/B3, no cross-region transfer, and no submission-level planning-performance claims.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -320,6 +331,8 @@ For the current real Bishan artifacts, Phase 24 reports 24 Phase 22 rows, 18 Pha
 - Phase 23 multi-seed training module: `src/paper11_geofm/multi_seed_training.py`
 - Phase 24 IJAEOG evidence-package runner: `experiments/phase24_ijaeog_evidence_package/run_phase24_ijaeog_evidence_package.py`
 - Phase 24 IJAEOG evidence-package module: `src/paper11_geofm/ijaeog_evidence_package.py`
+- Phase 25 padded held-out policy runner: `experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py`
+- Phase 25 padded held-out policy module: `src/paper11_geofm/padded_heldout_policy.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

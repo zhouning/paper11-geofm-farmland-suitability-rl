@@ -34,12 +34,13 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | multi-tile multi-seed scorer pilot | Phase 22 bounded multi-tile, multi-seed per-block scorer evaluation pilot | transfer result, final multi-seed policy result | Use only for broadened interface-pilot evidence. |
 | multi-seed B0/B1 training pilot | Phase 23 bounded multi-seed same-tile B0/B1 MaskablePPO training pilot | final performance result, transfer result | Use only for same-tile learned-policy pilot evidence. |
 | IJAEOG evidence package | Phase 24 synthesis and claim-readiness package | new performance result, new transfer result | Use only as an evidence ledger and claim-boundary artifact. |
+| padded held-out B0/B1 policy pilot | Phase 25 bounded padded variable-size held-out Bishan tile MaskablePPO pilot | cross-region transfer result, suitability-reward result, final policy-performance result | Use only for held-out Bishan tile learned-policy pilot evidence under deterministic base planning reward. |
 
 ## Readiness Summary
 
 | Item | Status | Evidence or blocker |
 |---|---|---|
-| Repository and code package | Ready | `origin/main` includes Phase 24 after this update; `python -m pytest tests -q` reports `141 passed`. |
+| Repository and code package | Ready | The Phase 25 branch includes the padded held-out policy runner/module and docs after this update; the prior full-suite record before this docs update reported `141 passed`. |
 | Lightweight reproducibility | Ready | `python scripts\smoke_check.py` passes with included Bishan AlphaEarth sample arrays. |
 | Real-data adapter | Ready for local reproduction | Phase 11 exports 64,984 Bishan DLTB polygons into Phase 2-compatible artifacts, using a local external GeoPackage. |
 | Tiled contract | Ready | Phase 13 creates 54 non-empty tiles; largest tile has 2,234 blocks. |
@@ -50,6 +51,7 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | Multi-tile scorer evaluation | Ready as broadened interface-pilot evidence | Phase 22 trains the same scorer once per B0/B1 variant on `tile_r003_c003`, evaluates `tile_r002_c003` and `tile_r005_c004` across seeds `0` and `1`, and writes 24 summary rows. |
 | Multi-seed learned-policy training | Ready as same-tile pilot evidence | Phase 23 repeats bounded B0/B1 MaskablePPO training on `tile_r003_c003` across seeds `0`, `1`, and `2`, writes 18 summary rows, and reports B1-B0 learned-policy mean reward delta `0.4273019432` under the short pilot budget. |
 | IJAEOG evidence package | Ready as claim-readiness synthesis | Phase 24 consolidates Phase 22/23 outputs into CSV, JSON, and Markdown evidence artifacts and keeps `submission_ready: not_ready`. |
+| Padded held-out learned-policy pilot | Ready as bounded held-out Bishan tile pilot evidence | Phase 25 trains B0/B1 MaskablePPO policies on `tile_r003_c003` and evaluates on distinct held-out tile `tile_r002_c003` under deterministic `base_planning_reward`; the verified smoke writes six summary rows and reports B1-B0 held-out learned-policy mean reward delta `1.3314600457` with `pilot_result_status: B1_improves_B0`. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled because weak-label evidence is incomplete. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
 | Full manuscript claims | Not ready | No longer-budget/full B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
@@ -99,14 +101,19 @@ Safe current claim:
 > but this remains pilot evidence pending longer training, ablations,
 > suitability-reward validation, and held-out-region transfer. Phase 24 records
 > these boundaries in a reviewer-facing evidence package and keeps full
-> submission readiness at `not_ready`.
+> submission readiness at `not_ready`. Phase 25 adds a padded variable-size
+> held-out Bishan tile B0/B1 learned-policy pilot under deterministic
+> `base_planning_reward`; the verified smoke result is positive for B1-B0 on
+> one held-out Bishan tile, but remains bounded pilot evidence and does not
+> resolve suitability-reward readiness, B2/B3 claims, cross-region transfer,
+> long-budget robustness, or final submission readiness.
 
 Unsafe current claim:
 
 > The GeoFM-enhanced DRL policy outperforms existing farmland-layout optimization
 > methods.
 
-## Phase 20/21/22/23/24 Status and Recommended Next Experimental Phase
+## Phase 20/21/22/23/24/25 Status and Recommended Next Experimental Phase
 
 Phase 20 now provides a bounded same-tile B0/B1 training and evaluation pilot.
 It avoids suitability reward, uses fixed tile selection and seed, runs a short
@@ -135,6 +142,17 @@ The next experimental phase should move beyond Phase 23 into a true variable
 tile-size policy or held-out-region experiment before any transfer claim.
 Phase 24 can be cited as the current evidence ledger, but not as a new
 performance experiment.
+
+Phase 25 introduces a padded variable-size learned-policy held-out Bishan tile
+pilot. The verified Windows smoke trains on `tile_r003_c003`, evaluates on the
+distinct tile `tile_r002_c003`, writes six B0/B1 learned-policy and baseline
+summary rows, reports all evaluations completed, and records a B1-B0 held-out
+learned-policy mean reward delta of `1.3314600457` with
+`pilot_result_status: B1_improves_B0`. This can support the limited statement
+that a B0/B1 learned policy can be trained on one Bishan tile and evaluated on
+a distinct held-out Bishan tile under the deterministic base planning reward.
+It does not resolve suitability-reward readiness, B2/B3 claims, cross-region
+transfer, long-budget robustness, or final submission readiness.
 Minimum requirements are:
 
 - a variable-size, padded, or per-block PPO-compatible policy architecture, or

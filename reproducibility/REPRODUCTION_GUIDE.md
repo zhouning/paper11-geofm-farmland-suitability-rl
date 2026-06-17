@@ -655,7 +655,53 @@ Phase 24 is a synthesis and claim-readiness package. It summarizes current
 Phase 22/23 pilot evidence and remaining gaps, but it does not create new
 policy-performance, transfer, or suitability-reward evidence.
 
-## 27. Inspect the Paper11 Design
+## 27. Run the Phase 25 Padded Held-Out Policy Pilot
+
+After Phase 13 has produced the real tile index and Phase 19 has provided the
+deterministic base planning reward, run the Windows smoke command:
+
+```powershell
+python experiments\phase25_padded_heldout_policy\run_phase25_padded_heldout_policy.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1 --total-timesteps 32 --eval-max-steps 4 --seeds 0 --max-eval-tiles 1 --output-dir experiments\phase25_padded_heldout_policy\outputs\real_bishan_smoke
+```
+
+Expected current Bishan smoke outcome:
+
+- `phase25_padded_heldout_policy_summary.csv` is written;
+- `phase25_padded_heldout_policy_traces.json` is written;
+- `phase25_padded_heldout_policy_comparison.json` is written;
+- train tile is `tile_r003_c003`;
+- held-out evaluation tile is `tile_r002_c003`;
+- padded max blocks is `2234`;
+- variants are `B0` and `B1`;
+- seed is `0`;
+- total timesteps is `32`;
+- evaluation max steps is `4`;
+- summary rows are `6`;
+- all evaluations completed is `True`;
+- B1-B0 held-out learned-policy mean reward delta is `1.3314600457`;
+- pilot result status is `B1_improves_B0`;
+- the comparison JSON keeps `suitability_reward_validation_before_B2_B3` in
+  the remaining evidence gaps.
+
+For the Colab Pro+ main run, use:
+
+```bash
+python experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py --phase2-output-dir experiments/phase11_bishan_dltb_real/outputs/phase2_real --tile-index-csv experiments/phase13_tiled_real_contract/outputs/real_bishan/phase13_tile_index.csv --variants B0,B1 --total-timesteps 1024 --eval-max-steps 8 --seeds 0,1,2 --max-eval-tiles 3 --output-dir experiments/phase25_padded_heldout_policy/outputs/real_bishan_colab_main
+```
+
+Windows is the implementation, test, schema-check, and short-smoke platform.
+Colab Pro+ is the intended platform for the multi-seed, multi-held-out-tile
+main run. A timing probe can adjust `--total-timesteps` within `512` to `4096`
+before the main run budget is fixed.
+
+Phase 25 uses `base_planning_reward` only. Do not enable B2/B3 or suitability
+reward in Phase 25; B2/B3 remain blocked until Phase 10 suitability reward
+readiness is resolved. The padded variable-size contract removes the Phase
+20/23 flat observation/action shape blocker for held-out Bishan tile evaluation,
+but Phase 25 remains a bounded B0/B1 pilot and does not support cross-region
+transfer or submission-level planning-performance claims.
+
+## 28. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -669,7 +715,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 28. Inspect Runtime Code
+## 29. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -853,9 +899,16 @@ experiments/phase24_ijaeog_evidence_package/run_phase24_ijaeog_evidence_package.
 src/paper11_geofm/ijaeog_evidence_package.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, and Phase 24 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+Phase 25 executable files:
 
-## 29. Regenerate Embeddings
+```text
+experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py
+src/paper11_geofm/padded_heldout_policy.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, and Phase 25 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage.
+
+## 30. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -872,7 +925,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 29. Large Data and Weights
+## 31. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
