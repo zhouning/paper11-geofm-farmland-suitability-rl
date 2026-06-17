@@ -157,6 +157,7 @@ data/bishan_phase2_csv_sample/block_pixel_mapping.csv	data	Tiny Phase 2 block-to
 data/bishan_phase2_csv_sample/block_attributes.csv	data	Tiny Phase 2 block attribute fixture with explicit features, weak labels, and split metadata.
 reproducibility/REPRODUCTION_GUIDE.md	reproducibility	Step-by-step lightweight verification and full-reproduction notes.
 reproducibility/DATA_MANIFEST.md	reproducibility	Included and excluded data-artifact manifest.
+reproducibility/MACOS_128GB_TRANSFER_GUIDE.md	reproducibility	macOS 128GB and Google Drive transfer guide for real-data Phase 25/26 runs.
 reproducibility/FILE_MANIFEST.tsv	reproducibility	Repository file inventory and role descriptions.
 scripts/smoke_check.py	verification	Lightweight repository and sample-data verification script.
 tests/test_repository_layout.py	verification	Pytest check for expected repository structure and Bishan sample files.
