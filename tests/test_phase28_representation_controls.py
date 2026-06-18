@@ -140,9 +140,17 @@ def _phase28_summary_rows(status_case="supported"):
             "B0": [1.0, 1.0, 1.0, 1.0],
             "B1": [1.2, 1.2, 1.2, 1.2],
             "D2": [1.0, 1.0, 1.0, 1.0],
-            "D3": [1.0, 1.0, 1.0, 1.0],
+            "D3": [1.2, 1.2, 1.2, 1.2],
             "D4P8": [1.2, 1.2, 1.2, 1.2],
             "D4P16": [1.1, 1.1, 1.1, 1.1],
+        },
+        "supported_with_compression_match": {
+            "B0": [1.0, 1.0, 1.0, 1.0],
+            "B1": [1.6, 1.4, 1.5, 1.3],
+            "D2": [1.0, 1.0, 1.0, 1.0],
+            "D3": [0.9, 1.0, 0.8, 1.0],
+            "D4P8": [1.6, 1.4, 1.5, 1.3],
+            "D4P16": [1.6, 1.4, 1.5, 1.3],
         },
     }
     rewards = rewards_by_case[status_case]
@@ -234,6 +242,39 @@ def test_phase28_contract_routes_b_and_d_variant_sources(tmp_path):
     assert contract["claim_boundary"] == PHASE28_CLAIM_BOUNDARY
 
 
+def test_phase28_contract_normalizes_variants_and_rejects_duplicates(tmp_path):
+    from paper11_geofm.phase28_representation_controls import (
+        build_phase28_representation_control_contract,
+    )
+
+    phase2_dir = tmp_path / "phase2"
+    phase8_dir = tmp_path / "phase8"
+    _write_ready_phase2_outputs(phase2_dir)
+    _write_phase8_outputs(phase2_dir, phase8_dir)
+    tile_index = _write_tile_index(tmp_path / "phase13_tile_index.csv")
+
+    contract = build_phase28_representation_control_contract(
+        phase2_dir,
+        phase8_dir,
+        tile_index,
+        variants=" b1 , d2 ",
+        total_timesteps=8,
+        eval_max_steps=2,
+        seeds="0",
+        max_eval_tiles=1,
+    )
+
+    assert contract["variants"] == ["B1", "D2"]
+
+    with pytest.raises(ValueError, match="must be unique"):
+        build_phase28_representation_control_contract(
+            phase2_dir,
+            phase8_dir,
+            tile_index,
+            variants=("B1", "b1", "D2"),
+        )
+
+
 def test_phase28_contract_rejects_unsupported_and_missing_b1(tmp_path):
     from paper11_geofm.phase28_representation_controls import (
         build_phase28_representation_control_contract,
@@ -305,6 +346,42 @@ def test_phase28_diagnostic_status_rules(tmp_path, status_case, expected_status)
     assert analysis["phase28_diagnostic_status"] == expected_status
 
 
+def test_phase28_supported_status_requires_d4_controls(tmp_path):
+    from paper11_geofm.phase28_representation_controls import (
+        build_phase28_representation_control_analysis,
+    )
+
+    rows = [
+        row
+        for row in _phase28_summary_rows("supported")
+        if row["variant_id"] not in {"D4P8", "D4P16"}
+    ]
+    summary_csv = _write_summary_csv(tmp_path / "missing_d4.csv", rows)
+
+    analysis = build_phase28_representation_control_analysis(summary_csv)
+
+    assert analysis["phase28_diagnostic_status"] == "insufficient"
+    missing_variants = {
+        row["variant_id"] for row in analysis["coverage_issues"]["missing_variant_rows"]
+    }
+    assert {"D4P8", "D4P16"}.issubset(missing_variants)
+
+
+def test_phase28_supported_status_takes_precedence_over_compression_match(tmp_path):
+    from paper11_geofm.phase28_representation_controls import (
+        build_phase28_representation_control_analysis,
+    )
+
+    summary_csv = _write_summary_csv(
+        tmp_path / "supported_with_compression_match.csv",
+        _phase28_summary_rows("supported_with_compression_match"),
+    )
+
+    analysis = build_phase28_representation_control_analysis(summary_csv)
+
+    assert analysis["phase28_diagnostic_status"] == "representation_signal_supported"
+
+
 def test_phase28_reports_insufficient_for_missing_comparator_rows(tmp_path):
     from paper11_geofm.phase28_representation_controls import (
         build_phase28_representation_control_analysis,
@@ -373,8 +450,10 @@ def test_phase28_writer_outputs_summary_trace_comparison_delta_and_markdown(tmp_
     assert {"D2", "D3"}.issubset(
         {row["comparator_variant_id"] for row in saved_delta_rows}
     )
+    assert all(row["claim_boundary"] for row in saved_delta_rows)
     saved_traces = json.loads(paths["traces_json"].read_text(encoding="utf-8"))
-    assert saved_traces["traces"]["trained_policy"]["B1"]["tile_eval_a"]["0"] == [
+    assert "phase28_diagnostic_status" not in saved_traces
+    assert saved_traces["trained_policy"]["B1"]["tile_eval_a"]["0"] == [
         {"action": 0, "reward": 1.6}
     ]
     saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
@@ -382,7 +461,30 @@ def test_phase28_writer_outputs_summary_trace_comparison_delta_and_markdown(tmp_
     markdown = paths["control_readiness_md"].read_text(encoding="utf-8")
     assert "representation_signal_supported" in markdown
     assert "Unsafe wording:" in markdown
-    assert "GeoFM improves planning decisions." in markdown
+    assert "GeoFM improves planning decisions." not in markdown
+
+
+def test_phase28_writer_preserves_summary_rows_in_analyze_only_usage(tmp_path):
+    from paper11_geofm.phase28_representation_controls import (
+        build_phase28_representation_control_analysis,
+        write_phase28_representation_control_artifacts,
+    )
+
+    source_rows = _phase28_summary_rows("supported")
+    summary_csv = _write_summary_csv(tmp_path / "summary.csv", source_rows)
+    analysis = build_phase28_representation_control_analysis(summary_csv)
+
+    paths = write_phase28_representation_control_artifacts(
+        analysis,
+        tmp_path / "outputs",
+    )
+
+    with paths["summary_csv"].open("r", encoding="utf-8", newline="") as handle:
+        saved_summary_rows = list(csv.DictReader(handle))
+    saved_traces = json.loads(paths["traces_json"].read_text(encoding="utf-8"))
+
+    assert len(saved_summary_rows) == len(source_rows)
+    assert saved_traces == {}
 
 
 def test_phase28_run_uses_fake_training_model_for_all_variants(tmp_path, monkeypatch):

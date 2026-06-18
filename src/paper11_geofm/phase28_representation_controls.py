@@ -4,17 +4,29 @@ from collections.abc import Iterable, Mapping, Sequence
 import csv
 import json
 import statistics
+import warnings
 from os import PathLike
 from pathlib import Path
 
-from .padded_heldout_policy import SUMMARY_FIELDNAMES
+from .padded_heldout_policy import (
+    SUMMARY_FIELDNAMES,
+    Phase25PaddedTileEnv,
+    _dependency_metadata,
+    _evaluate_baseline_policy,
+    _evaluate_trained_policy,
+    _normalize_seeds,
+    _select_train_eval_tiles,
+    _store_trace,
+)
+from .tiled_inputs import load_tiled_variant_input
 
 
 PHASE28_CLAIM_BOUNDARY = (
-    "Phase 28 is a bounded representation-control analysis for padded held-out "
-    "learned-policy rows under the deterministic base planning reward; it compares "
-    "B1 against raw, explicit-only, embedding-only, and compressed controls, and "
-    "does not support cross-region transfer or final planning-performance claims."
+    "Phase 28 is a representation-control diagnostic over B0/B1/D2/D3/D4 "
+    "base-reward padded held-out Bishan policy runs; it does not enable "
+    "suitability reward, does not test B2/B3, does not test cross-region "
+    "transfer, and does not support submission-level planning-performance "
+    "claims."
 )
 
 PHASE28_REMAINING_EVIDENCE_GAPS = [
@@ -28,6 +40,7 @@ PHASE28_REMAINING_EVIDENCE_GAPS = [
 PHASE28_DEFAULT_VARIANTS = ("B0", "B1", "D2", "D3", "D4P8", "D4P16")
 PHASE28_ALLOWED_VARIANTS = PHASE28_DEFAULT_VARIANTS
 PHASE28_PRIMARY_COMPARATORS = ("B0", "D2", "D3")
+PHASE28_REQUIRED_CONTROL_VARIANTS = PHASE28_DEFAULT_VARIANTS
 
 TILE_SEED_DELTA_FIELDNAMES = [
     "comparator_variant_id",
@@ -39,7 +52,220 @@ TILE_SEED_DELTA_FIELDNAMES = [
     "b1_improves_comparator",
     "train_timesteps",
     "eval_max_steps",
+    "claim_boundary",
 ]
+
+
+def build_phase28_representation_control_contract(
+    phase2_output_dir: Path | str,
+    phase8_output_dir: Path | str,
+    tile_index_csv: Path | str,
+    variants: Sequence[str] | str = PHASE28_DEFAULT_VARIANTS,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 3,
+    total_timesteps: int = 32,
+    eval_max_steps: int = 4,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+) -> dict[str, object]:
+    if int(total_timesteps) <= 0:
+        raise ValueError("total_timesteps must be positive")
+    if int(eval_max_steps) <= 0:
+        raise ValueError("eval_max_steps must be positive")
+
+    normalized_variants = _normalize_phase28_variants(variants)
+    normalized_seeds = _normalize_seeds(seeds)
+    selected = _select_train_eval_tiles(
+        Path(tile_index_csv),
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+    )
+    eval_ids = list(selected["eval_tile_ids"])
+    selected_counts = dict(selected["selected_tile_block_counts"])
+    max_blocks = max(int(selected_counts[tile_id]) for tile_id in selected_counts)
+    eval_tile_ranks = {
+        str(tile_id): rank for rank, tile_id in enumerate(eval_ids, start=1)
+    }
+    seed_ranks = {
+        str(seed): rank for rank, seed in enumerate(normalized_seeds, start=1)
+    }
+    variant_source_dirs = _phase28_variant_source_dirs(
+        normalized_variants,
+        phase2_output_dir=phase2_output_dir,
+        phase8_output_dir=phase8_output_dir,
+    )
+
+    train_id = str(selected["train_tile_id"])
+    return {
+        "phase": "phase28_representation_control_evaluation",
+        "phase2_output_dir": str(Path(phase2_output_dir)),
+        "phase8_output_dir": str(Path(phase8_output_dir)),
+        "tile_index_csv": str(Path(tile_index_csv)),
+        "variants": normalized_variants,
+        "variant_source_dirs": variant_source_dirs,
+        "train_tile_id": train_id,
+        "train_tile_ids": [train_id],
+        "eval_tile_ids": eval_ids,
+        "eval_tile_count": len(eval_ids),
+        "eval_tile_ranks": eval_tile_ranks,
+        "selected_tile_block_counts": selected_counts,
+        "train_tile_selection": selected["train_tile_selection"],
+        "eval_tile_selection": selected["eval_tile_selection"],
+        "padded_policy_status": "enabled_phase28_representation_controls",
+        "learned_policy_evaluation_scope": (
+            "padded_variable_size_heldout_tile_representation_control_diagnostic"
+        ),
+        "max_blocks": int(max_blocks),
+        "total_timesteps": int(total_timesteps),
+        "eval_max_steps": int(eval_max_steps),
+        "seeds": normalized_seeds,
+        "seed_count": len(normalized_seeds),
+        "seed_ranks": seed_ranks,
+        "claim_boundary": PHASE28_CLAIM_BOUNDARY,
+        "remaining_evidence_gaps": list(PHASE28_REMAINING_EVIDENCE_GAPS),
+    }
+
+
+def run_phase28_representation_control_evaluation(
+    phase2_output_dir: Path | str,
+    phase8_output_dir: Path | str,
+    tile_index_csv: Path | str,
+    variants: Sequence[str] | str = PHASE28_DEFAULT_VARIANTS,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 3,
+    total_timesteps: int = 32,
+    eval_max_steps: int = 4,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+    compression_match_tolerance: float = 1e-9,
+) -> dict[str, object]:
+    contract = build_phase28_representation_control_contract(
+        phase2_output_dir=phase2_output_dir,
+        phase8_output_dir=phase8_output_dir,
+        tile_index_csv=tile_index_csv,
+        variants=variants,
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+        total_timesteps=total_timesteps,
+        eval_max_steps=eval_max_steps,
+        seeds=seeds,
+    )
+    summaries: list[dict[str, object]] = []
+    traces: dict[str, dict[str, dict[str, dict[str, list[dict[str, object]]]]]] = {
+        "trained_policy": {},
+        "first_valid": {},
+        "seeded_random": {},
+    }
+
+    for variant_id in contract["variants"]:
+        for seed in contract["seeds"]:
+            train_tiled = _load_phase28_tiled_variant_input(
+                contract,
+                str(contract["train_tile_id"]),
+                str(variant_id),
+            )
+            train_env = Phase25PaddedTileEnv(
+                train_tiled,
+                max_blocks=int(contract["max_blocks"]),
+                max_steps=int(contract["total_timesteps"]),
+            )
+            train_env.reset(seed=int(seed))
+            model = _train_maskable_ppo_model(
+                train_env,
+                seed=int(seed),
+                total_timesteps=int(contract["total_timesteps"]),
+            )
+
+            for eval_tile_id in contract["eval_tile_ids"]:
+                eval_tiled = _load_phase28_tiled_variant_input(
+                    contract,
+                    str(eval_tile_id),
+                    str(variant_id),
+                )
+                eval_tile_rank = int(contract["eval_tile_ranks"][str(eval_tile_id)])
+                seed_rank = int(contract["seed_ranks"][str(int(seed))])
+                train_n_blocks = int(
+                    contract["selected_tile_block_counts"][
+                        str(contract["train_tile_id"])
+                    ]
+                )
+                trained_summary, trained_steps = _evaluate_trained_policy(
+                    model,
+                    eval_tiled,
+                    train_tile_id=str(contract["train_tile_id"]),
+                    train_n_blocks=train_n_blocks,
+                    max_blocks=int(contract["max_blocks"]),
+                    eval_tile_rank=eval_tile_rank,
+                    phase25_seed_rank=seed_rank,
+                    eval_max_steps=int(contract["eval_max_steps"]),
+                    train_timesteps=int(contract["total_timesteps"]),
+                    seed=int(seed),
+                )
+                trained_summary["claim_boundary"] = PHASE28_CLAIM_BOUNDARY
+                summaries.append(trained_summary)
+                _store_trace(
+                    traces,
+                    "trained_policy",
+                    str(variant_id),
+                    str(eval_tile_id),
+                    int(seed),
+                    trained_steps,
+                )
+
+                for policy_id in ("first_valid", "seeded_random"):
+                    baseline_summary, baseline_steps = _evaluate_baseline_policy(
+                        eval_tiled,
+                        policy_id=policy_id,
+                        train_tile_id=str(contract["train_tile_id"]),
+                        train_n_blocks=train_n_blocks,
+                        max_blocks=int(contract["max_blocks"]),
+                        eval_tile_rank=eval_tile_rank,
+                        phase25_seed_rank=seed_rank,
+                        eval_max_steps=int(contract["eval_max_steps"]),
+                        train_timesteps=int(contract["total_timesteps"]),
+                        seed=int(seed),
+                    )
+                    baseline_summary["claim_boundary"] = PHASE28_CLAIM_BOUNDARY
+                    summaries.append(baseline_summary)
+                    _store_trace(
+                        traces,
+                        policy_id,
+                        str(variant_id),
+                        str(eval_tile_id),
+                        int(seed),
+                        baseline_steps,
+                    )
+
+    analysis = build_phase28_representation_control_analysis(
+        summaries,
+        compression_match_tolerance=compression_match_tolerance,
+        metadata={
+            "phase2_output_dir": contract["phase2_output_dir"],
+            "phase8_output_dir": contract["phase8_output_dir"],
+            "tile_index_csv": contract["tile_index_csv"],
+            "variants": list(contract["variants"]),
+            "eval_tile_ids": list(contract["eval_tile_ids"]),
+            "seeds": list(contract["seeds"]),
+            "total_timesteps": int(contract["total_timesteps"]),
+            "eval_max_steps": int(contract["eval_max_steps"]),
+        },
+    )
+    return {
+        **contract,
+        **analysis,
+        "training_completed": True,
+        "all_evaluations_completed": all(
+            bool(row["terminated"]) or bool(row["truncated"]) for row in summaries
+        ),
+        "summary_count": len(summaries),
+        "summaries": summaries,
+        "traces": traces,
+        "dependencies": _dependency_metadata(),
+        "claim_boundary": PHASE28_CLAIM_BOUNDARY,
+    }
+
 
 def build_phase28_representation_control_analysis(
     summary_rows_or_csv: Path | str | Sequence[Mapping[str, object]],
@@ -110,6 +336,7 @@ def build_phase28_representation_control_analysis(
         "seeds": seeds,
         "train_timesteps": train_timesteps,
         "eval_max_steps": eval_max_steps,
+        "source_rows": rows,
         "main_summary_rows": _main_summary_rows(rows),
         "tile_seed_delta_rows": delta_rows,
         "learned_policy": learned_policy,
@@ -138,9 +365,16 @@ def write_phase28_representation_control_artifacts(
     delta_path = output_path / "phase28_tile_seed_delta_table.csv"
     readiness_path = output_path / "phase28_control_readiness.md"
 
-    _write_phase25_summary_csv(summary_path, protocol_or_analysis.get("summaries", []))
+    _write_phase25_summary_csv(
+        summary_path,
+        protocol_or_analysis.get("summaries", protocol_or_analysis.get("source_rows", [])),
+    )
     traces_path.write_text(
-        json.dumps(_json_ready(dict(protocol_or_analysis)), indent=2, sort_keys=True),
+        json.dumps(
+            _json_ready(protocol_or_analysis.get("traces", {})),
+            indent=2,
+            sort_keys=True,
+        ),
         encoding="utf-8",
     )
     comparison = _comparison_payload(protocol_or_analysis)
@@ -184,6 +418,95 @@ def _load_summary_rows(
             raise ValueError("Phase 28 summary rows must be objects")
         rows.append(dict(row))
     return rows
+
+
+def _normalize_phase28_variants(variants: Sequence[str] | str) -> list[str]:
+    if isinstance(variants, str):
+        values = [part.strip() for part in variants.split(",")]
+    else:
+        values = [str(item).strip() for item in variants]
+    normalized = [item.upper() for item in values if item]
+    if not normalized:
+        raise ValueError("At least one Phase 28 variant must be requested")
+    unsupported = [
+        variant for variant in normalized if variant not in PHASE28_ALLOWED_VARIANTS
+    ]
+    if unsupported:
+        raise ValueError(f"unsupported Phase 28 variants: {unsupported}")
+    if "B1" not in normalized:
+        raise ValueError("Phase 28 representation controls requires B1")
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("Phase 28 variants must be unique")
+    return normalized
+
+
+def _phase28_variant_source_dirs(
+    variants: Sequence[str],
+    phase2_output_dir: Path | str,
+    phase8_output_dir: Path | str,
+) -> dict[str, str]:
+    source_dirs: dict[str, str] = {}
+    for variant_id in variants:
+        if variant_id in {"B0", "B1"}:
+            source_dirs[str(variant_id)] = str(Path(phase2_output_dir))
+        else:
+            source_dirs[str(variant_id)] = str(Path(phase8_output_dir))
+    return source_dirs
+
+
+def _load_phase28_tiled_variant_input(
+    contract: Mapping[str, object],
+    tile_id: str,
+    variant_id: str,
+):
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 28 contract is missing variant source routing")
+    source_dir = variant_source_dirs.get(variant_id)
+    if source_dir is None:
+        raise ValueError(f"Phase 28 contract has no source for variant {variant_id}")
+    return load_tiled_variant_input(
+        source_dir,
+        str(contract["tile_index_csv"]),
+        tile_id,
+        variant_id=variant_id,
+    )
+
+
+def _train_maskable_ppo_model(
+    train_env: Phase25PaddedTileEnv,
+    seed: int,
+    total_timesteps: int,
+):
+    try:
+        from sb3_contrib import MaskablePPO
+        from sb3_contrib.common.maskable.utils import is_masking_supported
+    except ImportError as exc:
+        raise RuntimeError(
+            "Phase 28 representation-control evaluation requires "
+            "stable-baselines3 and sb3-contrib"
+        ) from exc
+    if not is_masking_supported(train_env):
+        raise ValueError("Phase 28 train env does not expose action_masks")
+    model = MaskablePPO(
+        "MlpPolicy",
+        train_env,
+        seed=int(seed),
+        device="cpu",
+        verbose=0,
+        n_steps=4,
+        batch_size=4,
+        n_epochs=1,
+        gamma=0.99,
+    )
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="XPU device count is zero!.*",
+            category=UserWarning,
+        )
+        model.learn(total_timesteps=int(total_timesteps))
+    return model
 
 
 def _main_summary_rows(rows: list[dict[str, object]]) -> list[dict[str, object]]:
@@ -277,6 +600,7 @@ def _tile_seed_delta_rows(
                             "eval_max_steps",
                             fallback=_optional_int(comparator_row, "eval_max_steps"),
                         ),
+                        "claim_boundary": PHASE28_CLAIM_BOUNDARY,
                     }
                 )
     return delta_rows
@@ -435,9 +759,10 @@ def _expected_variants(
             for variant in _metadata_string_list(metadata, "variants", fallback=[])
             if str(variant) in PHASE28_ALLOWED_VARIANTS
         }
-    return {
-        variant for variant in variants if variant in PHASE28_ALLOWED_VARIANTS
-    }
+    observed = {variant for variant in variants if variant in PHASE28_ALLOWED_VARIANTS}
+    if {"B0", "B1", "D2", "D3"}.issubset(observed):
+        return set(PHASE28_REQUIRED_CONTROL_VARIANTS)
+    return observed
 
 
 def _phase28_diagnostic_status(
@@ -465,15 +790,6 @@ def _phase28_diagnostic_status(
     assert isinstance(d2, Mapping)
     assert isinstance(d3, Mapping)
 
-    if not _beats_comparator(d2, compression_match_tolerance) and not _beats_comparator(
-        d3,
-        compression_match_tolerance,
-    ):
-        return "representation_signal_not_distinguishable"
-
-    if _compression_matches_raw(comparator_deltas, compression_match_tolerance):
-        return "compression_matches_raw"
-
     if (
         _beats_comparator(b0, compression_match_tolerance)
         and _beats_comparator(d2, compression_match_tolerance)
@@ -482,6 +798,15 @@ def _phase28_diagnostic_status(
         and _positive_fraction(d3) >= 0.6
     ):
         return "representation_signal_supported"
+
+    if _compression_matches_raw(comparator_deltas, compression_match_tolerance):
+        return "compression_matches_raw"
+
+    if not _beats_comparator(d2, compression_match_tolerance) and not _beats_comparator(
+        d3,
+        compression_match_tolerance,
+    ):
+        return "representation_signal_not_distinguishable"
 
     return "representation_signal_control_limited"
 
@@ -607,7 +932,7 @@ def _phase28_control_readiness_markdown(analysis: Mapping[str, object]) -> str:
             str(analysis.get("claim_boundary", PHASE28_CLAIM_BOUNDARY)),
             "",
             "Unsafe wording:",
-            "- GeoFM improves planning decisions.",
+            "- Do not claim planning improvement, transfer, or submission readiness from this diagnostic alone.",
             "",
             "Remaining evidence gaps:",
         ]
