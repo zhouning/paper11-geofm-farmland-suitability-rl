@@ -16,6 +16,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 
 - `paper/design/`: Paper11 design package, including system design, experiment plan, manuscript outline, and risk boundaries.
 - `paper/phase1_results/`: interpretation of the executable Phase 1 baseline and the next experiment matrix.
+- `paper/phase26_results/`: interpretation of the current Phase 26 empirical package and the next diagnostic matrix.
 - `paper/submission/`: IJAEOG submission-readiness audit and guarded submission text drafts.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
@@ -310,6 +311,9 @@ Phase 26 analyzes Phase 25 padded held-out B0/B1 outputs into manuscript-facing 
 - Experiment plan: `paper/design/03_experiment_plan.md`
 - Phase 1 result interpretation: `paper/phase1_results/01_phase1_result_interpretation.md`
 - Next experiment matrix: `paper/phase1_results/02_next_experiment_matrix.md`
+- Phase 26 result interpretation: `paper/phase26_results/01_phase26_result_interpretation.md`
+- Phase 26 next experiment matrix: `paper/phase26_results/02_next_experiment_matrix.md`
+- Phase 26 budget comparison: `paper/phase26_results/03_phase26_budget_comparison.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`

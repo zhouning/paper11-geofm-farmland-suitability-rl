@@ -740,11 +740,19 @@ Expected Phase 26 artifacts:
 - `phase26_main_comparison.json`;
 - `phase26_claim_readiness.md`.
 
-Phase 26 reports B1-B0 learned-policy deltas across held-out Bishan tiles and
-random seeds under the deterministic base planning reward. It does not enable
-suitability reward, test B2/B3, demonstrate cross-region transfer, or support
-submission-level planning-performance claims without the actual main-run
-artifacts, figures, uncertainty checks, and robustness package.
+The current macOS Phase 26 result artifacts are available under
+`experiments/phase26_main_experiment/outputs/macos_main/` and
+`experiments/phase26_main_experiment/outputs/macos_main_4096/`. The 1024-step
+result reports a B1-B0 learned-policy mean reward delta of `-0.4329022862`
+with `4 / 9` positive tile-seed pairs. The 4096-step result reports
+`-0.1318712688` with `3 / 9` positive tile-seed pairs. Both have claim status
+`not_supported`.
+
+Phase 26 therefore reports B1-B0 learned-policy deltas across held-out Bishan
+tiles and random seeds under the deterministic base planning reward, but the
+current evidence does not support a positive B1-over-B0 learned-policy claim.
+It does not enable suitability reward, test B2/B3, demonstrate cross-region
+transfer, or support submission-level planning-performance claims.
 
 ## 29. Inspect the Paper11 Design
 

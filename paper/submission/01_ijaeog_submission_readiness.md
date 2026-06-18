@@ -53,7 +53,7 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | Multi-seed learned-policy training | Ready as same-tile pilot evidence | Phase 23 repeats bounded B0/B1 MaskablePPO training on `tile_r003_c003` across seeds `0`, `1`, and `2`, writes 18 summary rows, and reports B1-B0 learned-policy mean reward delta `0.4273019432` under the short pilot budget. |
 | IJAEOG evidence package | Ready as claim-readiness synthesis | Phase 24 consolidates Phase 22/23 outputs into CSV, JSON, and Markdown evidence artifacts and keeps `submission_ready: not_ready`. |
 | Padded held-out learned-policy pilot | Ready as bounded held-out Bishan tile pilot evidence | Phase 25 trains B0/B1 MaskablePPO policies on `tile_r003_c003` and evaluates on distinct held-out tile `tile_r002_c003` under deterministic `base_planning_reward`; the verified smoke writes six summary rows and reports B1-B0 held-out learned-policy mean reward delta `1.3314600457` with `pilot_result_status: B1_improves_B0`. |
-| Main empirical analysis package | Ready as analysis code; awaiting real main-run artifacts | Phase 26 ingests Phase 25 outputs, writes main summary, tile-seed delta, comparison JSON, and claim-readiness Markdown artifacts, and assigns a conservative claim status. Submission readiness still depends on actual Colab/main-run outputs and figures. |
+| Main empirical analysis package | Ready as current negative evidence | Phase 26 ingests Phase 25 outputs and now includes macOS 1024-step and 4096-step result sets. The 4096-step learned-policy B1-B0 mean reward delta is `-0.1318712688`, with only `3 / 9` positive tile-seed pairs and claim status `not_supported`. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled because weak-label evidence is incomplete. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
 | Full manuscript claims | Not ready | No longer-budget/full B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
@@ -109,10 +109,10 @@ Safe current claim:
 > one held-out Bishan tile, but remains bounded pilot evidence and does not
 > resolve suitability-reward readiness, B2/B3 claims, cross-region transfer,
 > long-budget robustness, or final submission readiness. Phase 26 adds the
-> recommended main empirical analysis package for B0/B1 padded held-out outputs:
-> it reports B1-B0 learned-policy deltas by held-out Bishan tile and random
-> seed under the deterministic base planning reward, but it should be treated
-> as manuscript evidence only after real main-run artifacts are available.
+> main empirical analysis package for B0/B1 padded held-out outputs, and the
+> current macOS result sets do not support a positive B1-over-B0 learned-policy
+> claim: the 4096-step mean delta is `-0.1318712688` and only `3 / 9`
+> tile-seed pairs favor B1.
 
 Unsafe current claim:
 
@@ -160,13 +160,16 @@ a distinct held-out Bishan tile under the deterministic base planning reward.
 It does not resolve suitability-reward readiness, B2/B3 claims, cross-region
 transfer, long-budget robustness, or final submission readiness.
 
-Phase 26 is the recommended main empirical analysis package. It does not create
-a new reward or representation family; it consumes Phase 25 outputs and writes
+Phase 26 is the current main empirical analysis package. It does not create a
+new reward or representation family; it consumes Phase 25 outputs and writes
 the main B0/B1 held-out summary, tile-seed delta table, comparison JSON, and
-claim-readiness Markdown. The next experimental action is to run the Phase 25
-main budget on Colab Pro+ or an equivalent training platform, then run Phase 26
-analyze-only on those outputs. Do not claim positive multi-tile results until
-the real Phase 26 artifacts support that statement.
+claim-readiness Markdown. The macOS main result artifacts now show that the
+current B1 learned policy does not stably outperform B0. The 1024-step result
+reports a B1-B0 mean delta of `-0.4329022862` with `4 / 9` positive tile-seed
+pairs, and the 4096-step result reports `-0.1318712688` with `3 / 9` positive
+tile-seed pairs. The next experimental action is diagnostic rather than
+claim-extending: compare budget sensitivity, run representation controls, and
+repair suitability-proxy readiness before any positive performance claim.
 
 Minimum requirements are:
 

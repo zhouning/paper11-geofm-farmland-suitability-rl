@@ -34,11 +34,12 @@ Current guarded version:
 - A deterministic base planning reward supports bounded B0/B1 pilot protocols.
 - Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
 - A padded variable-size policy contract enables a bounded held-out Bishan tile learned-policy pilot for B0/B1 under a deterministic planning reward.
-- A main empirical analysis package is ready to report B1-B0 learned-policy deltas across held-out Bishan tiles and random seeds under a deterministic base planning reward.
+- A main empirical analysis package reports that current B1 learned-policy results do not stably outperform B0 across held-out Bishan tiles and random seeds.
 - Claim-readiness artifacts separate pilot evidence from unsupported claims.
 
-After training evidence exists, revise the last two bullets to report the
-actual multi-seed B0/B1/B2/B3, ablation, and transfer findings.
+Before submission, revise the last two bullets after diagnostic, ablation,
+suitability-reward, and transfer evidence exists. Do not convert the current
+Phase 26 result into a positive performance claim.
 
 ## Abstract Scaffold
 
@@ -73,13 +74,14 @@ the learned policy can be trained on one Bishan tile and evaluated on a distinct
 held-out Bishan tile under the deterministic base planning reward, while still
 excluding suitability reward, B2/B3, cross-region transfer, and submission-level
 performance claims. The Phase 26 analysis package converts Phase 25 outputs
-into main empirical tables, including B1-B0 learned-policy deltas by held-out
-Bishan tile and random seed, and assigns a conservative claim status without
-enabling suitability reward, B2/B3, or cross-region transfer claims.
+into main empirical tables. The current macOS result sets do not support a
+positive B1-over-B0 learned-policy claim: the 1024-step mean delta is
+`-0.4329022862`, and the 4096-step mean delta is `-0.1318712688` with only
+`3 / 9` positive tile-seed pairs.
 
-[Evidence needed: longer-budget B0/B1/B2/B3 training and evaluation results,
-ablation results, suitability-reward validation, cross-region transfer results,
-and final spatial diagnostics.]
+[Evidence needed: B0/B1 stability diagnosis, representation ablation results,
+suitability-reward validation, B2/B3 training and evaluation results,
+cross-region transfer results, and final spatial diagnostics.]
 
 The final manuscript should conclude only from completed comparisons. Until
 those results exist, the contribution should be framed as a reproducible
@@ -212,6 +214,7 @@ Current blocked boundary:
 > deterministic base planning reward, but it still does not enable suitability
 > reward, test B2/B3, demonstrate cross-region transfer, or support
 > submission-level performance claims. Phase 26 adds the main B0/B1 held-out
-> analysis package and can report tile-seed B1-B0 deltas from real Phase 25
-> outputs, but it must not be used to claim positive multi-tile results unless
-> the actual Phase 26 artifacts support that statement.
+> analysis package and the current macOS artifacts do not support positive
+> multi-tile B1-over-B0 results. The 4096-step learned-policy mean delta is
+> negative, so the next step is diagnosis rather than manuscript performance
+> claiming.

@@ -65,6 +65,10 @@ paper/design/05_risks_and_boundaries.md	design	Claim boundaries, failure modes, 
 paper/phase1_results/README.md	results	Index for the Phase 1 result interpretation package.
 paper/phase1_results/01_phase1_result_interpretation.md	results	Reviewer-facing interpretation of the executable Phase 1 Bishan GeoFM baseline.
 paper/phase1_results/02_next_experiment_matrix.md	results	Next experiment matrix connecting Phase 1 to Paper11 DRL, ablation, and transfer evidence.
+paper/phase26_results/README.md	results	Index for the Phase 26 result interpretation package.
+paper/phase26_results/01_phase26_result_interpretation.md	results	Reviewer-facing interpretation of the current Phase 26 B0/B1 held-out empirical evidence.
+paper/phase26_results/02_next_experiment_matrix.md	results	Next diagnostic experiment matrix after the current Phase 26 negative B1-over-B0 result.
+paper/phase26_results/03_phase26_budget_comparison.md	results	Comparison of current 1024-step and 4096-step Phase 26 result sets and claim status.
 paper/submission/README.md	submission	Index for Paper11 submission-readiness materials.
 paper/submission/01_ijaeog_submission_readiness.md	submission	IJAEOG target-journal readiness audit, claim-evidence gate, and next experimental phase recommendation.
 paper/submission/02_draft_titles_highlights_declarations.md	submission	Guarded draft titles, highlights, abstract scaffold, cover-letter scaffold, and declaration text.

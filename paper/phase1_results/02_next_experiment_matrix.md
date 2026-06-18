@@ -116,3 +116,20 @@ This phase can be completed before full DRL training. It would create the table 
 ## Recommended Next Step
 
 Build a Phase 2 block-feature assembly pipeline. The output should be a block-level table that joins explicit planning features, AlphaEarth 64-dimensional block embeddings, `suitability_proxy`, weak labels, and region split identifiers.
+
+## Phase 26 Follow-On Decision
+
+The current Phase 26 evidence package shows that the 4096-step learned-policy
+result is not yet stable enough to support a positive B1-over-B0 claim. Before
+moving to new manuscript claims, the next implementation should decide between
+three follow-on tracks:
+
+1. longer-budget B0/B1 stability replication;
+2. suitability-proxy validation and reward readiness repair;
+3. transfer and robustness diagnostics with explicit ablations.
+
+The recommended order is:
+
+1. check whether the negative Phase 26 mean delta is a budget effect;
+2. if not, focus on suitability proxy repair or representation ablations;
+3. only then move toward manuscript-level figures.
