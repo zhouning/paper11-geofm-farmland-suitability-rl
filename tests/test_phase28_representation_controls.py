@@ -146,6 +146,7 @@ def _phase28_summary_rows(status_case="supported"):
         },
     }
     rewards = rewards_by_case[status_case]
+    n_features_by_variant = {"B0": 17, "D4P8": 25, "D4P16": 33}
     rows = []
     pairs = [
         ("tile_eval_a", 0),
@@ -169,7 +170,7 @@ def _phase28_summary_rows(status_case="supported"):
                     "max_blocks": 3,
                     "train_n_blocks": 3,
                     "eval_n_blocks": 2,
-                    "n_features": 17 if variant_id == "B0" else 81,
+                    "n_features": n_features_by_variant.get(variant_id, 81),
                     "observation_shape": 260,
                     "action_space_n": 3,
                     "episode_steps": 2,
@@ -224,6 +225,8 @@ def test_phase28_contract_routes_b_and_d_variant_sources(tmp_path):
     assert contract["variant_source_dirs"]["B0"] == str(phase2_dir)
     assert contract["variant_source_dirs"]["B1"] == str(phase2_dir)
     assert contract["variant_source_dirs"]["D2"] == str(phase8_dir)
+    assert contract["variant_source_dirs"]["D3"] == str(phase8_dir)
+    assert contract["variant_source_dirs"]["D4P8"] == str(phase8_dir)
     assert contract["variant_source_dirs"]["D4P16"] == str(phase8_dir)
     assert contract["train_tile_id"] == "tile_r000_c001"
     assert contract["eval_tile_ids"] == ["tile_r000_c002", "tile_r000_c000"]
@@ -338,7 +341,11 @@ def test_phase28_writer_outputs_summary_trace_comparison_delta_and_markdown(tmp_
     protocol = {
         **analysis,
         "summaries": summary_rows,
-        "traces": {"trained_policy": {"B1": {"tile_eval_a": {"0": []}}}},
+        "traces": {
+            "trained_policy": {
+                "B1": {"tile_eval_a": {"0": [{"action": 0, "reward": 1.6}]}}
+            }
+        },
     }
 
     paths = write_phase28_representation_control_artifacts(
@@ -351,11 +358,31 @@ def test_phase28_writer_outputs_summary_trace_comparison_delta_and_markdown(tmp_
     assert paths["comparison_json"].name == "phase28_representation_control_comparison.json"
     assert paths["tile_seed_delta_csv"].name == "phase28_tile_seed_delta_table.csv"
     assert paths["control_readiness_md"].name == "phase28_control_readiness.md"
+    assert all(path.exists() for path in paths.values())
+    with paths["summary_csv"].open("r", encoding="utf-8", newline="") as handle:
+        saved_summary_rows = list(csv.DictReader(handle))
+    assert any(
+        row["row_type"] == "trained_policy"
+        and row["variant_id"] == "B1"
+        and row["eval_tile_id"] == "tile_eval_a"
+        and row["seed"] == "0"
+        for row in saved_summary_rows
+    )
+    with paths["tile_seed_delta_csv"].open("r", encoding="utf-8", newline="") as handle:
+        saved_delta_rows = list(csv.DictReader(handle))
+    assert {"D2", "D3"}.issubset(
+        {row["comparator_variant_id"] for row in saved_delta_rows}
+    )
+    saved_traces = json.loads(paths["traces_json"].read_text(encoding="utf-8"))
+    assert saved_traces["traces"]["trained_policy"]["B1"]["tile_eval_a"]["0"] == [
+        {"action": 0, "reward": 1.6}
+    ]
     saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
     assert saved["phase28_diagnostic_status"] == "representation_signal_supported"
     markdown = paths["control_readiness_md"].read_text(encoding="utf-8")
     assert "representation_signal_supported" in markdown
-    assert "GeoFM improves planning decisions" not in markdown
+    assert "Unsafe wording:" in markdown
+    assert "GeoFM improves planning decisions." in markdown
 
 
 def test_phase28_run_uses_fake_training_model_for_all_variants(tmp_path, monkeypatch):
@@ -375,10 +402,23 @@ def test_phase28_run_uses_fake_training_model_for_all_variants(tmp_path, monkeyp
     _write_ready_phase2_outputs(phase2_dir)
     _write_phase8_outputs(phase2_dir, phase8_dir)
     tile_index = _write_tile_index(tmp_path / "phase13_tile_index.csv")
+
+    train_calls = []
+
+    def _fake_train(train_env, seed, total_timesteps):
+        train_calls.append(
+            {
+                "variant_id": train_env.unwrapped.variant_id,
+                "seed": seed,
+                "total_timesteps": total_timesteps,
+            }
+        )
+        return FakeModel()
+
     monkeypatch.setattr(
         phase28,
         "_train_maskable_ppo_model",
-        lambda train_env, seed, total_timesteps: FakeModel(),
+        _fake_train,
     )
 
     protocol = phase28.run_phase28_representation_control_evaluation(
@@ -395,6 +435,16 @@ def test_phase28_run_uses_fake_training_model_for_all_variants(tmp_path, monkeyp
     assert protocol["training_completed"] is True
     assert protocol["summary_count"] == 6
     assert {row["variant_id"] for row in protocol["summaries"]} == {"B1", "D2"}
+    assert train_calls == [
+        {"variant_id": "B1", "seed": 0, "total_timesteps": 8},
+        {"variant_id": "D2", "seed": 0, "total_timesteps": 8},
+    ]
+    trained_rows = [
+        row for row in protocol["summaries"] if row["row_type"] == "trained_policy"
+    ]
+    assert {row["variant_id"] for row in trained_rows} == {"B1", "D2"}
+    assert protocol["traces"]["trained_policy"]["B1"]["tile_r000_c002"]["0"]
+    assert protocol["traces"]["trained_policy"]["D2"]["tile_r000_c002"]["0"]
     assert protocol["phase28_diagnostic_status"] in {
         "representation_signal_control_limited",
         "representation_signal_not_distinguishable",
