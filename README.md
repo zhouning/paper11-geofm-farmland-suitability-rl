@@ -47,7 +47,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase25_padded_heldout_policy/`: executable Phase 25 padded variable-size held-out-tile B0/B1 policy pilot runner.
 - `experiments/phase26_main_experiment/`: executable Phase 26 main empirical analysis runner.
 - `experiments/phase27_stability_diagnosis/`: executable Phase 27 B0/B1 stability diagnosis runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, and Phase 27 stability diagnosis.
+- `experiments/phase28_representation_controls/`: executable Phase 28 representation-control runner for B0/B1/D2/D3/D4 padded held-out diagnostics.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, and Phase 28 representation-control diagnostics.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -318,6 +319,27 @@ B1-B0 learned-policy deltas and reports `budget_not_explanatory`: the mean
 delta improves by `0.3010310174`, but the higher-budget result is still
 negative and the positive tile-seed count falls from `4 / 9` to `3 / 9`.
 
+Run the Phase 28 representation-control package after Phase 2 B0/B1 outputs,
+Phase 8 D-control outputs, and the Phase 13 tile index are available:
+
+```powershell
+python experiments\phase28_representation_controls\run_phase28_representation_controls.py --mode run-and-analyze --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1,D2,D3,D4P8,D4P16 --total-timesteps 1024 --eval-max-steps 8 --seeds 0,1,2 --max-eval-tiles 3 --output-dir experiments\phase28_representation_controls\outputs\real_bishan_main
+```
+
+For existing Phase 28 summary rows, use analyze-only mode:
+
+```powershell
+python experiments\phase28_representation_controls\run_phase28_representation_controls.py --mode analyze-only --existing-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_main\phase28_representation_control_summary.csv --output-dir experiments\phase28_representation_controls\outputs\real_bishan_analysis
+```
+
+Phase 28 writes `phase28_representation_control_summary.csv`,
+`phase28_representation_control_traces.json`,
+`phase28_representation_control_comparison.json`,
+`phase28_tile_seed_delta_table.csv`, and `phase28_control_readiness.md`.
+It is diagnostic only: it does not enable suitability reward, test B2/B3,
+test cross-region transfer, or support final submission-level
+planning-performance claims.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -365,6 +387,8 @@ negative and the positive tile-seed count falls from `4 / 9` to `3 / 9`.
 - Phase 26 main empirical analysis module: `src/paper11_geofm/phase26_main_experiment.py`
 - Phase 27 stability diagnosis runner: `experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py`
 - Phase 27 stability diagnosis module: `src/paper11_geofm/phase27_stability_diagnosis.py`
+- Phase 28 representation-control runner: `experiments/phase28_representation_controls/run_phase28_representation_controls.py`
+- Phase 28 representation-control module: `src/paper11_geofm/phase28_representation_controls.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

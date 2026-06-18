@@ -31,6 +31,7 @@ docs/superpowers/specs/2026-06-12-phase24-ijaeog-evidence-package-design.md	desi
 docs/superpowers/specs/2026-06-12-phase25-padded-heldout-policy-design.md	design	Phase 25 design for padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy evidence.
 docs/superpowers/specs/2026-06-17-phase26-main-empirical-experiment-design.md	design	Phase 26 design for the B0/B1 padded held-out multi-seed, multi-tile main empirical analysis package.
 docs/superpowers/specs/2026-06-18-phase27-b0-b1-stability-diagnosis-design.md	design	Phase 27 design for read-only B0/B1 budget and tile-seed stability diagnosis over Phase 26 artifacts.
+docs/superpowers/specs/2026-06-18-phase28-representation-control-evaluation-design.md	design	Phase 28 design for B0/B1/D2/D3/D4 representation-control diagnostics under the padded held-out protocol.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 docs/superpowers/plans/2026-06-09-phase2-block-geofm-feature-assembly.md	plan	Implementation plan for the Phase 2 block-level GeoFM feature assembly pipeline.
 docs/superpowers/plans/2026-06-09-phase3-drl-input-adapter.md	plan	Implementation plan for the Phase 3 DRL input adapter.
@@ -58,6 +59,7 @@ docs/superpowers/plans/2026-06-12-phase24-ijaeog-evidence-package.md	plan	Implem
 docs/superpowers/plans/2026-06-12-phase25-padded-heldout-policy.md	plan	Implementation plan for the Phase 25 padded held-out-tile B0/B1 learned-policy pilot.
 docs/superpowers/plans/2026-06-17-phase26-main-empirical-experiment.md	plan	Implementation plan for the Phase 26 main empirical analysis package.
 docs/superpowers/plans/2026-06-18-phase27-b0-b1-stability-diagnosis.md	plan	Implementation plan for the Phase 27 B0/B1 stability diagnosis package.
+docs/superpowers/plans/2026-06-18-phase28-representation-control-evaluation.md	plan	Implementation plan for the Phase 28 representation-control evaluation package.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
@@ -116,6 +118,7 @@ src/paper11_geofm/ijaeog_evidence_package.py	runtime	Phase 24 IJAEOG evidence-pa
 src/paper11_geofm/padded_heldout_policy.py	runtime	Phase 25 padded variable-size tile environment, MaskablePPO held-out evaluation runner, baselines, comparison aggregation, and artifact writer.
 src/paper11_geofm/phase26_main_experiment.py	runtime	Phase 26 analyzer for Phase 25 outputs, tile-seed B1-B0 deltas, claim status, and manuscript-facing artifacts.
 src/paper11_geofm/phase27_stability_diagnosis.py	runtime	Phase 27 analyzer for Phase 26 budget transitions, tile-seed stability classes, and diagnostic artifacts.
+src/paper11_geofm/phase28_representation_controls.py	runtime	Phase 28 contract builder, evaluator, analyzer, and artifact writer for B0/B1/D2/D3/D4 representation-control diagnostics.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -142,6 +145,7 @@ experiments/phase24_ijaeog_evidence_package/run_phase24_ijaeog_evidence_package.
 experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py	experiment	Executable Phase 25 padded held-out-tile B0/B1 learned-policy runner for real Bishan tiled artifacts.
 experiments/phase26_main_experiment/run_phase26_main_experiment.py	experiment	Executable Phase 26 analyze-only and run-and-analyze runner for main empirical artifacts.
 experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py	experiment	Executable Phase 27 read-only stability diagnosis runner for Phase 26 comparison JSON artifacts.
+experiments/phase28_representation_controls/run_phase28_representation_controls.py	experiment	Executable Phase 28 analyze-only and run-and-analyze runner for representation-control artifacts.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -199,3 +203,4 @@ tests/test_phase24_ijaeog_evidence_package.py	verification	Pytest checks for Pha
 tests/test_phase25_padded_heldout_policy.py	verification	Pytest checks for Phase 25 padded environment masks, held-out tile selection, tiny MaskablePPO run, artifact writing, and CLI output.
 tests/test_phase26_main_experiment.py	verification	Pytest checks for Phase 26 aggregation, claim status rules, artifact writing, and CLI behavior.
 tests/test_phase27_stability_diagnosis.py	verification	Pytest checks for Phase 27 budget transitions, stability classes, artifact writing, and CLI behavior.
+tests/test_phase28_representation_controls.py	verification	Pytest checks for Phase 28 contract routing, status rules, writer behavior, run path, and CLI behavior.

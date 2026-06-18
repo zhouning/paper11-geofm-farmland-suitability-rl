@@ -787,7 +787,39 @@ explain or resolve the current negative B1 evidence. The next recommended work
 is representation controls and repeated/intermediate budget stability, not a
 positive learned-policy claim.
 
-## 30. Inspect the Paper11 Design
+## 30. Run the Phase 28 Representation-Control Evaluation
+
+Phase 28 evaluates whether B1 differs from B0 and D2/D3/D4 representation
+controls under the same padded held-out base-reward protocol. It consumes
+Phase 2 B0/B1 outputs, Phase 8 D-control outputs, and the Phase 13 tile index.
+
+Run-and-analyze mode:
+
+```powershell
+python experiments\phase28_representation_controls\run_phase28_representation_controls.py --mode run-and-analyze --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,B1,D2,D3,D4P8,D4P16 --total-timesteps 1024 --eval-max-steps 8 --seeds 0,1,2 --max-eval-tiles 3 --output-dir experiments\phase28_representation_controls\outputs\real_bishan_main
+```
+
+Analyze-only mode:
+
+```powershell
+python experiments\phase28_representation_controls\run_phase28_representation_controls.py --mode analyze-only --existing-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_main\phase28_representation_control_summary.csv --output-dir experiments\phase28_representation_controls\outputs\real_bishan_analysis
+```
+
+Expected Phase 28 artifacts:
+
+- `phase28_representation_control_summary.csv`;
+- `phase28_representation_control_traces.json`;
+- `phase28_representation_control_comparison.json`;
+- `phase28_tile_seed_delta_table.csv`;
+- `phase28_control_readiness.md`.
+
+`run-and-analyze` requires explicit `--variants`, `--total-timesteps`,
+`--eval-max-steps`, `--seeds`, and either `--max-eval-tiles` or
+`--eval-tile-ids`. Phase 28 is diagnostic only: it does not enable suitability
+reward, test B2/B3, test cross-region transfer, or support final
+submission-level planning-performance claims.
+
+## 31. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -801,7 +833,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 31. Inspect Runtime Code
+## 32. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -1006,9 +1038,16 @@ experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py
 src/paper11_geofm/phase27_stability_diagnosis.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, and Phase 27 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26 run-and-analyze mode requires the real Phase 11/13 outputs plus the RL stack.
+Phase 28 executable files:
 
-## 32. Regenerate Embeddings
+```text
+experiments/phase28_representation_controls/run_phase28_representation_controls.py
+src/paper11_geofm/phase28_representation_controls.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, Phase 27, and Phase 28 analyze-only reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26/28 run-and-analyze modes require the real Phase 11/13 outputs plus the RL stack.
+
+## 33. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -1025,7 +1064,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 33. Large Data and Weights
+## 34. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

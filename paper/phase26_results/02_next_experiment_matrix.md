@@ -157,7 +157,11 @@ current 1024 and 4096 step result sets. It reports:
 
 The next implementation target should therefore be:
 
-1. a representation ablation sweep against random, shuffled, and PCA controls;
-2. a repeated or intermediate-budget B0/B1 stability sweep if compute is
-   available;
-3. a suitability-proxy validation update before any reward integration.
+1. run the implemented Phase 28 representation-control package on
+   `B0,B1,D2,D3,D4P8,D4P16` under the same padded held-out base-reward
+   protocol;
+2. require full B0/B1/D2/D3/D4P8/D4P16 coverage before any
+   `representation_signal_supported` interpretation;
+3. run a repeated or intermediate-budget B0/B1 stability sweep only if compute
+   is available after the control package is analyzed;
+4. update suitability-proxy validation before any reward integration.
