@@ -367,6 +367,34 @@ def test_phase28_supported_status_requires_d4_controls(tmp_path):
     assert {"D4P8", "D4P16"}.issubset(missing_variants)
 
 
+def test_phase28_supported_status_requires_d4_controls_even_with_metadata_subset(tmp_path):
+    from paper11_geofm.phase28_representation_controls import (
+        build_phase28_representation_control_analysis,
+    )
+
+    rows = [
+        row
+        for row in _phase28_summary_rows("supported")
+        if row["variant_id"] in {"B0", "B1", "D2", "D3"}
+    ]
+    summary_csv = _write_summary_csv(tmp_path / "missing_d4_with_metadata.csv", rows)
+
+    analysis = build_phase28_representation_control_analysis(
+        summary_csv,
+        metadata={
+            "variants": ["B0", "B1", "D2", "D3"],
+            "eval_tile_ids": ["tile_eval_a", "tile_eval_b"],
+            "seeds": [0, 1],
+        },
+    )
+
+    assert analysis["phase28_diagnostic_status"] == "insufficient"
+    missing_variants = {
+        row["variant_id"] for row in analysis["coverage_issues"]["missing_variant_rows"]
+    }
+    assert {"D4P8", "D4P16"}.issubset(missing_variants)
+
+
 def test_phase28_supported_status_takes_precedence_over_compression_match(tmp_path):
     from paper11_geofm.phase28_representation_controls import (
         build_phase28_representation_control_analysis,
@@ -459,8 +487,14 @@ def test_phase28_writer_outputs_summary_trace_comparison_delta_and_markdown(tmp_
     saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
     assert saved["phase28_diagnostic_status"] == "representation_signal_supported"
     markdown = paths["control_readiness_md"].read_text(encoding="utf-8")
+    assert "Setup:" in markdown
+    assert "Variants evaluated:" in markdown
     assert "representation_signal_supported" in markdown
+    assert "B1 minus D4P8" in markdown
+    assert "B1 minus D4P16" in markdown
+    assert "Safe wording:" in markdown
     assert "Unsafe wording:" in markdown
+    assert "Next recommended experiment:" in markdown
     assert "GeoFM improves planning decisions." not in markdown
 
 

@@ -754,15 +754,18 @@ def _expected_variants(
     metadata: Mapping[str, object],
 ) -> set[str]:
     if "variants" in metadata:
-        return {
+        expected = {
             str(variant)
             for variant in _metadata_string_list(metadata, "variants", fallback=[])
             if str(variant) in PHASE28_ALLOWED_VARIANTS
         }
-    observed = {variant for variant in variants if variant in PHASE28_ALLOWED_VARIANTS}
-    if {"B0", "B1", "D2", "D3"}.issubset(observed):
+    else:
+        expected = {
+            variant for variant in variants if variant in PHASE28_ALLOWED_VARIANTS
+        }
+    if {"B0", "B1", "D2", "D3"}.issubset(expected):
         return set(PHASE28_REQUIRED_CONTROL_VARIANTS)
-    return observed
+    return expected
 
 
 def _phase28_diagnostic_status(
@@ -908,15 +911,31 @@ def _phase28_control_readiness_markdown(analysis: Mapping[str, object]) -> str:
     gaps = analysis.get("remaining_evidence_gaps")
     if not isinstance(gaps, list):
         gaps = []
+    variants = analysis.get("variants")
+    if not isinstance(variants, list):
+        variants = []
+    eval_tile_ids = analysis.get("eval_tile_ids")
+    if not isinstance(eval_tile_ids, list):
+        eval_tile_ids = []
+    seeds = analysis.get("seeds")
+    if not isinstance(seeds, list):
+        seeds = []
 
     lines = [
         "# Phase 28 Control Readiness",
         "",
         f"Status: {analysis.get('phase28_diagnostic_status', '')}",
         "",
+        "Setup:",
+        f"- Variants evaluated: {', '.join(str(item) for item in variants)}",
+        f"- Evaluation tiles: {', '.join(str(item) for item in eval_tile_ids)}",
+        f"- Seeds: {', '.join(str(item) for item in seeds)}",
+        f"- Train timesteps: {analysis.get('train_timesteps', '')}",
+        f"- Evaluation max steps: {analysis.get('eval_max_steps', '')}",
+        "",
         "Primary comparator deltas:",
     ]
-    for comparator in PHASE28_PRIMARY_COMPARATORS:
+    for comparator in ("B0", "D2", "D3", "D4P8", "D4P16"):
         summary = comparator_deltas.get(f"B1_minus_{comparator}")
         if isinstance(summary, Mapping):
             lines.append(
@@ -931,8 +950,15 @@ def _phase28_control_readiness_markdown(analysis: Mapping[str, object]) -> str:
             "",
             str(analysis.get("claim_boundary", PHASE28_CLAIM_BOUNDARY)),
             "",
+            "Safe wording:",
+            "- Phase 28 reports whether B1 is distinguishable from B0 and representation controls under the current base-reward Bishan held-out protocol.",
+            "",
             "Unsafe wording:",
             "- Do not claim planning improvement, transfer, or submission readiness from this diagnostic alone.",
+            "",
+            "Next recommended experiment:",
+            "- If Phase 28 remains insufficient or control-limited, repair representation controls before enabling suitability reward or B2/B3.",
+            "- If Phase 28 supports a representation signal, rerun stability checks and validate suitability proxy before any manuscript-level performance claim.",
             "",
             "Remaining evidence gaps:",
         ]
