@@ -36,12 +36,13 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | IJAEOG evidence package | Phase 24 synthesis and claim-readiness package | new performance result, new transfer result | Use only as an evidence ledger and claim-boundary artifact. |
 | padded held-out B0/B1 policy pilot | Phase 25 bounded padded variable-size held-out Bishan tile MaskablePPO pilot | cross-region transfer result, suitability-reward result, final policy-performance result | Use only for held-out Bishan tile learned-policy pilot evidence under deterministic base planning reward. |
 | main B0/B1 held-out analysis package | Phase 26 B0/B1 padded held-out multi-seed, multi-tile analysis package | final B2/B3 result, suitability-reward result, cross-region transfer result | Use only for B1-B0 learned-policy deltas across held-out Bishan tiles and seeds under deterministic base planning reward. |
+| B0/B1 stability diagnosis | Phase 27 read-only comparison of 1024-step and 4096-step Phase 26 artifacts | new training result, convergence proof, positive performance result | Use only to explain budget and tile-seed instability in the current negative evidence. |
 
 ## Readiness Summary
 
 | Item | Status | Evidence or blocker |
 |---|---|---|
-| Repository and code package | Ready | The Phase 26 branch includes the main empirical analysis package and CLI after this update; final verification must be rerun before upload. |
+| Repository and code package | Ready | The repository includes the Phase 26 main empirical analysis package and Phase 27 stability diagnosis CLI after this update; final verification must be rerun before upload. |
 | Lightweight reproducibility | Ready | `python scripts\smoke_check.py` passes with included Bishan AlphaEarth sample arrays. |
 | Real-data adapter | Ready for local reproduction | Phase 11 exports 64,984 Bishan DLTB polygons into Phase 2-compatible artifacts, using a local external GeoPackage. |
 | Tiled contract | Ready | Phase 13 creates 54 non-empty tiles; largest tile has 2,234 blocks. |
@@ -54,6 +55,7 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | IJAEOG evidence package | Ready as claim-readiness synthesis | Phase 24 consolidates Phase 22/23 outputs into CSV, JSON, and Markdown evidence artifacts and keeps `submission_ready: not_ready`. |
 | Padded held-out learned-policy pilot | Ready as bounded held-out Bishan tile pilot evidence | Phase 25 trains B0/B1 MaskablePPO policies on `tile_r003_c003` and evaluates on distinct held-out tile `tile_r002_c003` under deterministic `base_planning_reward`; the verified smoke writes six summary rows and reports B1-B0 held-out learned-policy mean reward delta `1.3314600457` with `pilot_result_status: B1_improves_B0`. |
 | Main empirical analysis package | Ready as current negative evidence | Phase 26 ingests Phase 25 outputs and now includes macOS 1024-step and 4096-step result sets. The 4096-step learned-policy B1-B0 mean reward delta is `-0.1318712688`, with only `3 / 9` positive tile-seed pairs and claim status `not_supported`. |
+| B0/B1 stability diagnosis | Ready as current diagnostic evidence | Phase 27 compares the 1024-step and 4096-step Phase 26 result sets and reports `budget_not_explanatory`: mean delta improves by `0.3010310174`, but positive tile-seed count falls by `1`, with stability counts `1` stable-positive, `3` stable-negative, `2` flip-to-positive, and `3` flip-to-negative. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled because weak-label evidence is incomplete. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
 | Full manuscript claims | Not ready | No longer-budget/full B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
@@ -112,14 +114,17 @@ Safe current claim:
 > main empirical analysis package for B0/B1 padded held-out outputs, and the
 > current macOS result sets do not support a positive B1-over-B0 learned-policy
 > claim: the 4096-step mean delta is `-0.1318712688` and only `3 / 9`
-> tile-seed pairs favor B1.
+> tile-seed pairs favor B1. Phase 27 adds a budget and tile-seed stability
+> diagnosis and reports `budget_not_explanatory`, so the next work should be
+> representation controls and repeated/intermediate budget checks rather than
+> a positive learned-policy claim.
 
 Unsafe current claim:
 
 > The GeoFM-enhanced DRL policy outperforms existing farmland-layout optimization
 > methods.
 
-## Phase 20/21/22/23/24/25/26 Status and Recommended Next Experimental Phase
+## Phase 20/21/22/23/24/25/26/27 Status and Recommended Next Experimental Phase
 
 Phase 20 now provides a bounded same-tile B0/B1 training and evaluation pilot.
 It avoids suitability reward, uses fixed tile selection and seed, runs a short
@@ -170,6 +175,16 @@ pairs, and the 4096-step result reports `-0.1318712688` with `3 / 9` positive
 tile-seed pairs. The next experimental action is diagnostic rather than
 claim-extending: compare budget sensitivity, run representation controls, and
 repair suitability-proxy readiness before any positive performance claim.
+
+Phase 27 performs that diagnostic comparison without rerunning training. It
+finds that the higher budget improves the mean B1-B0 delta by `0.3010310174`,
+but the higher-budget result remains negative and the positive tile-seed count
+falls by `1`. Its stability counts are `1` stable-positive, `3`
+stable-negative, `2` flip-to-positive, and `3` flip-to-negative. The diagnosis
+therefore remains conservative: budget alone is not a sufficient explanation,
+and the next phase should prioritize representation ablations against random,
+shuffled, and PCA-compressed GeoFM controls, with repeated or intermediate
+budgets only as a stability check.
 
 Minimum requirements are:
 

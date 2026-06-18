@@ -11,7 +11,8 @@ analysis package to evidence that can actually support a paper claim.
 The next work should follow this order:
 
 1. **Stability diagnosis:** explain why the learned-policy B1-B0 mean delta is
-   currently negative on the 4096-step result set.
+   currently negative on the 4096-step result set. Phase 27 now completes this
+   read-only diagnostic step and reports `budget_not_explanatory`.
 2. **Representation diagnostics:** separate GeoFM signal from extra input
    capacity and seed noise.
 3. **Proxy validation:** re-check whether `suitability_proxy` is ready for
@@ -122,11 +123,11 @@ explicit-feature-only policies.
 
 The minimum next implementation should be:
 
-1. Diagnose the current Phase 26 negative learned-policy mean delta.
-2. Run B0/B1 stability checks across additional seeds or budgets.
-3. Compare B1 against random, shuffled, and PCA-compressed GeoFM controls.
-4. Validate or further block `suitability_proxy` for reward use.
-5. Add at least one spatial case map for a representative held-out tile.
+1. Compare B1 against random, shuffled, and PCA-compressed GeoFM controls.
+2. Run B0/B1 stability checks across additional seeds or intermediate/repeated
+   budgets only if compute is available.
+3. Validate or further block `suitability_proxy` for reward use.
+4. Add at least one spatial case map for a representative held-out tile.
 
 This work can be completed before any new manuscript claim. It would create the
 diagnostic evidence needed to decide whether Paper11 should stay focused on a
@@ -145,10 +146,18 @@ paper.
 
 ## Recommended Next Step
 
-Run a Phase 26 follow-on diagnosis package that compares the current 1024 and
-4096 step result sets, then use the conclusion to decide whether the next
-implementation target should be:
+Phase 27 has now run the Phase 26 follow-on diagnosis package comparing the
+current 1024 and 4096 step result sets. It reports:
 
-1. an intermediate-budget B0/B1 stability sweep;
-2. a representation ablation sweep against random, shuffled, and PCA controls;
-3. a suitability-proxy validation update if budget does not explain the gap.
+- diagnostic status: `budget_not_explanatory`;
+- mean delta change from 1024 to 4096 steps: `0.3010310174`;
+- positive tile-seed count change: `-1`;
+- stability counts: stable-positive `1`, stable-negative `3`,
+  flip-to-positive `2`, flip-to-negative `3`, incomplete `0`.
+
+The next implementation target should therefore be:
+
+1. a representation ablation sweep against random, shuffled, and PCA controls;
+2. a repeated or intermediate-budget B0/B1 stability sweep if compute is
+   available;
+3. a suitability-proxy validation update before any reward integration.

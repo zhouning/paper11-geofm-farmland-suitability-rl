@@ -754,7 +754,40 @@ current evidence does not support a positive B1-over-B0 learned-policy claim.
 It does not enable suitability reward, test B2/B3, demonstrate cross-region
 transfer, or support submission-level planning-performance claims.
 
-## 29. Inspect the Paper11 Design
+## 29. Run the Phase 27 B0/B1 Stability Diagnosis
+
+Phase 27 is a read-only diagnosis over the existing Phase 26 comparison JSON
+artifacts. It does not run RL training.
+
+Run:
+
+```powershell
+python experiments\phase27_stability_diagnosis\run_phase27_stability_diagnosis.py --phase26-comparison-json experiments\phase26_main_experiment\outputs\macos_main\phase26_analysis\phase26_main_comparison.json --phase26-comparison-json experiments\phase26_main_experiment\outputs\macos_main_4096\phase26_analysis\phase26_main_comparison.json --output-dir experiments\phase27_stability_diagnosis\outputs\macos_1024_vs_4096
+```
+
+Expected Phase 27 artifacts:
+
+- `phase27_budget_transition_table.csv`;
+- `phase27_tile_seed_stability.csv`;
+- `phase27_diagnostic_summary.json`;
+- `phase27_diagnostic_readiness.md`.
+
+Current observed outcome:
+
+- diagnostic status: `budget_not_explanatory`;
+- 1024-step B1-B0 mean delta: `-0.4329022862`;
+- 4096-step B1-B0 mean delta: `-0.1318712688`;
+- mean delta change: `0.3010310174`;
+- positive tile-seed count change: `-1`;
+- stability counts: stable-positive `1`, stable-negative `3`,
+  flip-to-positive `2`, flip-to-negative `3`, incomplete `0`.
+
+Phase 27 confirms that budget sensitivity exists, but budget alone does not
+explain or resolve the current negative B1 evidence. The next recommended work
+is representation controls and repeated/intermediate budget stability, not a
+positive learned-policy claim.
+
+## 30. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -768,7 +801,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 30. Inspect Runtime Code
+## 31. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -966,9 +999,16 @@ experiments/phase26_main_experiment/run_phase26_main_experiment.py
 src/paper11_geofm/phase26_main_experiment.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, and Phase 26 analysis-only reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26 run-and-analyze mode requires the real Phase 11/13 outputs plus the RL stack.
+Phase 27 executable files:
 
-## 31. Regenerate Embeddings
+```text
+experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py
+src/paper11_geofm/phase27_stability_diagnosis.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, and Phase 27 reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26 run-and-analyze mode requires the real Phase 11/13 outputs plus the RL stack.
+
+## 32. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -985,7 +1025,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 32. Large Data and Weights
+## 33. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

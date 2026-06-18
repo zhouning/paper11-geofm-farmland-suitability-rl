@@ -17,6 +17,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `paper/design/`: Paper11 design package, including system design, experiment plan, manuscript outline, and risk boundaries.
 - `paper/phase1_results/`: interpretation of the executable Phase 1 baseline and the next experiment matrix.
 - `paper/phase26_results/`: interpretation of the current Phase 26 empirical package and the next diagnostic matrix.
+- `paper/phase27_results/`: interpretation of the Phase 27 B0/B1 budget and tile-seed stability diagnosis.
 - `paper/submission/`: IJAEOG submission-readiness audit and guarded submission text drafts.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
@@ -45,7 +46,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase24_ijaeog_evidence_package/`: executable Phase 24 IJAEOG evidence-package and claim-readiness runner.
 - `experiments/phase25_padded_heldout_policy/`: executable Phase 25 padded variable-size held-out-tile B0/B1 policy pilot runner.
 - `experiments/phase26_main_experiment/`: executable Phase 26 main empirical analysis runner.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, and Phase 26 empirical analysis.
+- `experiments/phase27_stability_diagnosis/`: executable Phase 27 B0/B1 stability diagnosis runner.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, and Phase 27 stability diagnosis.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -304,6 +306,18 @@ python experiments\phase26_main_experiment\run_phase26_main_experiment.py --mode
 
 Phase 26 analyzes Phase 25 padded held-out B0/B1 outputs into manuscript-facing empirical tables. It reports B1-B0 learned-policy deltas by held-out tile and seed, assigns a conservative claim status, and keeps suitability reward, B2/B3, and cross-region transfer out of scope.
 
+Run the Phase 27 B0/B1 stability diagnosis after the current Phase 26 macOS
+artifacts exist:
+
+```powershell
+python experiments\phase27_stability_diagnosis\run_phase27_stability_diagnosis.py --phase26-comparison-json experiments\phase26_main_experiment\outputs\macos_main\phase26_analysis\phase26_main_comparison.json --phase26-comparison-json experiments\phase26_main_experiment\outputs\macos_main_4096\phase26_analysis\phase26_main_comparison.json --output-dir experiments\phase27_stability_diagnosis\outputs\macos_1024_vs_4096
+```
+
+Phase 27 is read-only. It compares the 1024-step and 4096-step Phase 26
+B1-B0 learned-policy deltas and reports `budget_not_explanatory`: the mean
+delta improves by `0.3010310174`, but the higher-budget result is still
+negative and the positive tile-seed count falls from `4 / 9` to `3 / 9`.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -314,6 +328,7 @@ Phase 26 analyzes Phase 25 padded held-out B0/B1 outputs into manuscript-facing 
 - Phase 26 result interpretation: `paper/phase26_results/01_phase26_result_interpretation.md`
 - Phase 26 next experiment matrix: `paper/phase26_results/02_next_experiment_matrix.md`
 - Phase 26 budget comparison: `paper/phase26_results/03_phase26_budget_comparison.md`
+- Phase 27 stability diagnosis: `paper/phase27_results/01_phase27_stability_diagnosis.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -348,6 +363,8 @@ Phase 26 analyzes Phase 25 padded held-out B0/B1 outputs into manuscript-facing 
 - Phase 25 padded held-out policy module: `src/paper11_geofm/padded_heldout_policy.py`
 - Phase 26 main empirical analysis runner: `experiments/phase26_main_experiment/run_phase26_main_experiment.py`
 - Phase 26 main empirical analysis module: `src/paper11_geofm/phase26_main_experiment.py`
+- Phase 27 stability diagnosis runner: `experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py`
+- Phase 27 stability diagnosis module: `src/paper11_geofm/phase27_stability_diagnosis.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

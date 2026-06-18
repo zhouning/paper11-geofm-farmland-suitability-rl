@@ -30,6 +30,7 @@ docs/superpowers/specs/2026-06-12-phase23-multi-seed-b0-b1-training-design.md	de
 docs/superpowers/specs/2026-06-12-phase24-ijaeog-evidence-package-design.md	design	Phase 24 design for IJAEOG evidence packaging and claim-readiness synthesis.
 docs/superpowers/specs/2026-06-12-phase25-padded-heldout-policy-design.md	design	Phase 25 design for padded variable-size held-out-tile B0/B1 MaskablePPO learned-policy evidence.
 docs/superpowers/specs/2026-06-17-phase26-main-empirical-experiment-design.md	design	Phase 26 design for the B0/B1 padded held-out multi-seed, multi-tile main empirical analysis package.
+docs/superpowers/specs/2026-06-18-phase27-b0-b1-stability-diagnosis-design.md	design	Phase 27 design for read-only B0/B1 budget and tile-seed stability diagnosis over Phase 26 artifacts.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 docs/superpowers/plans/2026-06-09-phase2-block-geofm-feature-assembly.md	plan	Implementation plan for the Phase 2 block-level GeoFM feature assembly pipeline.
 docs/superpowers/plans/2026-06-09-phase3-drl-input-adapter.md	plan	Implementation plan for the Phase 3 DRL input adapter.
@@ -56,6 +57,7 @@ docs/superpowers/plans/2026-06-12-phase23-multi-seed-b0-b1-training.md	plan	Impl
 docs/superpowers/plans/2026-06-12-phase24-ijaeog-evidence-package.md	plan	Implementation plan for the Phase 24 IJAEOG evidence package.
 docs/superpowers/plans/2026-06-12-phase25-padded-heldout-policy.md	plan	Implementation plan for the Phase 25 padded held-out-tile B0/B1 learned-policy pilot.
 docs/superpowers/plans/2026-06-17-phase26-main-empirical-experiment.md	plan	Implementation plan for the Phase 26 main empirical analysis package.
+docs/superpowers/plans/2026-06-18-phase27-b0-b1-stability-diagnosis.md	plan	Implementation plan for the Phase 27 B0/B1 stability diagnosis package.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
@@ -69,6 +71,8 @@ paper/phase26_results/README.md	results	Index for the Phase 26 result interpreta
 paper/phase26_results/01_phase26_result_interpretation.md	results	Reviewer-facing interpretation of the current Phase 26 B0/B1 held-out empirical evidence.
 paper/phase26_results/02_next_experiment_matrix.md	results	Next diagnostic experiment matrix after the current Phase 26 negative B1-over-B0 result.
 paper/phase26_results/03_phase26_budget_comparison.md	results	Comparison of current 1024-step and 4096-step Phase 26 result sets and claim status.
+paper/phase27_results/README.md	results	Index for the Phase 27 stability diagnosis result package.
+paper/phase27_results/01_phase27_stability_diagnosis.md	results	Reviewer-facing interpretation of the Phase 27 budget and tile-seed stability diagnosis.
 paper/submission/README.md	submission	Index for Paper11 submission-readiness materials.
 paper/submission/01_ijaeog_submission_readiness.md	submission	IJAEOG target-journal readiness audit, claim-evidence gate, and next experimental phase recommendation.
 paper/submission/02_draft_titles_highlights_declarations.md	submission	Guarded draft titles, highlights, abstract scaffold, cover-letter scaffold, and declaration text.
@@ -111,6 +115,7 @@ src/paper11_geofm/multi_seed_training.py	runtime	Phase 23 multi-seed same-tile B
 src/paper11_geofm/ijaeog_evidence_package.py	runtime	Phase 24 IJAEOG evidence-package aggregation, claim-readiness table construction, and artifact writer.
 src/paper11_geofm/padded_heldout_policy.py	runtime	Phase 25 padded variable-size tile environment, MaskablePPO held-out evaluation runner, baselines, comparison aggregation, and artifact writer.
 src/paper11_geofm/phase26_main_experiment.py	runtime	Phase 26 analyzer for Phase 25 outputs, tile-seed B1-B0 deltas, claim status, and manuscript-facing artifacts.
+src/paper11_geofm/phase27_stability_diagnosis.py	runtime	Phase 27 analyzer for Phase 26 budget transitions, tile-seed stability classes, and diagnostic artifacts.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -136,6 +141,7 @@ experiments/phase23_multi_seed_training/run_phase23_multi_seed_training.py	exper
 experiments/phase24_ijaeog_evidence_package/run_phase24_ijaeog_evidence_package.py	experiment	Executable Phase 24 IJAEOG evidence-package runner for Phase 22/23 pilot outputs.
 experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py	experiment	Executable Phase 25 padded held-out-tile B0/B1 learned-policy runner for real Bishan tiled artifacts.
 experiments/phase26_main_experiment/run_phase26_main_experiment.py	experiment	Executable Phase 26 analyze-only and run-and-analyze runner for main empirical artifacts.
+experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py	experiment	Executable Phase 27 read-only stability diagnosis runner for Phase 26 comparison JSON artifacts.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -192,3 +198,4 @@ tests/test_phase23_multi_seed_training.py	verification	Pytest checks for Phase 2
 tests/test_phase24_ijaeog_evidence_package.py	verification	Pytest checks for Phase 24 evidence aggregation, claim-readiness artifact writing, and CLI output.
 tests/test_phase25_padded_heldout_policy.py	verification	Pytest checks for Phase 25 padded environment masks, held-out tile selection, tiny MaskablePPO run, artifact writing, and CLI output.
 tests/test_phase26_main_experiment.py	verification	Pytest checks for Phase 26 aggregation, claim status rules, artifact writing, and CLI behavior.
+tests/test_phase27_stability_diagnosis.py	verification	Pytest checks for Phase 27 budget transitions, stability classes, artifact writing, and CLI behavior.

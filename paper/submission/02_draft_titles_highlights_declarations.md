@@ -35,11 +35,12 @@ Current guarded version:
 - Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
 - A padded variable-size policy contract enables a bounded held-out Bishan tile learned-policy pilot for B0/B1 under a deterministic planning reward.
 - A main empirical analysis package reports that current B1 learned-policy results do not stably outperform B0 across held-out Bishan tiles and random seeds.
+- A stability diagnosis finds that budget increase alone does not resolve the current negative B1 evidence.
 - Claim-readiness artifacts separate pilot evidence from unsupported claims.
 
-Before submission, revise the last two bullets after diagnostic, ablation,
+Before submission, revise the last two bullets after ablation,
 suitability-reward, and transfer evidence exists. Do not convert the current
-Phase 26 result into a positive performance claim.
+Phase 26/27 result into a positive performance claim.
 
 ## Abstract Scaffold
 
@@ -77,11 +78,14 @@ performance claims. The Phase 26 analysis package converts Phase 25 outputs
 into main empirical tables. The current macOS result sets do not support a
 positive B1-over-B0 learned-policy claim: the 1024-step mean delta is
 `-0.4329022862`, and the 4096-step mean delta is `-0.1318712688` with only
-`3 / 9` positive tile-seed pairs.
+`3 / 9` positive tile-seed pairs. The Phase 27 stability diagnosis reports
+`budget_not_explanatory`: the higher budget improves the mean delta by
+`0.3010310174`, but the positive tile-seed count falls by `1` and three
+tile-seed pairs flip from positive to non-positive.
 
-[Evidence needed: B0/B1 stability diagnosis, representation ablation results,
-suitability-reward validation, B2/B3 training and evaluation results,
-cross-region transfer results, and final spatial diagnostics.]
+[Evidence needed: representation ablation results, suitability-reward
+validation, B2/B3 training and evaluation results, cross-region transfer
+results, and final spatial diagnostics.]
 
 The final manuscript should conclude only from completed comparisons. Until
 those results exist, the contribution should be framed as a reproducible
@@ -147,7 +151,7 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-26 workflow is available at:
+Phase 1-27 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
@@ -215,6 +219,7 @@ Current blocked boundary:
 > reward, test B2/B3, demonstrate cross-region transfer, or support
 > submission-level performance claims. Phase 26 adds the main B0/B1 held-out
 > analysis package and the current macOS artifacts do not support positive
-> multi-tile B1-over-B0 results. The 4096-step learned-policy mean delta is
-> negative, so the next step is diagnosis rather than manuscript performance
-> claiming.
+> multi-tile B1-over-B0 results. Phase 27 diagnoses the 1024-step to 4096-step
+> budget transition and reports `budget_not_explanatory`, so the next step is
+> representation controls and stability checks rather than manuscript
+> performance claiming.
