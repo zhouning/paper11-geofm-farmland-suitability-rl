@@ -18,6 +18,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `paper/phase1_results/`: interpretation of the executable Phase 1 baseline and the next experiment matrix.
 - `paper/phase26_results/`: interpretation of the current Phase 26 empirical package and the next diagnostic matrix.
 - `paper/phase27_results/`: interpretation of the Phase 27 B0/B1 budget and tile-seed stability diagnosis.
+- `paper/phase28_results/`: interpretation of the Phase 28 B0/B1/D2/D3/D4 representation-control diagnosis.
 - `paper/submission/`: IJAEOG submission-readiness audit and guarded submission text drafts.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
@@ -336,9 +337,12 @@ Phase 28 writes `phase28_representation_control_summary.csv`,
 `phase28_representation_control_traces.json`,
 `phase28_representation_control_comparison.json`,
 `phase28_tile_seed_delta_table.csv`, and `phase28_control_readiness.md`.
-It is diagnostic only: it does not enable suitability reward, test B2/B3,
-test cross-region transfer, or support final submission-level
-planning-performance claims.
+The current 1024-step and 4096-step real Bishan runs both report
+`compression_matches_raw`. The 4096-step run records B1-B0 mean delta
+`-0.1318712688` and compressed controls D4P8/D4P16 above B1, so Phase 28
+does not support a positive raw-B1 representation claim. It is diagnostic only:
+it does not enable suitability reward, test B2/B3, test cross-region transfer,
+or support final submission-level planning-performance claims.
 
 ## Key Entry Points
 
@@ -351,6 +355,7 @@ planning-performance claims.
 - Phase 26 next experiment matrix: `paper/phase26_results/02_next_experiment_matrix.md`
 - Phase 26 budget comparison: `paper/phase26_results/03_phase26_budget_comparison.md`
 - Phase 27 stability diagnosis: `paper/phase27_results/01_phase27_stability_diagnosis.md`
+- Phase 28 representation-control diagnosis: `paper/phase28_results/01_phase28_representation_control_diagnosis.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`

@@ -75,6 +75,8 @@ paper/phase26_results/02_next_experiment_matrix.md	results	Next diagnostic exper
 paper/phase26_results/03_phase26_budget_comparison.md	results	Comparison of current 1024-step and 4096-step Phase 26 result sets and claim status.
 paper/phase27_results/README.md	results	Index for the Phase 27 stability diagnosis result package.
 paper/phase27_results/01_phase27_stability_diagnosis.md	results	Reviewer-facing interpretation of the Phase 27 budget and tile-seed stability diagnosis.
+paper/phase28_results/README.md	results	Index for the Phase 28 representation-control result package.
+paper/phase28_results/01_phase28_representation_control_diagnosis.md	results	Reviewer-facing interpretation of the Phase 28 B0/B1/D2/D3/D4 representation-control diagnosis.
 paper/submission/README.md	submission	Index for Paper11 submission-readiness materials.
 paper/submission/01_ijaeog_submission_readiness.md	submission	IJAEOG target-journal readiness audit, claim-evidence gate, and next experimental phase recommendation.
 paper/submission/02_draft_titles_highlights_declarations.md	submission	Guarded draft titles, highlights, abstract scaffold, cover-letter scaffold, and declaration text.

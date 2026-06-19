@@ -14,7 +14,9 @@ The next work should follow this order:
    currently negative on the 4096-step result set. Phase 27 now completes this
    read-only diagnostic step and reports `budget_not_explanatory`.
 2. **Representation diagnostics:** separate GeoFM signal from extra input
-   capacity and seed noise.
+   capacity and seed noise. Phase 28 now completes the first B0/B1/D2/D3/D4
+   control package and reports `compression_matches_raw` at both 1024 and 4096
+   training steps.
 3. **Proxy validation:** re-check whether `suitability_proxy` is ready for
    reward use.
 4. **Reward integration:** test whether suitability-aware reward improves
@@ -34,7 +36,8 @@ because:
 - suitability reward remains blocked;
 - transfer evidence remains Bishan-only;
 - spatial case maps and uncertainty are still missing;
-- the ablation package is incomplete.
+- the first representation-control package is complete but remains negative:
+  Phase 28 does not show a supported raw-B1 representation signal.
 
 ## Required Data Before the Next Phase
 
@@ -121,18 +124,19 @@ explicit-feature-only policies.
 
 ## Minimum Viable Next Experiment
 
-The minimum next implementation should be:
+The minimum representation-control implementation has now run:
 
-1. Compare B1 against random, shuffled, and PCA-compressed GeoFM controls.
-2. Run B0/B1 stability checks across additional seeds or intermediate/repeated
-   budgets only if compute is available.
-3. Validate or further block `suitability_proxy` for reward use.
-4. Add at least one spatial case map for a representative held-out tile.
+1. B1 was compared against random, shuffled, and PCA-compressed GeoFM controls.
+2. The comparison was run at 1024 and 4096 training steps across three seeds
+   and three held-out Bishan tiles.
+3. Both runs reported `compression_matches_raw`, not
+   `representation_signal_supported`.
 
-This work can be completed before any new manuscript claim. It would create the
-diagnostic evidence needed to decide whether Paper11 should stay focused on a
-GeoFM-enhanced representation paper or escalate to a full suitability-reward
-paper.
+The next minimum experiment is therefore no longer another identical B1
+control run. It should either validate or further block `suitability_proxy` for
+reward use, add spatial case maps for representative held-out tiles, or test a
+revised representation/reward design that explains why PCA-compressed controls
+can match or exceed raw B1.
 
 ## Manuscript Claim Gate
 
@@ -146,8 +150,8 @@ paper.
 
 ## Recommended Next Step
 
-Phase 27 has now run the Phase 26 follow-on diagnosis package comparing the
-current 1024 and 4096 step result sets. It reports:
+Phase 27 ran the Phase 26 follow-on diagnosis package comparing the current
+1024 and 4096 step result sets. It reported:
 
 - diagnostic status: `budget_not_explanatory`;
 - mean delta change from 1024 to 4096 steps: `0.3010310174`;
@@ -155,13 +159,18 @@ current 1024 and 4096 step result sets. It reports:
 - stability counts: stable-positive `1`, stable-negative `3`,
   flip-to-positive `2`, flip-to-negative `3`, incomplete `0`.
 
+Phase 28 has now run that representation-control package on
+`B0,B1,D2,D3,D4P8,D4P16` under the same padded held-out base-reward protocol.
+It reports `compression_matches_raw` at both 1024 and 4096 training steps. At
+4096 steps, B1 remains below B0, D3, D4P8, and D4P16, although it is slightly
+above D2.
+
 The next implementation target should therefore be:
 
-1. run the implemented Phase 28 representation-control package on
-   `B0,B1,D2,D3,D4P8,D4P16` under the same padded held-out base-reward
-   protocol;
-2. require full B0/B1/D2/D3/D4P8/D4P16 coverage before any
-   `representation_signal_supported` interpretation;
-3. run a repeated or intermediate-budget B0/B1 stability sweep only if compute
-   is available after the control package is analyzed;
-4. update suitability-proxy validation before any reward integration.
+1. update suitability-proxy validation before any reward integration;
+2. create spatial case maps for representative held-out tiles and selected
+   blocks;
+3. diagnose why PCA-compressed controls exceed raw B1 at 4096 steps;
+4. only after those diagnostics, decide whether to redesign B1 normalization,
+   proceed to B2/B3, or pivot the manuscript toward a reproducible negative
+   evidence and protocol paper.

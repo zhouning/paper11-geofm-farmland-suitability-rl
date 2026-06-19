@@ -1,6 +1,6 @@
 # IJAEOG Submission Readiness Audit
 
-Checked on 2026-06-12. Target journal source:
+Checked on 2026-06-19. Target journal source:
 
 - International Journal of Applied Earth Observation and Geoinformation,
   Guide for Authors:
@@ -37,12 +37,13 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | padded held-out B0/B1 policy pilot | Phase 25 bounded padded variable-size held-out Bishan tile MaskablePPO pilot | cross-region transfer result, suitability-reward result, final policy-performance result | Use only for held-out Bishan tile learned-policy pilot evidence under deterministic base planning reward. |
 | main B0/B1 held-out analysis package | Phase 26 B0/B1 padded held-out multi-seed, multi-tile analysis package | final B2/B3 result, suitability-reward result, cross-region transfer result | Use only for B1-B0 learned-policy deltas across held-out Bishan tiles and seeds under deterministic base planning reward. |
 | B0/B1 stability diagnosis | Phase 27 read-only comparison of 1024-step and 4096-step Phase 26 artifacts | new training result, convergence proof, positive performance result | Use only to explain budget and tile-seed instability in the current negative evidence. |
+| representation-control diagnosis | Phase 28 B0/B1/D2/D3/D4 padded held-out diagnostic package | positive raw-B1 superiority, suitability reward, B2/B3, transfer | Use only to show whether B1 is distinguishable from random, shuffled, and PCA-compressed controls under the current base-reward protocol. |
 
 ## Readiness Summary
 
 | Item | Status | Evidence or blocker |
 |---|---|---|
-| Repository and code package | Ready | The repository includes the Phase 26 main empirical analysis package and Phase 27 stability diagnosis CLI after this update; final verification must be rerun before upload. |
+| Repository and code package | Ready | The repository includes the Phase 26 main empirical analysis package, Phase 27 stability diagnosis, and Phase 28 representation-control CLI; final verification must be rerun before upload. |
 | Lightweight reproducibility | Ready | `python scripts\smoke_check.py` passes with included Bishan AlphaEarth sample arrays. |
 | Real-data adapter | Ready for local reproduction | Phase 11 exports 64,984 Bishan DLTB polygons into Phase 2-compatible artifacts, using a local external GeoPackage. |
 | Tiled contract | Ready | Phase 13 creates 54 non-empty tiles; largest tile has 2,234 blocks. |
@@ -56,6 +57,7 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | Padded held-out learned-policy pilot | Ready as bounded held-out Bishan tile pilot evidence | Phase 25 trains B0/B1 MaskablePPO policies on `tile_r003_c003` and evaluates on distinct held-out tile `tile_r002_c003` under deterministic `base_planning_reward`; the verified smoke writes six summary rows and reports B1-B0 held-out learned-policy mean reward delta `1.3314600457` with `pilot_result_status: B1_improves_B0`. |
 | Main empirical analysis package | Ready as current negative evidence | Phase 26 ingests Phase 25 outputs and now includes macOS 1024-step and 4096-step result sets. The 4096-step learned-policy B1-B0 mean reward delta is `-0.1318712688`, with only `3 / 9` positive tile-seed pairs and claim status `not_supported`. |
 | B0/B1 stability diagnosis | Ready as current diagnostic evidence | Phase 27 compares the 1024-step and 4096-step Phase 26 result sets and reports `budget_not_explanatory`: mean delta improves by `0.3010310174`, but positive tile-seed count falls by `1`, with stability counts `1` stable-positive, `3` stable-negative, `2` flip-to-positive, and `3` flip-to-negative. |
+| Representation-control diagnosis | Ready as current negative diagnostic evidence | Phase 28 compares B1 against B0, D2 random controls, D3 shuffled controls, and D4 PCA-compressed controls at 1024 and 4096 steps. Both runs report `compression_matches_raw`; at 4096 steps B1-B0 is `-0.1318712688`, B1-D2 is `0.0744591656`, B1-D3 is `-0.1094750135`, B1-D4P8 is `-0.3768518347`, and B1-D4P16 is `-0.6411940236`. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled because weak-label evidence is incomplete. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
 | Full manuscript claims | Not ready | No longer-budget/full B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
@@ -115,16 +117,18 @@ Safe current claim:
 > current macOS result sets do not support a positive B1-over-B0 learned-policy
 > claim: the 4096-step mean delta is `-0.1318712688` and only `3 / 9`
 > tile-seed pairs favor B1. Phase 27 adds a budget and tile-seed stability
-> diagnosis and reports `budget_not_explanatory`, so the next work should be
-> representation controls and repeated/intermediate budget checks rather than
-> a positive learned-policy claim.
+> diagnosis and reports `budget_not_explanatory`. Phase 28 then adds
+> B0/B1/D2/D3/D4 representation controls at 1024 and 4096 steps and reports
+> `compression_matches_raw` in both runs, so the current evidence still does
+> not support a positive raw-B1 learned-policy or representation-superiority
+> claim.
 
 Unsafe current claim:
 
 > The GeoFM-enhanced DRL policy outperforms existing farmland-layout optimization
 > methods.
 
-## Phase 20/21/22/23/24/25/26/27 Status and Recommended Next Experimental Phase
+## Phase 20/21/22/23/24/25/26/27/28 Status and Recommended Next Experimental Phase
 
 Phase 20 now provides a bounded same-tile B0/B1 training and evaluation pilot.
 It avoids suitability reward, uses fixed tile selection and seed, runs a short
@@ -181,25 +185,33 @@ finds that the higher budget improves the mean B1-B0 delta by `0.3010310174`,
 but the higher-budget result remains negative and the positive tile-seed count
 falls by `1`. Its stability counts are `1` stable-positive, `3`
 stable-negative, `2` flip-to-positive, and `3` flip-to-negative. The diagnosis
-therefore remains conservative: budget alone is not a sufficient explanation,
-and the next phase should prioritize representation ablations against random,
-shuffled, and PCA-compressed GeoFM controls, with repeated or intermediate
-budgets only as a stability check.
+therefore remains conservative: budget alone is not a sufficient explanation.
+
+Phase 28 runs the representation-control package that Phase 27 required. It
+evaluates B0, B1, D2, D3, D4P8, and D4P16 under the same padded held-out
+Bishan base-reward protocol at 1024 and 4096 training steps. Both runs report
+`compression_matches_raw` rather than `representation_signal_supported`. At
+4096 steps, B1 is slightly above D2 but remains below B0, D3, D4P8, and
+D4P16. This means the current raw 64-dimensional GeoFM B1 arm is not yet a
+stable positive representation signal, and compressed controls must be treated
+as a serious rival explanation before any manuscript-level claim.
 
 Minimum requirements are:
 
-- a variable-size, padded, or per-block PPO-compatible policy architecture, or
-  a clearly justified non-PPO policy protocol;
-- multi-tile and multi-seed B0/B1 evaluation under the same base planning reward;
-- deterministic non-learning baselines from Phase 16 for each evaluation tile;
-- total base reward, action validity, selected-block diagnostics, and runtime;
-- explicit claim boundary that this remains pilot evidence until multi-seed,
-  ablation, suitability-reward, and held-out-region tests are complete.
+- renewed suitability-proxy validation before any reward integration;
+- spatial case maps for representative held-out tiles and selected blocks;
+- diagnosis of why PCA-compressed controls exceed raw B1 in the 4096-step
+  Phase 28 run;
+- a redesigned representation or reward experiment before any B2/B3
+  escalation;
+- explicit claim boundary that current B1 evidence remains negative until
+  ablation, suitability-reward, and held-out-region tests become supportive.
 
 ## Final Upload Risks
 
-1. The manuscript will be rejected if it claims DRL performance before B0/B1/B2/B3
-   policy comparisons exist.
+1. The manuscript will be rejected if it claims DRL performance or raw-B1
+   representation superiority despite the current Phase 26/27/28 negative
+   evidence.
 2. The suitability contribution is not yet ready because Phase 10 blocks
    suitability reward.
 3. The external DLTB GeoPackage is not committed, so final data availability

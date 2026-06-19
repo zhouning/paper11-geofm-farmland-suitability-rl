@@ -15,13 +15,14 @@ reviewer-code package, while the manuscript is still evidence-gated.
 
 ## Current Status
 
-As of 2026-06-11, the code/reproducibility repository is ready to cite as a
+As of 2026-06-19, the code/reproducibility repository is ready to cite as a
 reviewer-facing artifact, but the Paper11 research manuscript is not yet ready
-for performance claims. Phase 19 implements the first deterministic
-`base_planning_reward`; Phase 18 still reports that true planning-performance
-experiments are not ready because suitability reward and flat full-scale
-training remain blocked.
+for positive performance claims. Phase 28 now adds B0/B1/D2/D3/D4
+representation-control diagnostics at 1024 and 4096 training steps, and both
+runs report `compression_matches_raw` rather than a supported raw-B1
+representation signal.
 
 Do not submit a main research article claiming model superiority until the
-bounded training and evaluation evidence listed in the readiness audit has been
-generated and checked.
+current negative representation-control evidence is resolved by validated
+suitability-reward evidence, stronger B2/B3 experiments, transfer tests, and
+spatial case diagnostics.
