@@ -16,7 +16,8 @@ The next work should follow this order:
 2. **Representation diagnostics:** separate GeoFM signal from extra input
    capacity and seed noise. Phase 28 now completes the first B0/B1/D2/D3/D4
    control package and reports `compression_matches_raw` at both 1024 and 4096
-   training steps.
+   training steps. Phase 29 now adds a read-only scale diagnosis and reports
+   `raw_b1_scale_may_affect_optimization`.
 3. **Proxy validation:** re-check whether `suitability_proxy` is ready for
    reward use.
 4. **Reward integration:** test whether suitability-aware reward improves
@@ -37,7 +38,9 @@ because:
 - transfer evidence remains Bishan-only;
 - spatial case maps and uncertainty are still missing;
 - the first representation-control package is complete but remains negative:
-  Phase 28 does not show a supported raw-B1 representation signal.
+  Phase 28 does not show a supported raw-B1 representation signal;
+- the Phase 29 scale diagnosis suggests a plausible raw-B1 optimization issue,
+  but it does not prove that normalization or PCA would improve PPO.
 
 ## Required Data Before the Next Phase
 
@@ -133,10 +136,12 @@ The minimum representation-control implementation has now run:
    `representation_signal_supported`.
 
 The next minimum experiment is therefore no longer another identical B1
-control run. It should either validate or further block `suitability_proxy` for
-reward use, add spatial case maps for representative held-out tiles, or test a
-revised representation/reward design that explains why PCA-compressed controls
-can match or exceed raw B1.
+control run. Phase 29 has narrowed the representation branch to a concrete
+normalization/compression hypothesis. The next minimum experiment should either
+validate or further block `suitability_proxy` for reward use, add spatial case
+maps for representative held-out tiles, or run a bounded normalized-B1
+ablation that tests whether raw-B1 scale rather than GeoFM semantics explains
+the compressed-control advantage.
 
 ## Manuscript Claim Gate
 
@@ -165,12 +170,19 @@ It reports `compression_matches_raw` at both 1024 and 4096 training steps. At
 4096 steps, B1 remains below B0, D3, D4P8, and D4P16, although it is slightly
 above D2.
 
+Phase 29 has now run a read-only representation-scale diagnosis over the
+existing B1, D4P8, D4P16, and tile-index artifacts. It reports
+`raw_b1_scale_may_affect_optimization`: raw B1 is highly compressible
+(`top8` variance ratio `0.8587823898`, effective rank `5.2467650861`) and has
+smaller per-coordinate scale than D4P8/D4P16. This is a testable optimization
+hypothesis, not a causal conclusion.
+
 The next implementation target should therefore be:
 
 1. update suitability-proxy validation before any reward integration;
 2. create spatial case maps for representative held-out tiles and selected
    blocks;
-3. diagnose why PCA-compressed controls exceed raw B1 at 4096 steps;
-4. only after those diagnostics, decide whether to redesign B1 normalization,
-   proceed to B2/B3, or pivot the manuscript toward a reproducible negative
-   evidence and protocol paper.
+3. run a bounded normalized-B1 ablation under the Phase 28 protocol if the
+   representation branch remains the priority;
+4. only after those diagnostics, decide whether to proceed to B2/B3 or pivot
+   the manuscript toward a reproducible negative-evidence and protocol paper.

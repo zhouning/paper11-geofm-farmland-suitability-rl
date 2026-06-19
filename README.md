@@ -50,7 +50,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase27_stability_diagnosis/`: executable Phase 27 B0/B1 stability diagnosis runner.
 - `experiments/phase28_representation_controls/`: executable Phase 28 representation-control runner for B0/B1/D2/D3/D4 padded held-out diagnostics.
 - `experiments/phase28_compression_diagnosis/`: executable read-only Phase 28 compression diagnosis runner for existing 4096-step representation-control outputs.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, and Phase 28 compression diagnostics.
+- `experiments/phase29_representation_scale_diagnosis/`: executable read-only Phase 29 representation-scale diagnosis runner for B1/D4 feature tables.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, and Phase 29 representation-scale diagnostics.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -360,6 +361,25 @@ D4P16 exceed raw B1 while selecting almost disjoint block sets with better
 explicit base-reward components. This remains a read-only association, not a
 causal claim that PCA is intrinsically superior.
 
+Run the read-only Phase 29 representation-scale follow-up after the Phase 2
+B1 feature table, Phase 8 D4 feature tables, Phase 13 tile index, and optional
+Phase 28 summary CSV are available:
+
+```powershell
+python experiments\phase29_representation_scale_diagnosis\run_phase29_representation_scale_diagnosis.py --phase2-b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --phase28-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --output-dir experiments\phase29_representation_scale_diagnosis\outputs\real_bishan_4096
+```
+
+This command writes `phase29_variant_scale_summary.csv`,
+`phase29_tile_scale_summary.csv`,
+`phase29_b1_normalization_profiles.csv`,
+`phase29_representation_scale_diagnosis.json`, and
+`phase29_representation_scale_diagnosis.md`. For the current real Bishan
+artifacts, it reports `raw_b1_scale_may_affect_optimization`: raw B1 has mean
+column standard deviation `0.0377917339`, D4P8/D4P16 have larger component
+standard deviations, and the raw embedding effective rank is `5.2467650861`.
+This is a diagnostic optimization hypothesis, not proof that PCA or
+normalization improves PPO performance.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -373,6 +393,7 @@ causal claim that PCA is intrinsically superior.
 - Phase 27 stability diagnosis: `paper/phase27_results/01_phase27_stability_diagnosis.md`
 - Phase 28 representation-control diagnosis: `paper/phase28_results/01_phase28_representation_control_diagnosis.md`
 - Phase 28 compression diagnosis: `paper/phase28_results/02_phase28_compression_diagnosis.md`
+- Phase 29 representation-scale diagnosis: `paper/phase28_results/03_phase29_representation_scale_diagnosis.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -413,6 +434,8 @@ causal claim that PCA is intrinsically superior.
 - Phase 28 representation-control module: `src/paper11_geofm/phase28_representation_controls.py`
 - Phase 28 compression diagnosis runner: `experiments/phase28_compression_diagnosis/run_phase28_compression_diagnosis.py`
 - Phase 28 compression diagnosis module: `src/paper11_geofm/phase28_compression_diagnosis.py`
+- Phase 29 representation-scale diagnosis runner: `experiments/phase29_representation_scale_diagnosis/run_phase29_representation_scale_diagnosis.py`
+- Phase 29 representation-scale diagnosis module: `src/paper11_geofm/phase29_representation_scale_diagnosis.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

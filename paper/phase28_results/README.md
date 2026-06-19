@@ -13,6 +13,9 @@ base-reward protocol.
   diagnostics.
 - `02_phase28_compression_diagnosis.md`: read-only follow-up diagnosis of why
   D4P8/D4P16 can exceed raw B1 in the current 4096-step run.
+- `03_phase29_representation_scale_diagnosis.md`: read-only follow-up diagnosis
+  of raw-B1 scale, normalization profiles, and PCA redundancy after the Phase
+  28 compressed-control result.
 
 ## Reproduction Link
 
@@ -44,6 +47,22 @@ Expected local read-only artifacts:
 - `phase28_compression_reward_components.csv`
 - `phase28_compression_diagnosis.json`
 - `phase28_compression_diagnosis.md`
+
+The Phase 29 representation-scale follow-up is also read-only. It inspects
+the same B1/D4 feature tables and the Phase 13 tile index without running
+new policy training:
+
+```powershell
+python experiments\phase29_representation_scale_diagnosis\run_phase29_representation_scale_diagnosis.py --phase2-b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --phase28-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --output-dir experiments\phase29_representation_scale_diagnosis\outputs\real_bishan_4096
+```
+
+Expected local Phase 29 artifacts:
+
+- `phase29_variant_scale_summary.csv`
+- `phase29_tile_scale_summary.csv`
+- `phase29_b1_normalization_profiles.csv`
+- `phase29_representation_scale_diagnosis.json`
+- `phase29_representation_scale_diagnosis.md`
 
 ## Claim Boundary
 

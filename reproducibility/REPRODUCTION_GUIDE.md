@@ -848,7 +848,44 @@ submission-level claims.
 reward, test B2/B3, test cross-region transfer, or support final
 submission-level planning-performance claims.
 
-## 31. Inspect the Paper11 Design
+## 31. Run the Phase 29 Representation-Scale Diagnosis
+
+Phase 29 is a read-only diagnosis over existing B1 and D4 feature tables. It
+inspects representation scale, B1 normalization profiles, tile-level B1 scale,
+and PCA concentration. It does not run policy training.
+
+Run:
+
+```powershell
+python experiments\phase29_representation_scale_diagnosis\run_phase29_representation_scale_diagnosis.py --phase2-b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --phase28-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --output-dir experiments\phase29_representation_scale_diagnosis\outputs\real_bishan_4096
+```
+
+Expected Phase 29 artifacts:
+
+- `phase29_variant_scale_summary.csv`;
+- `phase29_tile_scale_summary.csv`;
+- `phase29_b1_normalization_profiles.csv`;
+- `phase29_representation_scale_diagnosis.json`;
+- `phase29_representation_scale_diagnosis.md`.
+
+Current observed local outcome:
+
+- diagnostic status: `raw_b1_scale_may_affect_optimization`;
+- raw B1 mean row L2 norm: `1.0000582045`;
+- raw B1 mean column standard deviation: `0.0377917339`;
+- D4P8 mean component standard deviation: `0.0912456150`;
+- D4P16 mean component standard deviation: `0.0620769890`;
+- raw B1 effective rank: `5.2467650861`;
+- top-8 PCA variance ratio: `0.8587823898`;
+- top-16 PCA variance ratio: `0.9496006154`;
+- column-z-scored B1 mean row L2 norm: `7.2744760531`.
+
+This follow-up supports only the narrow hypothesis that raw B1 scale and
+redundancy may affect optimization under the current PPO setup. It does not
+prove that PCA is intrinsically superior and does not prove that normalization
+would improve PPO performance.
+
+## 32. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -862,7 +899,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 32. Inspect Runtime Code
+## 33. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -1076,9 +1113,16 @@ experiments/phase28_compression_diagnosis/run_phase28_compression_diagnosis.py
 src/paper11_geofm/phase28_compression_diagnosis.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, Phase 27, Phase 28 analyze-only, and Phase 28 compression-diagnosis reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26/28 run-and-analyze modes require the real Phase 11/13 outputs plus the RL stack.
+Phase 29 executable files:
 
-## 33. Regenerate Embeddings
+```text
+experiments/phase29_representation_scale_diagnosis/run_phase29_representation_scale_diagnosis.py
+src/paper11_geofm/phase29_representation_scale_diagnosis.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, Phase 27, Phase 28 analyze-only, Phase 28 compression-diagnosis, and Phase 29 representation-scale reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26/28 run-and-analyze modes require the real Phase 11/13 outputs plus the RL stack.
+
+## 34. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -1095,7 +1139,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 34. Large Data and Weights
+## 35. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 
