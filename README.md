@@ -49,7 +49,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase26_main_experiment/`: executable Phase 26 main empirical analysis runner.
 - `experiments/phase27_stability_diagnosis/`: executable Phase 27 B0/B1 stability diagnosis runner.
 - `experiments/phase28_representation_controls/`: executable Phase 28 representation-control runner for B0/B1/D2/D3/D4 padded held-out diagnostics.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, and Phase 28 representation-control diagnostics.
+- `experiments/phase28_compression_diagnosis/`: executable read-only Phase 28 compression diagnosis runner for existing 4096-step representation-control outputs.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, and Phase 28 compression diagnostics.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -344,6 +345,21 @@ does not support a positive raw-B1 representation claim. It is diagnostic only:
 it does not enable suitability reward, test B2/B3, test cross-region transfer,
 or support final submission-level planning-performance claims.
 
+For the read-only 4096-step compression follow-up, run:
+
+```powershell
+python experiments\phase28_compression_diagnosis\run_phase28_compression_diagnosis.py --summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --phase2-b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --output-dir experiments\phase28_compression_diagnosis\outputs\real_bishan_4096
+```
+
+This command writes `phase28_compression_overlap.csv`,
+`phase28_compression_reward_components.csv`,
+`phase28_compression_diagnosis.json`, and
+`phase28_compression_diagnosis.md`. For the current 4096-step artifacts, it
+reports `compressed_controls_select_distinct_higher_reward_blocks`: D4P8 and
+D4P16 exceed raw B1 while selecting almost disjoint block sets with better
+explicit base-reward components. This remains a read-only association, not a
+causal claim that PCA is intrinsically superior.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -356,6 +372,7 @@ or support final submission-level planning-performance claims.
 - Phase 26 budget comparison: `paper/phase26_results/03_phase26_budget_comparison.md`
 - Phase 27 stability diagnosis: `paper/phase27_results/01_phase27_stability_diagnosis.md`
 - Phase 28 representation-control diagnosis: `paper/phase28_results/01_phase28_representation_control_diagnosis.md`
+- Phase 28 compression diagnosis: `paper/phase28_results/02_phase28_compression_diagnosis.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -394,6 +411,8 @@ or support final submission-level planning-performance claims.
 - Phase 27 stability diagnosis module: `src/paper11_geofm/phase27_stability_diagnosis.py`
 - Phase 28 representation-control runner: `experiments/phase28_representation_controls/run_phase28_representation_controls.py`
 - Phase 28 representation-control module: `src/paper11_geofm/phase28_representation_controls.py`
+- Phase 28 compression diagnosis runner: `experiments/phase28_compression_diagnosis/run_phase28_compression_diagnosis.py`
+- Phase 28 compression diagnosis module: `src/paper11_geofm/phase28_compression_diagnosis.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

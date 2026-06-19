@@ -77,6 +77,7 @@ paper/phase27_results/README.md	results	Index for the Phase 27 stability diagnos
 paper/phase27_results/01_phase27_stability_diagnosis.md	results	Reviewer-facing interpretation of the Phase 27 budget and tile-seed stability diagnosis.
 paper/phase28_results/README.md	results	Index for the Phase 28 representation-control result package.
 paper/phase28_results/01_phase28_representation_control_diagnosis.md	results	Reviewer-facing interpretation of the Phase 28 B0/B1/D2/D3/D4 representation-control diagnosis.
+paper/phase28_results/02_phase28_compression_diagnosis.md	results	Read-only diagnosis of the current 4096-step compressed-control advantage over raw B1 in Phase 28.
 paper/submission/README.md	submission	Index for Paper11 submission-readiness materials.
 paper/submission/01_ijaeog_submission_readiness.md	submission	IJAEOG target-journal readiness audit, claim-evidence gate, and next experimental phase recommendation.
 paper/submission/02_draft_titles_highlights_declarations.md	submission	Guarded draft titles, highlights, abstract scaffold, cover-letter scaffold, and declaration text.
@@ -121,6 +122,7 @@ src/paper11_geofm/padded_heldout_policy.py	runtime	Phase 25 padded variable-size
 src/paper11_geofm/phase26_main_experiment.py	runtime	Phase 26 analyzer for Phase 25 outputs, tile-seed B1-B0 deltas, claim status, and manuscript-facing artifacts.
 src/paper11_geofm/phase27_stability_diagnosis.py	runtime	Phase 27 analyzer for Phase 26 budget transitions, tile-seed stability classes, and diagnostic artifacts.
 src/paper11_geofm/phase28_representation_controls.py	runtime	Phase 28 contract builder, evaluator, analyzer, and artifact writer for B0/B1/D2/D3/D4 representation-control diagnostics.
+src/paper11_geofm/phase28_compression_diagnosis.py	runtime	Read-only Phase 28 compression diagnosis over existing representation-control summary rows and Phase 2/8 feature tables.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -148,6 +150,7 @@ experiments/phase25_padded_heldout_policy/run_phase25_padded_heldout_policy.py	e
 experiments/phase26_main_experiment/run_phase26_main_experiment.py	experiment	Executable Phase 26 analyze-only and run-and-analyze runner for main empirical artifacts.
 experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py	experiment	Executable Phase 27 read-only stability diagnosis runner for Phase 26 comparison JSON artifacts.
 experiments/phase28_representation_controls/run_phase28_representation_controls.py	experiment	Executable Phase 28 analyze-only and run-and-analyze runner for representation-control artifacts.
+experiments/phase28_compression_diagnosis/run_phase28_compression_diagnosis.py	experiment	Executable read-only Phase 28 compression diagnosis runner for existing 4096-step representation-control artifacts.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -206,3 +209,4 @@ tests/test_phase25_padded_heldout_policy.py	verification	Pytest checks for Phase
 tests/test_phase26_main_experiment.py	verification	Pytest checks for Phase 26 aggregation, claim status rules, artifact writing, and CLI behavior.
 tests/test_phase27_stability_diagnosis.py	verification	Pytest checks for Phase 27 budget transitions, stability classes, artifact writing, and CLI behavior.
 tests/test_phase28_representation_controls.py	verification	Pytest checks for Phase 28 contract routing, status rules, writer behavior, run path, and CLI behavior.
+tests/test_phase28_compression_diagnosis.py	verification	Pytest checks for the read-only Phase 28 compression diagnosis tables, artifacts, and CLI behavior.

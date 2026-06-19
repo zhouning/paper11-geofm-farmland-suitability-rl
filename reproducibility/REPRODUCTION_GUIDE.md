@@ -813,6 +813,35 @@ Expected Phase 28 artifacts:
 - `phase28_tile_seed_delta_table.csv`;
 - `phase28_control_readiness.md`.
 
+For the read-only 4096-step compression follow-up, run:
+
+```powershell
+python experiments\phase28_compression_diagnosis\run_phase28_compression_diagnosis.py --summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --phase2-b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --output-dir experiments\phase28_compression_diagnosis\outputs\real_bishan_4096
+```
+
+Expected compression-diagnosis artifacts:
+
+- `phase28_compression_overlap.csv`;
+- `phase28_compression_reward_components.csv`;
+- `phase28_compression_diagnosis.json`;
+- `phase28_compression_diagnosis.md`.
+
+Current observed local outcome for the 4096-step run:
+
+- diagnostic status: `compressed_controls_select_distinct_higher_reward_blocks`;
+- D4P8 mean Jaccard overlap with B1: `0.0148148148`;
+- D4P16 mean Jaccard overlap with B1: `0.0074074074`;
+- D4P8 mean B1 minus comparator reward: `-0.3768518347`;
+- D4P16 mean B1 minus comparator reward: `-0.6411940236`;
+- top-8 PCA variance ratio: `0.8587823898`;
+- top-16 PCA variance ratio: `0.9496006154`.
+
+This read-only follow-up supports only the narrow statement that the current
+compressed controls outperform raw B1 while selecting almost disjoint block
+sets with better explicit base-reward components. It does not prove that PCA
+is intrinsically superior, does not establish causality, and does not enable
+submission-level claims.
+
 `run-and-analyze` requires explicit `--variants`, `--total-timesteps`,
 `--eval-max-steps`, `--seeds`, and either `--max-eval-tiles` or
 `--eval-tile-ids`. Phase 28 is diagnostic only: it does not enable suitability
@@ -1043,9 +1072,11 @@ Phase 28 executable files:
 ```text
 experiments/phase28_representation_controls/run_phase28_representation_controls.py
 src/paper11_geofm/phase28_representation_controls.py
+experiments/phase28_compression_diagnosis/run_phase28_compression_diagnosis.py
+src/paper11_geofm/phase28_compression_diagnosis.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, Phase 27, and Phase 28 analyze-only reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26/28 run-and-analyze modes require the real Phase 11/13 outputs plus the RL stack.
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, Phase 27, Phase 28 analyze-only, and Phase 28 compression-diagnosis reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26/28 run-and-analyze modes require the real Phase 11/13 outputs plus the RL stack.
 
 ## 33. Regenerate Embeddings
 
