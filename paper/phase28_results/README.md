@@ -16,6 +16,9 @@ base-reward protocol.
 - `03_phase29_representation_scale_diagnosis.md`: read-only follow-up diagnosis
   of raw-B1 scale, normalization profiles, and PCA redundancy after the Phase
   28 compressed-control result.
+- `04_phase30_normalized_b1_ablation.md`: bounded held-out follow-up testing
+  whether normalized B1 variants recover raw-B1 optimization losses under the
+  same protocol.
 
 ## Reproduction Link
 
@@ -64,8 +67,25 @@ Expected local Phase 29 artifacts:
 - `phase29_representation_scale_diagnosis.json`
 - `phase29_representation_scale_diagnosis.md`
 
+The Phase 30 normalized-B1 follow-up is a bounded training experiment, but the
+recommended path reuses the existing Phase 28 control summary and trains only
+the two new normalized variants:
+
+```powershell
+python experiments\phase30_normalized_b1_ablation\run_phase30_normalized_b1_ablation.py --mode run-and-analyze --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --existing-control-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --variants B0,B1,N1Z,N1ZR,D2,D3,D4P8,D4P16 --total-timesteps 4096 --eval-max-steps 8 --seeds 0,1,2 --max-eval-tiles 3 --output-dir experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental
+```
+
+Expected local Phase 30 artifacts:
+
+- `derived_normalized_controls/`
+- `phase30_normalized_b1_summary.csv`
+- `phase30_normalized_b1_traces.json`
+- `phase30_normalized_b1_comparison.json`
+- `phase30_normalized_b1_delta_table.csv`
+- `phase30_normalized_b1_readiness.md`
+
 ## Claim Boundary
 
-Phase 28 is diagnostic only. It does not enable suitability reward, does not
-test B2/B3, does not test cross-region transfer, and does not support final
-submission-level planning-performance claims.
+These representation-branch follow-ups are diagnostic only. They do not enable
+suitability reward, do not test B2/B3, do not test cross-region transfer, and
+do not support final submission-level planning-performance claims.

@@ -51,7 +51,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase28_representation_controls/`: executable Phase 28 representation-control runner for B0/B1/D2/D3/D4 padded held-out diagnostics.
 - `experiments/phase28_compression_diagnosis/`: executable read-only Phase 28 compression diagnosis runner for existing 4096-step representation-control outputs.
 - `experiments/phase29_representation_scale_diagnosis/`: executable read-only Phase 29 representation-scale diagnosis runner for B1/D4 feature tables.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, and Phase 29 representation-scale diagnostics.
+- `experiments/phase30_normalized_b1_ablation/`: executable Phase 30 normalized-B1 held-out ablation runner with optional reuse of Phase 28 control summaries.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, and Phase 30 normalized-B1 ablations.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -380,6 +381,28 @@ standard deviations, and the raw embedding effective rank is `5.2467650861`.
 This is a diagnostic optimization hypothesis, not proof that PCA or
 normalization improves PPO performance.
 
+Run the bounded Phase 30 normalized-B1 follow-up after the Phase 28 4096-step
+control summary exists. The recommended incremental path reuses the frozen
+`B0,B1,D2,D3,D4P8,D4P16` Phase 28 rows and trains only `N1Z` and `N1ZR`:
+
+```powershell
+python experiments\phase30_normalized_b1_ablation\run_phase30_normalized_b1_ablation.py --mode run-and-analyze --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --existing-control-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --variants B0,B1,N1Z,N1ZR,D2,D3,D4P8,D4P16 --total-timesteps 4096 --eval-max-steps 8 --seeds 0,1,2 --max-eval-tiles 3 --output-dir experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental
+```
+
+This command writes `phase30_normalized_b1_summary.csv`,
+`phase30_normalized_b1_traces.json`,
+`phase30_normalized_b1_comparison.json`,
+`phase30_normalized_b1_delta_table.csv`,
+`phase30_normalized_b1_readiness.md`, and a derived
+`derived_normalized_controls/` directory containing `variant_N1Z_features.csv`
+and `variant_N1ZR_features.csv`. For the current real Bishan artifacts, it
+reports `normalized_b1_recovers_b0_gap`: `N1Z` mean learned-policy reward is
+`0.6515323140`, `N1ZR` is `0.5772465716`, both exceed raw `B1`
+(`0.3506359482`) and `B0` (`0.4825072170`) on mean reward, but both remain
+below `D4P8` (`0.7274877829`) and `D4P16` (`0.9918299718`). This is partial
+support for the Phase 29 optimization hypothesis, not a manuscript-ready
+GeoFM planning-performance claim.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -394,6 +417,7 @@ normalization improves PPO performance.
 - Phase 28 representation-control diagnosis: `paper/phase28_results/01_phase28_representation_control_diagnosis.md`
 - Phase 28 compression diagnosis: `paper/phase28_results/02_phase28_compression_diagnosis.md`
 - Phase 29 representation-scale diagnosis: `paper/phase28_results/03_phase29_representation_scale_diagnosis.md`
+- Phase 30 normalized-B1 ablation: `paper/phase28_results/04_phase30_normalized_b1_ablation.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -436,6 +460,8 @@ normalization improves PPO performance.
 - Phase 28 compression diagnosis module: `src/paper11_geofm/phase28_compression_diagnosis.py`
 - Phase 29 representation-scale diagnosis runner: `experiments/phase29_representation_scale_diagnosis/run_phase29_representation_scale_diagnosis.py`
 - Phase 29 representation-scale diagnosis module: `src/paper11_geofm/phase29_representation_scale_diagnosis.py`
+- Phase 30 normalized-B1 ablation runner: `experiments/phase30_normalized_b1_ablation/run_phase30_normalized_b1_ablation.py`
+- Phase 30 normalized-B1 ablation module: `src/paper11_geofm/phase30_normalized_b1_ablation.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

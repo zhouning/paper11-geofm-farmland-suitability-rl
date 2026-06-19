@@ -33,6 +33,7 @@ docs/superpowers/specs/2026-06-17-phase26-main-empirical-experiment-design.md	de
 docs/superpowers/specs/2026-06-18-phase27-b0-b1-stability-diagnosis-design.md	design	Phase 27 design for read-only B0/B1 budget and tile-seed stability diagnosis over Phase 26 artifacts.
 docs/superpowers/specs/2026-06-18-phase28-representation-control-evaluation-design.md	design	Phase 28 design for B0/B1/D2/D3/D4 representation-control diagnostics under the padded held-out protocol.
 docs/superpowers/specs/2026-06-19-phase29-representation-scale-diagnosis-design.md	design	Phase 29 design for read-only B1 representation-scale, normalization, and PCA redundancy diagnosis.
+docs/superpowers/specs/2026-06-19-phase30-normalized-b1-ablation-design.md	design	Phase 30 design for bounded normalized-B1 held-out ablation under the existing representation-control protocol.
 docs/superpowers/plans/2026-06-08-phase1-bishan-geofm-baseline.md	plan	Implementation plan for the Phase 1 Bishan GeoFM baseline.
 docs/superpowers/plans/2026-06-09-phase2-block-geofm-feature-assembly.md	plan	Implementation plan for the Phase 2 block-level GeoFM feature assembly pipeline.
 docs/superpowers/plans/2026-06-09-phase3-drl-input-adapter.md	plan	Implementation plan for the Phase 3 DRL input adapter.
@@ -62,6 +63,7 @@ docs/superpowers/plans/2026-06-17-phase26-main-empirical-experiment.md	plan	Impl
 docs/superpowers/plans/2026-06-18-phase27-b0-b1-stability-diagnosis.md	plan	Implementation plan for the Phase 27 B0/B1 stability diagnosis package.
 docs/superpowers/plans/2026-06-18-phase28-representation-control-evaluation.md	plan	Implementation plan for the Phase 28 representation-control evaluation package.
 docs/superpowers/plans/2026-06-19-phase29-representation-scale-diagnosis.md	plan	Implementation plan for the Phase 29 read-only representation-scale diagnosis package.
+docs/superpowers/plans/2026-06-19-phase30-normalized-b1-ablation.md	plan	Implementation plan for the Phase 30 normalized-B1 ablation package.
 paper/design/README.md	design	Index for the Paper11 design package.
 paper/design/01_design_synthesis.md	design	Synthesized Paper11 argument and central design idea.
 paper/design/02_system_design.md	design	System architecture for GeoFM-enhanced current-state farmland suitability RL.
@@ -81,6 +83,7 @@ paper/phase28_results/README.md	results	Index for the Phase 28 representation-co
 paper/phase28_results/01_phase28_representation_control_diagnosis.md	results	Reviewer-facing interpretation of the Phase 28 B0/B1/D2/D3/D4 representation-control diagnosis.
 paper/phase28_results/02_phase28_compression_diagnosis.md	results	Read-only diagnosis of the current 4096-step compressed-control advantage over raw B1 in Phase 28.
 paper/phase28_results/03_phase29_representation_scale_diagnosis.md	results	Read-only diagnosis of raw-B1 scale, normalization profiles, and PCA redundancy after the Phase 28 compressed-control result.
+paper/phase28_results/04_phase30_normalized_b1_ablation.md	results	Bounded normalized-B1 held-out follow-up after the Phase 29 scale diagnosis.
 paper/submission/README.md	submission	Index for Paper11 submission-readiness materials.
 paper/submission/01_ijaeog_submission_readiness.md	submission	IJAEOG target-journal readiness audit, claim-evidence gate, and next experimental phase recommendation.
 paper/submission/02_draft_titles_highlights_declarations.md	submission	Guarded draft titles, highlights, abstract scaffold, cover-letter scaffold, and declaration text.
@@ -127,6 +130,7 @@ src/paper11_geofm/phase27_stability_diagnosis.py	runtime	Phase 27 analyzer for P
 src/paper11_geofm/phase28_representation_controls.py	runtime	Phase 28 contract builder, evaluator, analyzer, and artifact writer for B0/B1/D2/D3/D4 representation-control diagnostics.
 src/paper11_geofm/phase28_compression_diagnosis.py	runtime	Read-only Phase 28 compression diagnosis over existing representation-control summary rows and Phase 2/8 feature tables.
 src/paper11_geofm/phase29_representation_scale_diagnosis.py	runtime	Read-only Phase 29 analyzer for B1 representation scale, normalization profiles, tile-level scale, and PCA redundancy.
+src/paper11_geofm/phase30_normalized_b1_ablation.py	runtime	Phase 30 normalized-B1 control builder, bounded held-out evaluator, incremental-control merger, and artifact writer.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -156,6 +160,7 @@ experiments/phase27_stability_diagnosis/run_phase27_stability_diagnosis.py	exper
 experiments/phase28_representation_controls/run_phase28_representation_controls.py	experiment	Executable Phase 28 analyze-only and run-and-analyze runner for representation-control artifacts.
 experiments/phase28_compression_diagnosis/run_phase28_compression_diagnosis.py	experiment	Executable read-only Phase 28 compression diagnosis runner for existing 4096-step representation-control artifacts.
 experiments/phase29_representation_scale_diagnosis/run_phase29_representation_scale_diagnosis.py	experiment	Executable read-only Phase 29 representation-scale diagnosis runner for B1/D4 feature tables.
+experiments/phase30_normalized_b1_ablation/run_phase30_normalized_b1_ablation.py	experiment	Executable Phase 30 normalized-B1 ablation runner with optional reuse of existing Phase 28 control summaries.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -216,3 +221,4 @@ tests/test_phase27_stability_diagnosis.py	verification	Pytest checks for Phase 2
 tests/test_phase28_representation_controls.py	verification	Pytest checks for Phase 28 contract routing, status rules, writer behavior, run path, and CLI behavior.
 tests/test_phase28_compression_diagnosis.py	verification	Pytest checks for the read-only Phase 28 compression diagnosis tables, artifacts, and CLI behavior.
 tests/test_phase29_representation_scale_diagnosis.py	verification	Pytest checks for the read-only Phase 29 representation-scale diagnosis tables, artifacts, and CLI behavior.
+tests/test_phase30_normalized_b1_ablation.py	verification	Pytest checks for Phase 30 normalized-control generation, incremental held-out analysis, artifact writing, and CLI behavior.

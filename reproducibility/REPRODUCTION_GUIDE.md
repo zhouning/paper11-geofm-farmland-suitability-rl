@@ -885,7 +885,48 @@ redundancy may affect optimization under the current PPO setup. It does not
 prove that PCA is intrinsically superior and does not prove that normalization
 would improve PPO performance.
 
-## 32. Inspect the Paper11 Design
+## 32. Run the Phase 30 Normalized-B1 Ablation
+
+Phase 30 is a bounded representation-only follow-up under the same held-out
+Bishan base-reward protocol used in Phase 28. The recommended path reuses the
+existing 4096-step Phase 28 control summary and trains only the new normalized
+variants `N1Z` and `N1ZR`.
+
+Run:
+
+```powershell
+python experiments\phase30_normalized_b1_ablation\run_phase30_normalized_b1_ablation.py --mode run-and-analyze --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --existing-control-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --variants B0,B1,N1Z,N1ZR,D2,D3,D4P8,D4P16 --total-timesteps 4096 --eval-max-steps 8 --seeds 0,1,2 --max-eval-tiles 3 --output-dir experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental
+```
+
+Expected Phase 30 artifacts:
+
+- `derived_normalized_controls/`;
+- `phase30_normalized_b1_summary.csv`;
+- `phase30_normalized_b1_traces.json`;
+- `phase30_normalized_b1_comparison.json`;
+- `phase30_normalized_b1_delta_table.csv`;
+- `phase30_normalized_b1_readiness.md`.
+
+Current observed local outcome:
+
+- status: `normalized_b1_recovers_b0_gap`;
+- mean learned-policy reward `B0`: `0.4825072170`;
+- mean learned-policy reward `B1`: `0.3506359482`;
+- mean learned-policy reward `N1Z`: `0.6515323140`;
+- mean learned-policy reward `N1ZR`: `0.5772465716`;
+- mean learned-policy reward `D4P8`: `0.7274877829`;
+- mean learned-policy reward `D4P16`: `0.9918299718`;
+- `N1Z` minus `B1`: `0.3008963657` with `6 / 9` positive tile-seed pairs;
+- `N1ZR` minus `B1`: `0.2266106233` with `4 / 9` positive tile-seed pairs;
+- `N1Z` minus `B0`: `0.1690250969`;
+- `N1ZR` minus `B0`: `0.0947393545`.
+
+This follow-up supports a narrower statement than a positive representation
+claim: normalization can improve raw B1 under the current bounded protocol and
+can lift the mean above B0, but it does not match the compressed controls and
+does not support submission-level planning-performance claims.
+
+## 33. Inspect the Paper11 Design
 
 Read these files in order:
 
@@ -899,7 +940,7 @@ paper/design/05_risks_and_boundaries.md
 
 The design intentionally keeps Paper11 within current-state suitability representation and DRL layout optimization.
 
-## 33. Inspect Runtime Code
+## 34. Inspect Runtime Code
 
 Important copied runtime files:
 
@@ -1120,9 +1161,16 @@ experiments/phase29_representation_scale_diagnosis/run_phase29_representation_sc
 src/paper11_geofm/phase29_representation_scale_diagnosis.py
 ```
 
-The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, Phase 27, Phase 28 analyze-only, Phase 28 compression-diagnosis, and Phase 29 representation-scale reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 26/28 run-and-analyze modes require the real Phase 11/13 outputs plus the RL stack.
+Phase 30 executable files:
 
-## 34. Regenerate Embeddings
+```text
+experiments/phase30_normalized_b1_ablation/run_phase30_normalized_b1_ablation.py
+src/paper11_geofm/phase30_normalized_b1_ablation.py
+```
+
+The Phase 1, Phase 2, Phase 3, Phase 4, Phase 5, Phase 6, Phase 7, Phase 8, Phase 9, Phase 10, Phase 11, Phase 12, Phase 13, Phase 14, Phase 15, Phase 16, Phase 17, Phase 18, Phase 19, Phase 20, Phase 21, Phase 22, Phase 23, Phase 24, Phase 25, Phase 26 analysis-only, Phase 27, Phase 28 analyze-only, Phase 28 compression-diagnosis, and Phase 29 representation-scale reviewer paths are deterministic and do not require internet, GPU, Earth Engine, or full-scale DRL training. Phase 11 additionally requires a local copy of the external Bishan DLTB GeoPackage, and Phase 25/26/28/30 run-and-analyze modes require the real Phase 11/13 outputs plus the RL stack.
+
+## 35. Regenerate Embeddings
 
 The included Bishan arrays are cached samples from:
 
@@ -1139,7 +1187,7 @@ experiments/geofm_runtime/extract_village_embeddings.py
 
 These extraction scripts require Google Earth Engine authentication and may need local path edits for the target machine.
 
-## 35. Large Data and Weights
+## 36. Large Data and Weights
 
 Large arrays, model weights, and intervention transition files are not included in ordinary Git. See `DATA_MANIFEST.md` for what was deliberately included and excluded.
 

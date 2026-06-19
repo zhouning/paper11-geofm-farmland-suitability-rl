@@ -17,7 +17,8 @@ The next work should follow this order:
    capacity and seed noise. Phase 28 now completes the first B0/B1/D2/D3/D4
    control package and reports `compression_matches_raw` at both 1024 and 4096
    training steps. Phase 29 now adds a read-only scale diagnosis and reports
-   `raw_b1_scale_may_affect_optimization`.
+   `raw_b1_scale_may_affect_optimization`. Phase 30 now adds a bounded
+   normalized-B1 follow-up and reports `normalized_b1_recovers_b0_gap`.
 3. **Proxy validation:** re-check whether `suitability_proxy` is ready for
    reward use.
 4. **Reward integration:** test whether suitability-aware reward improves
@@ -40,7 +41,10 @@ because:
 - the first representation-control package is complete but remains negative:
   Phase 28 does not show a supported raw-B1 representation signal;
 - the Phase 29 scale diagnosis suggests a plausible raw-B1 optimization issue,
-  but it does not prove that normalization or PCA would improve PPO.
+  but it does not prove that normalization or PCA would improve PPO;
+- the Phase 30 follow-up shows that normalization can improve raw B1 and lift
+  the mean above B0, but it still does not match the compressed controls and
+  remains unstable at the tile-seed level.
 
 ## Required Data Before the Next Phase
 
@@ -136,12 +140,12 @@ The minimum representation-control implementation has now run:
    `representation_signal_supported`.
 
 The next minimum experiment is therefore no longer another identical B1
-control run. Phase 29 has narrowed the representation branch to a concrete
-normalization/compression hypothesis. The next minimum experiment should either
-validate or further block `suitability_proxy` for reward use, add spatial case
-maps for representative held-out tiles, or run a bounded normalized-B1
-ablation that tests whether raw-B1 scale rather than GeoFM semantics explains
-the compressed-control advantage.
+control run. Phase 29 narrowed the representation branch to a concrete
+normalization/compression hypothesis, and Phase 30 tested it directly. The
+next minimum experiment should now either validate or further block
+`suitability_proxy` for reward use, add spatial case maps for representative
+held-out tiles, or explain why normalized B1 still trails D4P8/D4P16 despite
+recovering the B0 mean gap.
 
 ## Manuscript Claim Gate
 
@@ -177,12 +181,22 @@ existing B1, D4P8, D4P16, and tile-index artifacts. It reports
 smaller per-coordinate scale than D4P8/D4P16. This is a testable optimization
 hypothesis, not a causal conclusion.
 
+Phase 30 has now run that bounded normalized-B1 follow-up under the 4096-step
+held-out protocol by reusing the verified Phase 28 control rows and training
+only `N1Z` and `N1ZR`. It reports `normalized_b1_recovers_b0_gap`: `N1Z`
+(`0.6515323140`) and `N1ZR` (`0.5772465716`) both exceed raw B1
+(`0.3506359482`) and B0 (`0.4825072170`) on mean learned-policy reward, but
+both remain below D4P8 (`0.7274877829`) and D4P16 (`0.9918299718`). This is
+partial support for the optimization-difficulty hypothesis, not a final
+representation claim.
+
 The next implementation target should therefore be:
 
 1. update suitability-proxy validation before any reward integration;
 2. create spatial case maps for representative held-out tiles and selected
    blocks;
-3. run a bounded normalized-B1 ablation under the Phase 28 protocol if the
-   representation branch remains the priority;
+3. if the representation branch remains the priority, explain why normalized
+   B1 still trails D4P8/D4P16 through case-map, action-overlap, or further
+   bounded robustness diagnostics rather than another raw-B1 rerun;
 4. only after those diagnostics, decide whether to proceed to B2/B3 or pivot
    the manuscript toward a reproducible negative-evidence and protocol paper.
