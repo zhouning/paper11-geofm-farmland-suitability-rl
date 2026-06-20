@@ -19,6 +19,9 @@ base-reward protocol.
 - `04_phase30_normalized_b1_ablation.md`: bounded held-out follow-up testing
   whether normalized B1 variants recover raw-B1 optimization losses under the
   same protocol.
+- `05_phase31_case_diagnostics.md`: read-only case diagnostic ranking
+  informative Phase 30 tile-seed pairs and summarizing selected blocks plus
+  tile geometry for spatial inspection.
 
 ## Reproduction Link
 
@@ -83,6 +86,23 @@ Expected local Phase 30 artifacts:
 - `phase30_normalized_b1_comparison.json`
 - `phase30_normalized_b1_delta_table.csv`
 - `phase30_normalized_b1_readiness.md`
+
+The Phase 31 case diagnostic is read-only. It ranks representative positive
+and failure tile-seed cases from the Phase 30 summary and trace outputs, then
+joins selected blocks to Phase 2 features, the Phase 13 tile index, and the
+Phase 11 block-pixel mapping:
+
+```powershell
+python experiments\phase31_case_diagnostics\run_phase31_case_diagnostics.py --summary-csv experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\phase30_normalized_b1_summary.csv --traces-json experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\phase30_normalized_b1_traces.json --phase2-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\block_geofm_features.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --block-mapping-csv experiments\phase11_bishan_dltb_real\outputs\adapter\block_pixel_mapping.csv --output-dir experiments\phase31_case_diagnostics\outputs\real_bishan_4096 --top-k 6
+```
+
+Expected local Phase 31 artifacts:
+
+- `phase31_ranked_cases.csv`
+- `phase31_selected_blocks.csv`
+- `phase31_tile_geometry.csv`
+- `phase31_case_diagnostics.json`
+- `phase31_case_diagnostics.md`
 
 ## Claim Boundary
 
