@@ -22,6 +22,9 @@ base-reward protocol.
 - `05_phase31_case_diagnostics.md`: read-only case diagnostic ranking
   informative Phase 30 tile-seed pairs and summarizing selected blocks plus
   tile geometry for spatial inspection.
+- `06_phase32_action_order_diagnostics.md`: read-only action-order diagnostic
+  comparing focal/comparator trace order, cumulative rewards, and local tile
+  block-pool composition for Phase 31 cases.
 
 ## Reproduction Link
 
@@ -103,6 +106,22 @@ Expected local Phase 31 artifacts:
 - `phase31_tile_geometry.csv`
 - `phase31_case_diagnostics.json`
 - `phase31_case_diagnostics.md`
+
+The Phase 32 action-order diagnostic is also read-only. It uses Phase 31 ranked
+cases, Phase 30 N1ZR traces, Phase 28 B1 traces, Phase 2 features, and the
+Phase 13 tile index to compare action order and local block composition:
+
+```powershell
+python experiments\phase32_action_order_diagnostics\run_phase32_action_order_diagnostics.py --ranked-cases-csv experiments\phase31_case_diagnostics\outputs\real_bishan_4096\phase31_ranked_cases.csv --focal-traces-json experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\phase30_normalized_b1_traces.json --comparator-traces-json experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_traces.json --phase2-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\block_geofm_features.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --output-dir experiments\phase32_action_order_diagnostics\outputs\real_bishan_4096 --top-k 6
+```
+
+Expected local Phase 32 artifacts:
+
+- `phase32_step_alignment.csv`
+- `phase32_case_summary.csv`
+- `phase32_tile_pool_composition.csv`
+- `phase32_action_order_diagnostics.json`
+- `phase32_action_order_diagnostics.md`
 
 ## Claim Boundary
 
