@@ -25,6 +25,9 @@ base-reward protocol.
 - `06_phase32_action_order_diagnostics.md`: read-only action-order diagnostic
   comparing focal/comparator trace order, cumulative rewards, and local tile
   block-pool composition for Phase 31 cases.
+- `07_phase33_budget_robustness.md`: bounded matched-pilot budget robustness
+  follow-up comparing the existing 4096-step Phase 30 result with a 5120-step
+  normalized-B1 rerun on one tile-seed pair.
 
 ## Reproduction Link
 
@@ -122,6 +125,25 @@ Expected local Phase 32 artifacts:
 - `phase32_tile_pool_composition.csv`
 - `phase32_action_order_diagnostics.json`
 - `phase32_action_order_diagnostics.md`
+
+The Phase 33 budget-robustness follow-up is a bounded matched pilot. It reuses
+the existing 4096-step Phase 30 comparison and 4096-step Phase 28 control
+summary, trains only the normalized variants at a modestly higher budget, and
+then compares the matched tile-seed/comparator coverage:
+
+```powershell
+python experiments\phase33_budget_robustness\run_phase33_budget_robustness.py --mode run-and-analyze --baseline-phase30-comparison-json experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\phase30_normalized_b1_comparison.json --baseline-control-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B1,N1Z,N1ZR,D4P8,D4P16 --total-timesteps 5120 --eval-max-steps 8 --seeds 0 --eval-tile-ids tile_r002_c003 --output-dir experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed0_matched
+```
+
+Expected local Phase 33 artifacts:
+
+- `phase33_matched_baseline_comparison.json`
+- `phase33_budget_transition.csv`
+- `phase33_focal_gap_transition.csv`
+- `phase33_tile_seed_stability.csv`
+- `phase33_budget_robustness.json`
+- `phase33_budget_robustness.md`
+- `phase30_high_budget/`
 
 ## Claim Boundary
 
