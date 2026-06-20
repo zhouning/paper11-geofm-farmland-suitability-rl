@@ -190,13 +190,26 @@ both remain below D4P8 (`0.7274877829`) and D4P16 (`0.9918299718`). This is
 partial support for the optimization-difficulty hypothesis, not a final
 representation claim.
 
+Phase 33 has now extended that bounded robustness check to `5120` train
+timesteps across the full Phase 30 held-out set: three evaluation tiles
+(`tile_r002_c003`, `tile_r005_c003`, `tile_r005_c004`) and seeds `0,1,2`.
+The earlier single-tile positive pilot on `tile_r002_c003` does not survive
+broader coverage. The completed `3 tiles x 3 seeds` aggregate reports
+`budget_not_explanatory`: all six tracked focal mean deltas remain negative at
+`5120` steps, including the compressed-control gaps `N1Z-D4P16`
+`-0.7597285327`, `N1Z-D4P8` `-0.4953863438`, `N1ZR-D4P16` `-0.6658915329`,
+and `N1ZR-D4P8` `-0.4015493440`. Budget therefore does not provide a stable
+rescue explanation for the normalized-B1 branch under the current Bishan-only
+bounded protocol.
+
 The next implementation target should therefore be:
 
-1. update suitability-proxy validation before any reward integration;
-2. create spatial case maps for representative held-out tiles and selected
-   blocks;
-3. if the representation branch remains the priority, explain why normalized
-   B1 still trails D4P8/D4P16 through case-map, action-overlap, or further
-   bounded robustness diagnostics rather than another raw-B1 rerun;
+1. create spatial case maps for representative held-out tiles, starting with
+   the diverging Phase 33 tiles `tile_r002_c003` and `tile_r005_c003`;
+2. use Phase 31/32-style action-overlap and selected-block diagnostics to
+   explain why `tile_r002_c003` can flip positive at `5120` while
+   `tile_r005_c003` and `tile_r005_c004` degrade;
+3. update suitability-proxy validation before any reward integration, because
+   the budget-robustness branch is no longer the main unresolved blocker;
 4. only after those diagnostics, decide whether to proceed to B2/B3 or pivot
    the manuscript toward a reproducible negative-evidence and protocol paper.

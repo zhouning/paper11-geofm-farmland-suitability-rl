@@ -52,7 +52,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase28_compression_diagnosis/`: executable read-only Phase 28 compression diagnosis runner for existing 4096-step representation-control outputs.
 - `experiments/phase29_representation_scale_diagnosis/`: executable read-only Phase 29 representation-scale diagnosis runner for B1/D4 feature tables.
 - `experiments/phase30_normalized_b1_ablation/`: executable Phase 30 normalized-B1 held-out ablation runner with optional reuse of Phase 28 control summaries.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, and Phase 30 normalized-B1 ablations.
+- `experiments/phase33_budget_robustness/`: executable Phase 33 bounded budget-robustness follow-up over existing Phase 30 normalized-B1 artifacts.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, and Phase 33 budget-robustness analysis.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -403,6 +404,39 @@ below `D4P8` (`0.7274877829`) and `D4P16` (`0.9918299718`). This is partial
 support for the Phase 29 optimization hypothesis, not a manuscript-ready
 GeoFM planning-performance claim.
 
+Run the bounded Phase 33 budget-robustness follow-up after the Phase 30
+incremental output exists. The current local execution history used nine
+separate matched `5120`-step pilots across the three held-out Phase 30 tiles
+and seeds `0,1,2`, then aggregated those pilots into a single bounded
+Phase 33 verdict:
+
+```powershell
+python experiments\phase33_budget_robustness\run_phase33_budget_robustness.py --mode analyze-only --phase30-comparison-json experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_matched_baseline_comparison.json --phase30-comparison-json experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase30_aggregate.json --output-dir experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate
+```
+
+The current bounded Phase 33 aggregate reports `budget_not_explanatory`.
+Across the completed `3 tiles x 3 seeds` coverage, all six tracked focal gaps
+are negative on mean delta at `5120` steps. The four compressed-control gaps
+are:
+
+- `N1Z - D4P16`: `-0.7597285327`
+- `N1Z - D4P8`: `-0.4953863438`
+- `N1ZR - D4P16`: `-0.6658915329`
+- `N1ZR - D4P8`: `-0.4015493440`
+
+The earlier positive `tile_r002_c003` seed-0 pilot remains in
+`experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed0_matched`,
+but it does not survive broader bounded coverage. The tilewise three-seed
+aggregates now split as:
+
+- `tile_r002_c003`: `budget_closes_compressed_gap`
+- `tile_r005_c003`: `budget_not_explanatory`
+- `tile_r005_c004`: `budget_not_explanatory`
+
+This keeps Phase 33 in the diagnostic bucket: it narrows the representation
+branch, but it does not justify a stable budget-based rescue claim for
+normalized B1.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -418,6 +452,7 @@ GeoFM planning-performance claim.
 - Phase 28 compression diagnosis: `paper/phase28_results/02_phase28_compression_diagnosis.md`
 - Phase 29 representation-scale diagnosis: `paper/phase28_results/03_phase29_representation_scale_diagnosis.md`
 - Phase 30 normalized-B1 ablation: `paper/phase28_results/04_phase30_normalized_b1_ablation.md`
+- Phase 33 budget robustness: `paper/phase28_results/07_phase33_budget_robustness.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -462,6 +497,8 @@ GeoFM planning-performance claim.
 - Phase 29 representation-scale diagnosis module: `src/paper11_geofm/phase29_representation_scale_diagnosis.py`
 - Phase 30 normalized-B1 ablation runner: `experiments/phase30_normalized_b1_ablation/run_phase30_normalized_b1_ablation.py`
 - Phase 30 normalized-B1 ablation module: `src/paper11_geofm/phase30_normalized_b1_ablation.py`
+- Phase 33 budget-robustness runner: `experiments/phase33_budget_robustness/run_phase33_budget_robustness.py`
+- Phase 33 budget-robustness module: `src/paper11_geofm/phase33_budget_robustness.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
