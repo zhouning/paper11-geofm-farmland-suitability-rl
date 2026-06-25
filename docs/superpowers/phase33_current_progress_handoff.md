@@ -142,6 +142,55 @@ comparators; negative cases are associated with lower base-reward selected
 block sets. This still does not support a general budget-rescue claim for
 normalized B1.
 
+## Phase 35 Action-Overlap Continuation
+
+Phase 35 completed the second next-step priority: extending action-overlap
+diagnostics to the completed Phase 33 `5120` matched outputs. It is
+read-only and uses the same nine Phase 33 matched pilot directories as Phase
+34; it does not run new policy training.
+
+Local ignored Phase 35 output:
+
+```text
+experiments/phase35_phase33_action_overlap_diagnostics/outputs/real_bishan_5120_phase33_9run
+```
+
+Artifacts:
+
+```text
+phase35_action_overlap_cases.csv
+phase35_action_overlap_steps.csv
+phase35_action_overlap_diagnostics.json
+phase35_action_overlap_diagnostics.md
+```
+
+Status and row counts:
+
+- status: `action_overlap_diagnostics_ready`
+- case rows: `54`
+- step rows: `432`
+- Phase 33 matched directories: `9`
+
+Main diagnostic result:
+
+- `disjoint_positive_gap`: `20` cases
+- `partial_overlap_positive_gap`: `4` cases
+- `disjoint_negative_gap`: `27` cases
+- `partial_overlap_negative_gap`: `3` cases
+- positive Phase 33 cases: mean selected-block Jaccard `0.0111111111`,
+  mean summary reward gap `0.5822555613`, nonzero-overlap cases `4 / 24`
+- failure Phase 33 cases: mean selected-block Jaccard `0.0066666667`,
+  mean summary reward gap `-1.2055407806`, nonzero-overlap cases `3 / 30`
+- `tile_r005_c003`: mean Jaccard `0.0074074074`, mean summary reward gap
+  `-1.3403609350`, still the clearest negative tile counterexample
+
+Interpretation: Phase 35 supports the Phase 34 spatial-composition diagnosis.
+The Phase 33 positive and negative outcomes are not mainly same-block
+reorderings; they are almost always nearly disjoint selected-block sets.
+Comparator step rewards are not fully available in the current matched
+artifacts, so Phase 35 uses summary selected-block order for comparators and
+keeps full step-reward trajectory claims out of scope.
+
 ## Tracked Docs Updated
 
 Updated in the Phase 33 window:
@@ -159,6 +208,16 @@ Updated in the Phase 34 continuation:
 README.md
 paper/phase28_results/README.md
 paper/phase28_results/08_phase34_case_map_diagnostics.md
+reproducibility/FILE_MANIFEST.tsv
+docs/superpowers/phase33_current_progress_handoff.md
+```
+
+Updated in the Phase 35 continuation:
+
+```text
+README.md
+paper/phase28_results/README.md
+paper/phase28_results/09_phase35_phase33_action_overlap_diagnostics.md
 reproducibility/FILE_MANIFEST.tsv
 docs/superpowers/phase33_current_progress_handoff.md
 ```
@@ -199,16 +258,13 @@ Embedding shape: (67, 70, 64)
 
 Do not move directly to manuscript claims. Next work should stay experiment-first:
 
-1. Extend Phase 31/32 action-overlap diagnostics to the new Phase 33 `5120`
-   outputs, especially the contrast between `tile_r002_c003` positive flips and
-   `tile_r005_c003` negative/stable failures.
-2. Resume suitability-proxy validation before any B2/B3 reward integration.
-3. Use the Phase 34 case-map outputs as spatial diagnostic support only; do not
-   convert them into manuscript-level performance claims.
-4. Treat `8192` only as a later, chunked/resumable experiment if the Phase 34
-   and action-overlap diagnostics show a reason to test longer budgets. The
-   previous `8192` attempts did not finish within the execution window and are
-   not evidence.
+1. Resume suitability-proxy validation before any B2/B3 reward integration.
+2. Use Phase 34/35 as spatial and action-overlap diagnostic support only;
+   do not convert them into manuscript-level performance claims.
+3. Treat `8192` only as a later, chunked/resumable experiment if the
+   suitability-proxy branch and Phase 34/35 diagnostics show a reason to test
+   longer budgets. The previous `8192` attempts did not finish within the
+   execution window and are not evidence.
 
 ## Useful Commands For Next Window
 
@@ -219,9 +275,11 @@ Get-Content docs\superpowers\phase33_current_progress_handoff.md
 Get-Content paper\phase28_results\07_phase33_budget_robustness.md
 Get-Content paper\phase28_results\08_phase34_case_map_diagnostics.md
 Get-ChildItem -Force experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run
+Get-ChildItem -Force experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run
 Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_focal_gap_transition.csv | Format-Table -AutoSize
 Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_tile_seed_stability.csv | Group-Object stability_class | Select-Object Name,Count
 Import-Csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_cases.csv | Group-Object eval_tile_id,spatial_pattern | Select-Object Name,Count
-python -m pytest tests\test_phase34_case_map_diagnostics.py tests\test_phase33_budget_robustness.py tests\test_phase32_action_order_diagnostics.py tests\test_phase30_normalized_b1_ablation.py -q --basetemp=.pytest_tmp_phase34_resume -p no:cacheprovider
+Import-Csv experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run\phase35_action_overlap_cases.csv | Group-Object eval_tile_id,action_overlap_pattern | Select-Object Name,Count
+python -m pytest tests\test_phase35_phase33_action_overlap_diagnostics.py tests\test_phase34_case_map_diagnostics.py tests\test_phase33_budget_robustness.py tests\test_phase32_action_order_diagnostics.py tests\test_phase30_normalized_b1_ablation.py -q --basetemp=.pytest_tmp_phase35_resume -p no:cacheprovider
 python scripts\smoke_check.py
 ```

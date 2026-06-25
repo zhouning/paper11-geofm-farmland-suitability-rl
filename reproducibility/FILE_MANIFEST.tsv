@@ -85,6 +85,7 @@ paper/phase28_results/02_phase28_compression_diagnosis.md	results	Read-only diag
 paper/phase28_results/03_phase29_representation_scale_diagnosis.md	results	Read-only diagnosis of raw-B1 scale, normalization profiles, and PCA redundancy after the Phase 28 compressed-control result.
 paper/phase28_results/04_phase30_normalized_b1_ablation.md	results	Bounded normalized-B1 held-out follow-up after the Phase 29 scale diagnosis.
 paper/phase28_results/08_phase34_case_map_diagnostics.md	results	Read-only Phase 34 case-map diagnostic over completed Phase 33 matched pilot outputs.
+paper/phase28_results/09_phase35_phase33_action_overlap_diagnostics.md	results	Read-only Phase 35 action-overlap diagnostic over completed Phase 33 matched pilot outputs.
 paper/submission/README.md	submission	Index for Paper11 submission-readiness materials.
 paper/submission/01_ijaeog_submission_readiness.md	submission	IJAEOG target-journal readiness audit, claim-evidence gate, and next experimental phase recommendation.
 paper/submission/02_draft_titles_highlights_declarations.md	submission	Guarded draft titles, highlights, abstract scaffold, cover-letter scaffold, and declaration text.
@@ -133,6 +134,7 @@ src/paper11_geofm/phase28_compression_diagnosis.py	runtime	Read-only Phase 28 co
 src/paper11_geofm/phase29_representation_scale_diagnosis.py	runtime	Read-only Phase 29 analyzer for B1 representation scale, normalization profiles, tile-level scale, and PCA redundancy.
 src/paper11_geofm/phase30_normalized_b1_ablation.py	runtime	Phase 30 normalized-B1 control builder, bounded held-out evaluator, incremental-control merger, and artifact writer.
 src/paper11_geofm/phase34_case_map_diagnostics.py	runtime	Read-only Phase 34 case-map diagnostic builder and artifact writer for completed Phase 33 matched pilot outputs.
+src/paper11_geofm/phase35_phase33_action_overlap_diagnostics.py	runtime	Read-only Phase 35 action-overlap diagnostic builder and artifact writer for completed Phase 33 matched pilot outputs.
 experiments/phase1_bishan_baseline/run_phase1.py	experiment	Executable Phase 1 Bishan GeoFM representation baseline.
 experiments/phase2_block_geofm_features/run_phase2.py	experiment	Executable Phase 2 block-level GeoFM feature assembly runner.
 experiments/phase3_drl_input_adapter/inspect_variant_inputs.py	experiment	Executable Phase 3 input-contract inspection runner for ready B0/B1/B2/B3 variant tables.
@@ -164,6 +166,7 @@ experiments/phase28_compression_diagnosis/run_phase28_compression_diagnosis.py	e
 experiments/phase29_representation_scale_diagnosis/run_phase29_representation_scale_diagnosis.py	experiment	Executable read-only Phase 29 representation-scale diagnosis runner for B1/D4 feature tables.
 experiments/phase30_normalized_b1_ablation/run_phase30_normalized_b1_ablation.py	experiment	Executable Phase 30 normalized-B1 ablation runner with optional reuse of existing Phase 28 control summaries.
 experiments/phase34_case_map_diagnostics/run_phase34_case_map_diagnostics.py	experiment	Executable read-only Phase 34 case-map diagnostic runner for existing Phase 33 matched pilot outputs.
+experiments/phase35_phase33_action_overlap_diagnostics/run_phase35_phase33_action_overlap_diagnostics.py	experiment	Executable read-only Phase 35 action-overlap diagnostic runner for existing Phase 33 matched pilot outputs.
 experiments/geofm_runtime/block_translator.py	experiment	Copied helper for translating embedding-space choices to block-level planning units.
 experiments/geofm_runtime/build_intervention_data.py	experiment	Copied intervention training-data builder.
 experiments/geofm_runtime/dual_rep_env.py	experiment	Copied dual-representation explicit-feature plus GeoFM embedding environment.
@@ -226,3 +229,4 @@ tests/test_phase28_compression_diagnosis.py	verification	Pytest checks for the r
 tests/test_phase29_representation_scale_diagnosis.py	verification	Pytest checks for the read-only Phase 29 representation-scale diagnosis tables, artifacts, and CLI behavior.
 tests/test_phase30_normalized_b1_ablation.py	verification	Pytest checks for Phase 30 normalized-control generation, incremental held-out analysis, artifact writing, and CLI behavior.
 tests/test_phase34_case_map_diagnostics.py	verification	Pytest checks for Phase 34 case-map construction, artifact writing, and CLI behavior.
+tests/test_phase35_phase33_action_overlap_diagnostics.py	verification	Pytest checks for Phase 35 Phase 33 action-overlap construction, artifact writing, and CLI behavior.

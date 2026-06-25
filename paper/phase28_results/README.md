@@ -31,6 +31,9 @@ base-reward protocol.
 - `08_phase34_case_map_diagnostics.md`: read-only case-map diagnostic joining
   completed Phase 33 matched pilots to selected-block spatial and base-reward
   composition.
+- `09_phase35_phase33_action_overlap_diagnostics.md`: read-only action-overlap
+  diagnostic over completed Phase 33 matched pilots, testing whether selected
+  blocks are shared/reordered or nearly disjoint.
 
 ## Reproduction Link
 
@@ -162,6 +165,22 @@ Expected local Phase 34 artifacts:
 - `phase34_case_map_blocks.csv`
 - `phase34_case_map_diagnostics.json`
 - `phase34_case_map_diagnostics.md`
+
+
+The Phase 35 action-overlap diagnostic is read-only. It uses the same Phase
+33 matched pilot directories and compares high-budget normalized-B1 selected
+blocks against matched comparator selected blocks:
+
+```powershell
+python experiments\phase35_phase33_action_overlap_diagnostics\run_phase35_phase33_action_overlap_diagnostics.py --phase33-output-dirs experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed2_matched --output-dir experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run --variants N1Z,N1ZR --comparators B1,D4P8,D4P16
+```
+
+Expected local Phase 35 artifacts:
+
+- `phase35_action_overlap_cases.csv`
+- `phase35_action_overlap_steps.csv`
+- `phase35_action_overlap_diagnostics.json`
+- `phase35_action_overlap_diagnostics.md`
 
 ## Claim Boundary
 

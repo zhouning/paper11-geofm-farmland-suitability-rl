@@ -54,7 +54,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase30_normalized_b1_ablation/`: executable Phase 30 normalized-B1 held-out ablation runner with optional reuse of Phase 28 control summaries.
 - `experiments/phase33_budget_robustness/`: executable Phase 33 bounded budget-robustness follow-up over existing Phase 30 normalized-B1 artifacts.
 - `experiments/phase34_case_map_diagnostics/`: executable read-only Phase 34 case-map diagnostic runner over existing Phase 33 matched pilot artifacts.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, and Phase 34 case-map diagnostics.
+- `experiments/phase35_phase33_action_overlap_diagnostics/`: executable read-only Phase 35 action-overlap diagnostic runner over existing Phase 33 matched pilot artifacts.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, and Phase 35 Phase 33 action-overlap diagnostics.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -452,6 +453,22 @@ block sets. `tile_r005_c003` is the clearest negative spatial counterexample.
 This remains a read-only diagnostic and does not change the Phase 33 aggregate
 status of `budget_not_explanatory`.
 
+
+Run the read-only Phase 35 Phase 33 action-overlap diagnostic after the
+completed Phase 33 matched pilot directories exist:
+
+```powershell
+python experiments\phase35_phase33_action_overlap_diagnostics\run_phase35_phase33_action_overlap_diagnostics.py --phase33-output-dirs experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed2_matched --output-dir experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run --variants N1Z,N1ZR --comparators B1,D4P8,D4P16
+```
+
+The current Phase 35 output reports `action_overlap_diagnostics_ready` with
+`54` case rows and `432` step rows. Positive and negative Phase 33 cases
+both select nearly disjoint block sets from their matched comparators; this
+supports the Phase 34 spatial-composition diagnosis rather than an action-order
+explanation. Comparator step rewards are not fully available in the current
+matched artifacts, so Phase 35 uses summary selected-block order for comparator
+overlap and keeps step-reward claims out of scope.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -469,6 +486,7 @@ status of `budget_not_explanatory`.
 - Phase 30 normalized-B1 ablation: `paper/phase28_results/04_phase30_normalized_b1_ablation.md`
 - Phase 33 budget robustness: `paper/phase28_results/07_phase33_budget_robustness.md`
 - Phase 34 case-map diagnostics: `paper/phase28_results/08_phase34_case_map_diagnostics.md`
+- Phase 35 Phase 33 action-overlap diagnostics: `paper/phase28_results/09_phase35_phase33_action_overlap_diagnostics.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -517,6 +535,8 @@ status of `budget_not_explanatory`.
 - Phase 33 budget-robustness module: `src/paper11_geofm/phase33_budget_robustness.py`
 - Phase 34 case-map diagnostics runner: `experiments/phase34_case_map_diagnostics/run_phase34_case_map_diagnostics.py`
 - Phase 34 case-map diagnostics module: `src/paper11_geofm/phase34_case_map_diagnostics.py`
+- Phase 35 Phase 33 action-overlap diagnostics runner: `experiments/phase35_phase33_action_overlap_diagnostics/run_phase35_phase33_action_overlap_diagnostics.py`
+- Phase 35 Phase 33 action-overlap diagnostics module: `src/paper11_geofm/phase35_phase33_action_overlap_diagnostics.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
