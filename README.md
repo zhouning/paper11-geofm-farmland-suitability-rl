@@ -53,7 +53,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase29_representation_scale_diagnosis/`: executable read-only Phase 29 representation-scale diagnosis runner for B1/D4 feature tables.
 - `experiments/phase30_normalized_b1_ablation/`: executable Phase 30 normalized-B1 held-out ablation runner with optional reuse of Phase 28 control summaries.
 - `experiments/phase33_budget_robustness/`: executable Phase 33 bounded budget-robustness follow-up over existing Phase 30 normalized-B1 artifacts.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, and Phase 33 budget-robustness analysis.
+- `experiments/phase34_case_map_diagnostics/`: executable read-only Phase 34 case-map diagnostic runner over existing Phase 33 matched pilot artifacts.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, and Phase 34 case-map diagnostics.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -437,6 +438,20 @@ This keeps Phase 33 in the diagnostic bucket: it narrows the representation
 branch, but it does not justify a stable budget-based rescue claim for
 normalized B1.
 
+Run the read-only Phase 34 case-map diagnostic after the completed Phase 33
+matched pilot directories exist:
+
+```powershell
+python experiments\phase34_case_map_diagnostics\run_phase34_case_map_diagnostics.py --phase33-output-dirs experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed2_matched --phase2-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\block_geofm_features.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --output-dir experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run --variants N1Z,N1ZR --comparators B1,D4P8,D4P16
+```
+
+The current Phase 34 output reports `case_map_diagnostics_ready` with `54`
+case rows and `857` selected-block rows. Positive Phase 33 cases select higher
+mean base-reward block sets, while negative cases select lower mean base-reward
+block sets. `tile_r005_c003` is the clearest negative spatial counterexample.
+This remains a read-only diagnostic and does not change the Phase 33 aggregate
+status of `budget_not_explanatory`.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -453,6 +468,7 @@ normalized B1.
 - Phase 29 representation-scale diagnosis: `paper/phase28_results/03_phase29_representation_scale_diagnosis.md`
 - Phase 30 normalized-B1 ablation: `paper/phase28_results/04_phase30_normalized_b1_ablation.md`
 - Phase 33 budget robustness: `paper/phase28_results/07_phase33_budget_robustness.md`
+- Phase 34 case-map diagnostics: `paper/phase28_results/08_phase34_case_map_diagnostics.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -499,6 +515,8 @@ normalized B1.
 - Phase 30 normalized-B1 ablation module: `src/paper11_geofm/phase30_normalized_b1_ablation.py`
 - Phase 33 budget-robustness runner: `experiments/phase33_budget_robustness/run_phase33_budget_robustness.py`
 - Phase 33 budget-robustness module: `src/paper11_geofm/phase33_budget_robustness.py`
+- Phase 34 case-map diagnostics runner: `experiments/phase34_case_map_diagnostics/run_phase34_case_map_diagnostics.py`
+- Phase 34 case-map diagnostics module: `src/paper11_geofm/phase34_case_map_diagnostics.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

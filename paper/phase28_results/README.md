@@ -26,8 +26,11 @@ base-reward protocol.
   comparing focal/comparator trace order, cumulative rewards, and local tile
   block-pool composition for Phase 31 cases.
 - `07_phase33_budget_robustness.md`: bounded matched-pilot budget robustness
-  follow-up comparing the existing 4096-step Phase 30 result with a 5120-step
-  normalized-B1 rerun on one tile-seed pair.
+  follow-up comparing the existing 4096-step Phase 30 result with completed
+  5120-step normalized-B1 reruns over three tiles and three seeds.
+- `08_phase34_case_map_diagnostics.md`: read-only case-map diagnostic joining
+  completed Phase 33 matched pilots to selected-block spatial and base-reward
+  composition.
 
 ## Reproduction Link
 
@@ -144,6 +147,21 @@ Expected local Phase 33 artifacts:
 - `phase33_budget_robustness.json`
 - `phase33_budget_robustness.md`
 - `phase30_high_budget/`
+
+The Phase 34 case-map diagnostic is read-only. It joins the completed Phase 33
+matched pilot summaries and traces to Phase 2 block features and the Phase 13
+tile index:
+
+```powershell
+python experiments\phase34_case_map_diagnostics\run_phase34_case_map_diagnostics.py --phase33-output-dirs experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r002_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c003_seed2_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed0_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed1_matched experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_tile_r005_c004_seed2_matched --phase2-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\block_geofm_features.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --output-dir experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run --variants N1Z,N1ZR --comparators B1,D4P8,D4P16
+```
+
+Expected local Phase 34 artifacts:
+
+- `phase34_case_map_cases.csv`
+- `phase34_case_map_blocks.csv`
+- `phase34_case_map_diagnostics.json`
+- `phase34_case_map_diagnostics.md`
 
 ## Claim Boundary
 

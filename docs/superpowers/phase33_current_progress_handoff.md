@@ -1,18 +1,18 @@
-﻿# Phase 33 Current Progress Handoff
+# Phase 33 Current Progress Handoff
 
 ## Current State
 
-Paper11 remains experiment-first. The newest Phase 33 work extends the earlier
-single-tile `5120` pilot into a bounded `3 tiles x 3 seeds` matched robustness
-check over the Phase 30 normalized-B1 branch.
+Paper11 remains experiment-first. Phase 33 has completed the bounded
+`3 tiles x 3 seeds` matched robustness check over the Phase 30 normalized-B1
+branch. The current continuation adds Phase 34: a read-only case-map diagnostic
+over the completed Phase 33 matched pilot outputs.
 
-Repository state when this handoff was written:
+Repository state when the Phase 34 continuation started:
 
 - branch: `main`
-- remote relation before committing this handoff: `main...origin/main [ahead 3]`
-- latest committed code before this handoff: `91b8afc feat: add Phase 33 budget robustness experiment`
-- current tracked edits: README, Phase 26 next matrix, Phase 33 result note,
-  and this handoff
+- remote relation: `main...origin/main`
+- latest commit before Phase 34 continuation: `6f94881 docs: record Phase 33 full-grid budget result`
+- starting tracked edits: none
 
 ## What Was Run This Window
 
@@ -93,14 +93,73 @@ broader bounded result weakens the Phase 29 optimization-budget explanation and
 pushes the next experimental priority toward spatial/action diagnostics and
 suitability-proxy validation.
 
+## Phase 34 Case-Map Continuation
+
+Phase 34 completed the first next-step priority from the previous handoff. It
+is read-only and uses the nine existing Phase 33 matched pilot directories; it
+does not run new policy training.
+
+Local ignored Phase 34 output:
+
+```text
+experiments/phase34_case_map_diagnostics/outputs/real_bishan_5120_phase33_9run
+```
+
+Artifacts:
+
+```text
+phase34_case_map_cases.csv
+phase34_case_map_blocks.csv
+phase34_case_map_diagnostics.json
+phase34_case_map_diagnostics.md
+```
+
+Status and row counts:
+
+- status: `case_map_diagnostics_ready`
+- case rows: `54`
+- case-map block rows: `857`
+- selected Phase 2 feature rows: `294`
+- Phase 33 matched directories: `9`
+
+Main diagnostic result:
+
+- positive Phase 33 cases: `24`, mean higher delta `0.5822555613`, mean
+  base-reward gap `0.0727819453`, all classified as
+  `variant_selects_higher_base_reward_blocks`
+- failure Phase 33 cases: `30`, mean higher delta `-1.2055407806`, mean
+  base-reward gap `-0.1506925976`, all classified as
+  `variant_selects_lower_base_reward_blocks`
+- `tile_r002_c003`: `15` higher / `3` lower spatial-pattern split
+- `tile_r005_c003`: `0` higher / `18` lower; clearest negative spatial
+  counterexample
+- `tile_r005_c004`: `9` higher / `9` lower
+
+Interpretation: Phase 34 supports the existing bounded Phase 33 conclusion and
+makes the spatial split concrete. Positive cases are associated with selected
+block sets that have higher deterministic base-planning reward than their
+comparators; negative cases are associated with lower base-reward selected
+block sets. This still does not support a general budget-rescue claim for
+normalized B1.
+
 ## Tracked Docs Updated
 
-Updated this window:
+Updated in the Phase 33 window:
 
 ```text
 README.md
 paper/phase26_results/02_next_experiment_matrix.md
 paper/phase28_results/07_phase33_budget_robustness.md
+docs/superpowers/phase33_current_progress_handoff.md
+```
+
+Updated in the Phase 34 continuation:
+
+```text
+README.md
+paper/phase28_results/README.md
+paper/phase28_results/08_phase34_case_map_diagnostics.md
+reproducibility/FILE_MANIFEST.tsv
 docs/superpowers/phase33_current_progress_handoff.md
 ```
 
@@ -140,16 +199,16 @@ Embedding shape: (67, 70, 64)
 
 Do not move directly to manuscript claims. Next work should stay experiment-first:
 
-1. Build spatial case maps for `tile_r002_c003` versus `tile_r005_c003` at
-   matched seeds, focusing on selected blocks from `N1Z`, `N1ZR`, `D4P8`, and
-   `D4P16`.
-2. Extend Phase 31/32 action-overlap diagnostics to the new Phase 33 `5120`
+1. Extend Phase 31/32 action-overlap diagnostics to the new Phase 33 `5120`
    outputs, especially the contrast between `tile_r002_c003` positive flips and
    `tile_r005_c003` negative/stable failures.
-3. Resume suitability-proxy validation before any B2/B3 reward integration.
-4. Treat `8192` only as a later, chunked/resumable experiment if the case-map
-   diagnostics show a reason to test longer budgets. The previous `8192`
-   attempts did not finish within the execution window and are not evidence.
+2. Resume suitability-proxy validation before any B2/B3 reward integration.
+3. Use the Phase 34 case-map outputs as spatial diagnostic support only; do not
+   convert them into manuscript-level performance claims.
+4. Treat `8192` only as a later, chunked/resumable experiment if the Phase 34
+   and action-overlap diagnostics show a reason to test longer budgets. The
+   previous `8192` attempts did not finish within the execution window and are
+   not evidence.
 
 ## Useful Commands For Next Window
 
@@ -158,8 +217,11 @@ cd D:\test\paper11-geofm-farmland-suitability-rl
 git status --short --branch
 Get-Content docs\superpowers\phase33_current_progress_handoff.md
 Get-Content paper\phase28_results\07_phase33_budget_robustness.md
+Get-Content paper\phase28_results\08_phase34_case_map_diagnostics.md
+Get-ChildItem -Force experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run
 Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_focal_gap_transition.csv | Format-Table -AutoSize
 Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_tile_seed_stability.csv | Group-Object stability_class | Select-Object Name,Count
-python -m pytest tests\test_phase33_budget_robustness.py tests\test_phase32_action_order_diagnostics.py tests\test_phase30_normalized_b1_ablation.py -q --basetemp=.pytest_tmp_phase33_resume -p no:cacheprovider
+Import-Csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_cases.csv | Group-Object eval_tile_id,spatial_pattern | Select-Object Name,Count
+python -m pytest tests\test_phase34_case_map_diagnostics.py tests\test_phase33_budget_robustness.py tests\test_phase32_action_order_diagnostics.py tests\test_phase30_normalized_b1_ablation.py -q --basetemp=.pytest_tmp_phase34_resume -p no:cacheprovider
 python scripts\smoke_check.py
 ```
