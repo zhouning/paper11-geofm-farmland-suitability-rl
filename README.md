@@ -55,7 +55,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase33_budget_robustness/`: executable Phase 33 bounded budget-robustness follow-up over existing Phase 30 normalized-B1 artifacts.
 - `experiments/phase34_case_map_diagnostics/`: executable read-only Phase 34 case-map diagnostic runner over existing Phase 33 matched pilot artifacts.
 - `experiments/phase35_phase33_action_overlap_diagnostics/`: executable read-only Phase 35 action-overlap diagnostic runner over existing Phase 33 matched pilot artifacts.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, and Phase 35 Phase 33 action-overlap diagnostics.
+- `experiments/phase36_suitability_proxy_validation/`: executable read-only Phase 36 suitability-proxy validation runner over existing Phase 2, Phase 8, and Phase 30 feature tables.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, and Phase 36 suitability-proxy validation.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -469,6 +470,21 @@ explanation. Comparator step rewards are not fully available in the current
 matched artifacts, so Phase 35 uses summary selected-block order for comparator
 overlap and keeps step-reward claims out of scope.
 
+Run the read-only Phase 36 suitability-proxy validation after the Phase 11
+real Phase 2 features, Phase 8 controls, and Phase 30 normalized controls
+exist:
+
+```powershell
+python experiments\phase36_suitability_proxy_validation\run_phase36_suitability_proxy_validation.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --normalized-controls-dir experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\derived_normalized_controls --output-dir experiments\phase36_suitability_proxy_validation\outputs\real_bishan --label-columns current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label
+```
+
+The current Phase 36 status is `proxy_signal_not_supported`. The available
+weak labels are usable but DLTB/slope-derived and flagged as
+`explicit_label_leakage_risk`; `explicit_only` reaches perfect weak-label
+scores, while `suitability_proxy_only` is near random. The narrow raw-GeoFM
+association with `low_slope_farmland_label` is useful for proxy-rebuild work,
+but it does not justify enabling the current B2/B3 suitability reward.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -487,6 +503,7 @@ overlap and keeps step-reward claims out of scope.
 - Phase 33 budget robustness: `paper/phase28_results/07_phase33_budget_robustness.md`
 - Phase 34 case-map diagnostics: `paper/phase28_results/08_phase34_case_map_diagnostics.md`
 - Phase 35 Phase 33 action-overlap diagnostics: `paper/phase28_results/09_phase35_phase33_action_overlap_diagnostics.md`
+- Phase 36 suitability-proxy validation: `paper/phase28_results/10_phase36_suitability_proxy_validation.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -537,6 +554,8 @@ overlap and keeps step-reward claims out of scope.
 - Phase 34 case-map diagnostics module: `src/paper11_geofm/phase34_case_map_diagnostics.py`
 - Phase 35 Phase 33 action-overlap diagnostics runner: `experiments/phase35_phase33_action_overlap_diagnostics/run_phase35_phase33_action_overlap_diagnostics.py`
 - Phase 35 Phase 33 action-overlap diagnostics module: `src/paper11_geofm/phase35_phase33_action_overlap_diagnostics.py`
+- Phase 36 suitability-proxy validation runner: `experiments/phase36_suitability_proxy_validation/run_phase36_suitability_proxy_validation.py`
+- Phase 36 suitability-proxy validation module: `src/paper11_geofm/phase36_suitability_proxy_validation.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

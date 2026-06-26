@@ -2,16 +2,17 @@
 
 ## Current State
 
-Paper11 remains experiment-first. Phase 33 has completed the bounded
-`3 tiles x 3 seeds` matched robustness check over the Phase 30 normalized-B1
-branch. The current continuation adds Phase 34: a read-only case-map diagnostic
-over the completed Phase 33 matched pilot outputs.
+Paper11 remains experiment-first. Phase 33 completed the bounded `3 tiles x 3
+seeds` matched robustness check over the Phase 30 normalized-B1 branch. Phase
+34 and Phase 35 then localized the result with spatial-composition and
+action-overlap diagnostics. The current continuation adds Phase 36: a read-only
+suitability-proxy validation gate before any B2/B3 reward work.
 
-Repository state when the Phase 34 continuation started:
+Repository state when the Phase 36 continuation started:
 
 - branch: `main`
 - remote relation: `main...origin/main`
-- latest commit before Phase 34 continuation: `6f94881 docs: record Phase 33 full-grid budget result`
+- latest commit before Phase 36 continuation: `6f94881 docs: record Phase 33 full-grid budget result`
 - starting tracked edits: none
 
 ## What Was Run This Window
@@ -191,6 +192,56 @@ Comparator step rewards are not fully available in the current matched
 artifacts, so Phase 35 uses summary selected-block order for comparators and
 keeps full step-reward trajectory claims out of scope.
 
+## Phase 36 Suitability-Proxy Validation Continuation
+
+Phase 36 completed the third next-step priority: suitability-proxy validation
+before any B2/B3 reward integration. It is read-only and consumes the existing
+Phase 11/Phase 2 real feature tables, Phase 8 representation controls, and
+Phase 30 normalized controls. It does not run policy training and does not
+enable suitability reward.
+
+Local ignored Phase 36 output:
+
+```text
+experiments/phase36_suitability_proxy_validation/outputs/real_bishan
+```
+
+Artifacts:
+
+```text
+phase36_label_summary.csv
+phase36_model_summary.csv
+phase36_suitability_proxy_validation.json
+phase36_suitability_proxy_validation.md
+```
+
+Status and row counts:
+
+- status: `proxy_signal_not_supported`
+- input rows: `64,984`
+- train/evaluation rows: `45,460 / 19,524`
+- feature families evaluated: `11`
+- usable labels: `current_farmland_label`, `farmland_or_orchard_label`,
+  `low_slope_farmland_label`
+- label leakage flag: all three labels are `explicit_label_leakage_risk`
+
+Main diagnostic result:
+
+- `explicit_only` reaches ROC AUC, average precision, and balanced accuracy of
+  `1.0` for all three labels because the weak labels are DLTB/slope-derived and
+  encoded by explicit planning features.
+- `suitability_proxy_only` is near random: ROC AUC `0.5081982029` for current
+  farmland, `0.5124973908` for farmland/orchard, and `0.4979564572` for
+  low-slope farmland.
+- `raw_geofm_only` has one weak positive association with
+  `low_slope_farmland_label` (ROC AUC `0.6490064144`, AP `0.1695914498`), but
+  this does not clear the leakage boundary.
+
+Interpretation: Phase 36 keeps the current B2/B3 suitability reward blocked.
+The next branch should obtain independent labels or rebuild a supervised or
+semi-supervised suitability proxy under spatial held-out validation. More PPO
+budget is not the right next move until that proxy gate improves.
+
 ## Tracked Docs Updated
 
 Updated in the Phase 33 window:
@@ -220,6 +271,21 @@ paper/phase28_results/README.md
 paper/phase28_results/09_phase35_phase33_action_overlap_diagnostics.md
 reproducibility/FILE_MANIFEST.tsv
 docs/superpowers/phase33_current_progress_handoff.md
+```
+
+Updated in the Phase 36 continuation:
+
+```text
+README.md
+paper/phase28_results/README.md
+paper/phase28_results/10_phase36_suitability_proxy_validation.md
+reproducibility/FILE_MANIFEST.tsv
+docs/superpowers/phase33_current_progress_handoff.md
+docs/superpowers/specs/2026-06-25-phase36-suitability-proxy-validation-design.md
+docs/superpowers/plans/2026-06-25-phase36-suitability-proxy-validation.md
+src/paper11_geofm/phase36_suitability_proxy_validation.py
+experiments/phase36_suitability_proxy_validation/run_phase36_suitability_proxy_validation.py
+tests/test_phase36_suitability_proxy_validation.py
 ```
 
 Do not describe Phase 33 as generally `budget_closes_compressed_gap`. That is
@@ -254,17 +320,48 @@ Sample years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
 Embedding shape: (67, 70, 64)
 ```
 
+Fresh Phase 36 verification completed after the suitability-proxy continuation:
+
+```powershell
+python -m pytest tests\test_phase36_suitability_proxy_validation.py tests\test_phase9_proxy_validation.py tests\test_phase10_reward_readiness.py -q --basetemp=.pytest_tmp_phase36_final -p no:cacheprovider
+```
+
+Result:
+
+```text
+15 passed in 10.23s
+```
+
+Smoke check rerun after the Phase 36 continuation:
+
+```powershell
+python scripts\smoke_check.py
+```
+
+Result:
+
+```text
+Paper11 smoke check passed.
+Sample years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+Embedding shape: (67, 70, 64)
+```
+
 ## Next Experimental Priority
 
 Do not move directly to manuscript claims. Next work should stay experiment-first:
 
-1. Resume suitability-proxy validation before any B2/B3 reward integration.
-2. Use Phase 34/35 as spatial and action-overlap diagnostic support only;
-   do not convert them into manuscript-level performance claims.
-3. Treat `8192` only as a later, chunked/resumable experiment if the
-   suitability-proxy branch and Phase 34/35 diagnostics show a reason to test
-   longer budgets. The previous `8192` attempts did not finish within the
-   execution window and are not evidence.
+1. Build a Phase 37 proxy-rebuild or decision-alignment branch with more
+   independent labels, such as high-standard farmland, retention/productivity,
+   irrigation/water-proximity, external soil/yield proxy, or another defensible
+   non-DLTB label source.
+2. Train or calibrate the rebuilt suitability proxy under spatial held-out
+   validation, then test whether Phase 33/34/35 selected block sets are ordered
+   by that proxy.
+3. Use Phase 34/35 as spatial and action-overlap diagnostic support only; do
+   not convert them into manuscript-level performance claims.
+4. Treat `8192` only as a later, chunked/resumable experiment if the rebuilt
+   proxy branch produces a reason to test longer budgets. The previous `8192`
+   attempts did not finish within the execution window and are not evidence.
 
 ## Useful Commands For Next Window
 
@@ -274,12 +371,15 @@ git status --short --branch
 Get-Content docs\superpowers\phase33_current_progress_handoff.md
 Get-Content paper\phase28_results\07_phase33_budget_robustness.md
 Get-Content paper\phase28_results\08_phase34_case_map_diagnostics.md
+Get-Content paper\phase28_results\10_phase36_suitability_proxy_validation.md
 Get-ChildItem -Force experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run
 Get-ChildItem -Force experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run
+Get-ChildItem -Force experiments\phase36_suitability_proxy_validation\outputs\real_bishan
+Get-Content experiments\phase36_suitability_proxy_validation\outputs\real_bishan\phase36_suitability_proxy_validation.md
 Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_focal_gap_transition.csv | Format-Table -AutoSize
 Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_tile_seed_stability.csv | Group-Object stability_class | Select-Object Name,Count
 Import-Csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_cases.csv | Group-Object eval_tile_id,spatial_pattern | Select-Object Name,Count
 Import-Csv experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run\phase35_action_overlap_cases.csv | Group-Object eval_tile_id,action_overlap_pattern | Select-Object Name,Count
-python -m pytest tests\test_phase35_phase33_action_overlap_diagnostics.py tests\test_phase34_case_map_diagnostics.py tests\test_phase33_budget_robustness.py tests\test_phase32_action_order_diagnostics.py tests\test_phase30_normalized_b1_ablation.py -q --basetemp=.pytest_tmp_phase35_resume -p no:cacheprovider
+python -m pytest tests\test_phase36_suitability_proxy_validation.py tests\test_phase9_proxy_validation.py tests\test_phase10_reward_readiness.py -q --basetemp=.pytest_tmp_phase36_resume -p no:cacheprovider
 python scripts\smoke_check.py
 ```

@@ -34,6 +34,9 @@ base-reward protocol.
 - `09_phase35_phase33_action_overlap_diagnostics.md`: read-only action-overlap
   diagnostic over completed Phase 33 matched pilots, testing whether selected
   blocks are shared/reordered or nearly disjoint.
+- `10_phase36_suitability_proxy_validation.md`: read-only weak-label
+  suitability-proxy validation over existing Phase 2, Phase 8, and Phase 30
+  feature tables before any B2/B3 reward work.
 
 ## Reproduction Link
 
@@ -182,8 +185,30 @@ Expected local Phase 35 artifacts:
 - `phase35_action_overlap_diagnostics.json`
 - `phase35_action_overlap_diagnostics.md`
 
+The Phase 36 suitability-proxy validation is read-only. It tests whether
+GeoFM-derived feature families add weak-label signal beyond explicit planning
+features and diagnostic controls before any suitability-reward integration:
+
+```powershell
+python experiments\phase36_suitability_proxy_validation\run_phase36_suitability_proxy_validation.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --normalized-controls-dir experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\derived_normalized_controls --output-dir experiments\phase36_suitability_proxy_validation\outputs\real_bishan --label-columns current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label
+```
+
+Expected local Phase 36 artifacts:
+
+- `phase36_label_summary.csv`
+- `phase36_model_summary.csv`
+- `phase36_suitability_proxy_validation.json`
+- `phase36_suitability_proxy_validation.md`
+
+The current status is `proxy_signal_not_supported`: the available weak labels
+are usable, but they are DLTB/slope-derived and flagged for explicit-feature
+leakage risk. The current scalar `suitability_proxy` is not supported as a
+reward term; the next branch should use independent labels or rebuild a
+supervised/semi-supervised suitability proxy.
+
 ## Claim Boundary
 
 These representation-branch follow-ups are diagnostic only. They do not enable
-suitability reward, do not test B2/B3, do not test cross-region transfer, and
-do not support final submission-level planning-performance claims.
+suitability reward, do not validate the current scalar suitability proxy as a
+reward term, do not test B2/B3, do not test cross-region transfer, and do not
+support final submission-level planning-performance claims.
