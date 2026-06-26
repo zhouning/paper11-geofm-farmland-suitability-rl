@@ -283,7 +283,10 @@ def _phase37_status(case_rows: Sequence[Mapping[str, object]]) -> str:
         _proxy_rebuild_signal_positive(group_rows, gate_fields)
         for group_rows in _case_groups(positive_rows).values()
     )
-    failure_supported = _proxy_rebuild_signal_positive(failure_rows, gate_fields)
+    failure_supported = any(
+        _proxy_rebuild_signal_positive(group_rows, gate_fields)
+        for group_rows in _case_groups(failure_rows).values()
+    )
     if positive_supported and not failure_supported:
         return "decision_alignment_supported_for_proxy_rebuild"
     return "decision_alignment_not_supported"
@@ -293,8 +296,8 @@ def _phase37_interpretation(status: str) -> str:
     if status == "decision_alignment_supported_for_proxy_rebuild":
         return (
             "Positive Phase 33 cases show reconstructed proxy or weak-label "
-            "alignment while failure cases do not under the conservative Phase "
-            "37 diagnostic rule."
+            "alignment while failure cases do not under the status gate. "
+            "This remains a conservative Phase 37 diagnostic rule."
         )
     if status == "decision_alignment_not_supported":
         return "Phase 37 did not find conservative decision-alignment support."

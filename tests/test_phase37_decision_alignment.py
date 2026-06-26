@@ -408,3 +408,129 @@ def test_phase37_positive_only_joined_cases_are_inputs_insufficient(tmp_path):
         analysis["phase37_decision_alignment_status"]
         == "decision_alignment_inputs_insufficient"
     )
+
+
+def test_phase37_failure_subgroup_alignment_blocks_support(tmp_path):
+    from paper11_geofm.phase37_decision_alignment import build_phase37_decision_alignment
+
+    positive_id = "tile_positive_group|0|N1ZR|D4P8"
+    aligned_failure_id = "tile_failure_aligned|0|N1ZR|D4P8"
+    negative_failure_id = "tile_failure_negative|0|N1ZR|D4P8"
+    phase34_cases = [
+        {
+            "case_id": positive_id,
+            "case_role": "phase33_positive_case",
+            "eval_tile_id": "tile_positive_group",
+            "seed": 0,
+            "variant_id": "N1ZR",
+            "comparator_variant_id": "D4P8",
+            "variant_mean_base_planning_reward": 0.8,
+            "comparator_mean_base_planning_reward": 0.6,
+            "variant_mean_suitability_proxy": 0.8,
+            "comparator_mean_suitability_proxy": 0.5,
+            "variant_mean_low_slope_farmland_label": 0.7,
+            "comparator_mean_low_slope_farmland_label": 0.4,
+        },
+        {
+            "case_id": aligned_failure_id,
+            "case_role": "phase33_failure_case",
+            "eval_tile_id": "tile_failure_aligned",
+            "seed": 0,
+            "variant_id": "N1ZR",
+            "comparator_variant_id": "D4P8",
+            "variant_mean_base_planning_reward": 0.4,
+            "comparator_mean_base_planning_reward": 0.5,
+            "variant_mean_suitability_proxy": 0.7,
+            "comparator_mean_suitability_proxy": 0.4,
+            "variant_mean_low_slope_farmland_label": 0.3,
+            "comparator_mean_low_slope_farmland_label": 0.3,
+        },
+        {
+            "case_id": negative_failure_id,
+            "case_role": "phase33_failure_case",
+            "eval_tile_id": "tile_failure_negative",
+            "seed": 0,
+            "variant_id": "N1ZR",
+            "comparator_variant_id": "D4P8",
+            "variant_mean_base_planning_reward": 0.1,
+            "comparator_mean_base_planning_reward": 0.5,
+            "variant_mean_suitability_proxy": 0.0,
+            "comparator_mean_suitability_proxy": 1.0,
+            "variant_mean_low_slope_farmland_label": 0.0,
+            "comparator_mean_low_slope_farmland_label": 1.0,
+        },
+    ]
+    phase34_blocks = []
+    for case_id in (positive_id, aligned_failure_id, negative_failure_id):
+        phase34_blocks.extend(
+            [
+                {
+                    "case_id": case_id,
+                    "block_id": f"{case_id}_variant",
+                    "variant_step": 1,
+                    "current_farmland_label": 0.0,
+                    "slope_mean": 10.0,
+                    "slope_max": 15.0,
+                },
+                {
+                    "case_id": case_id,
+                    "block_id": f"{case_id}_comparator",
+                    "comparator_step": 1,
+                    "current_farmland_label": 1.0,
+                    "slope_mean": 8.0,
+                    "slope_max": 12.0,
+                },
+            ]
+        )
+    phase35_cases = [
+        {
+            "case_id": positive_id,
+            "summary_reward_gap": 0.4,
+            "action_overlap_pattern": "disjoint_positive_gap",
+        },
+        {
+            "case_id": aligned_failure_id,
+            "summary_reward_gap": -0.2,
+            "action_overlap_pattern": "disjoint_negative_gap",
+        },
+        {
+            "case_id": negative_failure_id,
+            "summary_reward_gap": -0.5,
+            "action_overlap_pattern": "disjoint_negative_gap",
+        },
+    ]
+
+    phase34_cases_csv = _write_csv(
+        tmp_path / "phase34_case_map_cases.csv",
+        phase34_cases,
+        list(phase34_cases[0].keys()),
+    )
+    phase34_blocks_csv = _write_csv(
+        tmp_path / "phase34_case_map_blocks.csv",
+        phase34_blocks,
+        [
+            "case_id",
+            "block_id",
+            "variant_step",
+            "comparator_step",
+            "current_farmland_label",
+            "slope_mean",
+            "slope_max",
+        ],
+    )
+    phase35_cases_csv = _write_csv(
+        tmp_path / "phase35_action_overlap_cases.csv",
+        phase35_cases,
+        list(phase35_cases[0].keys()),
+    )
+
+    analysis = build_phase37_decision_alignment(
+        phase34_cases_csv,
+        phase34_blocks_csv,
+        phase35_cases_csv,
+    )
+
+    assert (
+        analysis["phase37_decision_alignment_status"]
+        == "decision_alignment_not_supported"
+    )
