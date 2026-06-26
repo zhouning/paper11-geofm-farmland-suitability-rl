@@ -8,6 +8,14 @@
 
 **Tech Stack:** Python standard library CSV/JSON/argparse/pathlib, pytest, existing Paper11 artifact patterns.
 
+**Implementation review note:** the final Phase 37 status gate is intentionally
+stricter than the initial aggregate sketch. A supported status requires at
+least one positive case group with positive suitability-proxy or low-slope
+label signal, and no failure-case group may show either positive gate signal.
+The row-level `proxy_alignment_pattern` remains descriptive and includes
+current-farmland/slope signals, but the status gate uses only suitability proxy
+and low-slope label gaps.
+
 ---
 
 ## File Structure
@@ -497,8 +505,14 @@ def _status(case_rows: Sequence[Mapping[str, object]]) -> str:
         return "decision_alignment_inputs_insufficient"
     positives = [row for row in case_rows if row.get("case_role") == "phase33_positive_case"]
     failures = [row for row in case_rows if row.get("case_role") == "phase33_failure_case"]
-    positive_alignment = _group_has_proxy_alignment(positives)
-    failure_alignment = _group_has_proxy_alignment(failures)
+    positive_alignment = any(
+        _group_has_proxy_alignment(group_rows)
+        for group_rows in _case_groups(positives).values()
+    )
+    failure_alignment = any(
+        _group_has_proxy_alignment(group_rows)
+        for group_rows in _case_groups(failures).values()
+    )
     if positive_alignment and not failure_alignment:
         return "decision_alignment_supported_for_proxy_rebuild"
     return "decision_alignment_not_supported"
@@ -698,7 +712,8 @@ Expected: if Task 1 implementation already satisfies these cases, all tests pass
 
 - [ ] **Step 3: Adjust implementation only if the new tests fail**
 
-If `decision_alignment_not_supported` fails, update `_status()` to use the full failure-case aggregate:
+If `decision_alignment_not_supported` fails, update `_status()` to use the
+conservative subgroup gate:
 
 ```python
 def _status(case_rows: Sequence[Mapping[str, object]]) -> str:
@@ -706,8 +721,9 @@ def _status(case_rows: Sequence[Mapping[str, object]]) -> str:
         return "decision_alignment_inputs_insufficient"
     positives = [row for row in case_rows if row.get("case_role") == "phase33_positive_case"]
     failures = [row for row in case_rows if row.get("case_role") == "phase33_failure_case"]
-    positive_alignment = _group_has_proxy_alignment(positives)
-    failure_alignment = _group_has_proxy_alignment(failures)
+    gate_fields = ("suitability_proxy_gap", "low_slope_farmland_label_gap")
+    positive_alignment = any(_group_has_proxy_alignment(rows, gate_fields) for rows in _case_groups(positives).values())
+    failure_alignment = any(_group_has_proxy_alignment(rows, gate_fields) for rows in _case_groups(failures).values())
     if positive_alignment and not failure_alignment:
         return "decision_alignment_supported_for_proxy_rebuild"
     return "decision_alignment_not_supported"

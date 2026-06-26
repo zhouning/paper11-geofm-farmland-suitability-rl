@@ -494,7 +494,7 @@ python experiments\phase37_decision_alignment\run_phase37_decision_alignment.py 
 ```
 
 The current Phase 37 status is `decision_alignment_not_supported` with `54`
-joined case rows and `42` summary rows. Phase 37 is diagnostic-only: it does
+joined case rows and `37` summary rows. Phase 37 is diagnostic-only: it does
 not run policy training, alter rewards, enable suitability reward, test B2/B3,
 or support final planning-performance claims. Phase 36 still blocks B2/B3
 suitability reward use because its status remains `proxy_signal_not_supported`.

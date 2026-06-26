@@ -56,11 +56,11 @@ Real row counts from `phase37_decision_alignment.json`:
 - Phase 34 selected-block rows: `857`
 - Phase 35 case rows: `54`
 - Phase 37 joined case rows: `54`
-- Phase 37 summary rows: `42`
+- Phase 37 summary rows: `37`
 
 ## Interpretation
 
-Phase 37 did not find conservative decision-alignment support. Across all
+Phase 37 did not find conservative decision-alignment support under the failure-subgroup gate. Across all
 joined cases, the mean summary reward gap is `-0.4109646286`, the mean
 suitability-proxy gap is `-0.0066127380`, and the mean low-slope farmland-label
 gap is `-0.0486111111`. Positive Phase 33 cases have positive mean summary

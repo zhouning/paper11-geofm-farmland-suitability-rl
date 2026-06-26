@@ -88,22 +88,25 @@ The summary artifact groups cases by:
 - `action_overlap_pattern`
 
 For each group, it reports case count, positive-gap counts, and mean gaps for
-all alignment metrics.
+all alignment metrics. The row-level `proxy_alignment_pattern` is descriptive;
+the summary grouping stays anchored to the Phase 34 `spatial_pattern` and Phase
+35 `action_overlap_pattern`.
 
 The aggregate status is conservative:
 
 - `decision_alignment_supported_for_proxy_rebuild`: at least one Phase 33
   positive-case group has positive mean suitability-proxy or low-slope label
-  alignment, and the full failure-case aggregate does not show the same
-  positive alignment pattern.
+  alignment, and no Phase 33 failure-case group shows the same positive
+  status-gate signal.
 - `decision_alignment_not_supported`: inputs are complete, but positive and
   failure cases do not separate in the available proxy or weak environmental
   metrics.
 - `decision_alignment_inputs_insufficient`: required CSVs are missing,
   unreadable, or contain no joinable cases.
 
-This status can justify a proxy-rebuild or external-label acquisition branch.
-It cannot justify suitability reward use.
+This status can justify a proxy-rebuild or external-label acquisition branch
+only when the conservative subgroup gate is supported. It cannot justify
+suitability reward use.
 
 ## Leakage And Claim Boundary
 

@@ -289,7 +289,7 @@ Status and row counts:
 - Phase 34 selected-block rows: `857`
 - Phase 35 case rows: `54`
 - Phase 37 joined case rows: `54`
-- Phase 37 summary rows: `42`
+- Phase 37 summary rows: `37`
 
 Main diagnostic result:
 
@@ -301,7 +301,7 @@ Main diagnostic result:
 - failure Phase 33 cases: `30` cases, mean summary reward gap
   `-1.2055407806`, and `17 / 30` proxy-or-label alignment cases
 
-Interpretation: Phase 37 did not find conservative decision-alignment support.
+Interpretation: Phase 37 did not find conservative decision-alignment support under the failure-subgroup gate: at least one failure-case group also showed a positive status-gate signal.
 The positive cases often align with available proxy or weak environmental
 diagnostics, but many failure cases also show proxy-or-label alignment while
 remaining strongly negative. This keeps Phase 37 diagnostic-only and does not

@@ -226,7 +226,7 @@ Expected local Phase 37 artifacts:
 - `phase37_decision_alignment.md`
 
 The current Phase 37 status is `decision_alignment_not_supported` with `54`
-joined case rows and `42` summary rows. Phase 36 remains
+joined case rows and `37` summary rows. Phase 36 remains
 `proxy_signal_not_supported`, so B2/B3 suitability reward remains blocked.
 
 ## Claim Boundary

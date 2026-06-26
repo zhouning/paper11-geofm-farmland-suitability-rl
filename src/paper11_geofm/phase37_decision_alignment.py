@@ -10,8 +10,8 @@ PHASE37_DECISION_ALIGNMENT_CLAIM_BOUNDARY = (
     "Phase 37 is a read-only decision-alignment diagnostic over existing "
     "Phase 34, Phase 35, and optional Phase 36 artifacts; it does not run new "
     "policy training, does not alter rewards, does not enable suitability "
-    "reward, and does not support final submission-level planning-performance "
-    "claims."
+    "reward, does not test B2/B3, and does not support final "
+    "submission-level planning-performance claims."
 )
 
 PHASE37_CASE_FIELDNAMES = [
@@ -21,7 +21,11 @@ PHASE37_CASE_FIELDNAMES = [
     "seed",
     "variant_id",
     "comparator_variant_id",
+    "stability_class",
     "summary_reward_gap",
+    "spatial_pattern",
+    "action_overlap_pattern",
+    "selected_block_jaccard",
     "base_planning_reward_gap",
     "suitability_proxy_gap",
     "low_slope_farmland_label_gap",
@@ -29,7 +33,7 @@ PHASE37_CASE_FIELDNAMES = [
     "slope_mean_gap",
     "slope_max_gap",
     "proxy_alignment_pattern",
-    "action_overlap_pattern",
+    "phase36_proxy_validation_status",
     "claim_boundary",
 ]
 
@@ -39,7 +43,7 @@ PHASE37_SUMMARY_FIELDNAMES = [
     "group_eval_tile_id",
     "group_variant_id",
     "group_comparator_variant_id",
-    "group_proxy_alignment_pattern",
+    "group_spatial_pattern",
     "group_action_overlap_pattern",
     "case_count",
     "mean_summary_reward_gap",
@@ -81,7 +85,9 @@ def build_phase37_decision_alignment(
         phase34_case = phase34_by_case[case_id]
         phase35_case = phase35_by_case[case_id]
         blocks = phase34_blocks_by_case.get(case_id, [])
-        case_rows.append(_case_row(case_id, phase34_case, phase35_case, blocks))
+        case_rows.append(
+            _case_row(case_id, phase34_case, phase35_case, blocks, phase36_status)
+        )
 
     summary_rows = _summary_rows(case_rows)
     status = _phase37_status(case_rows)
@@ -143,6 +149,7 @@ def _case_row(
     phase34_case: Mapping[str, object],
     phase35_case: Mapping[str, object],
     blocks: Sequence[Mapping[str, object]],
+    phase36_status: str,
 ) -> dict[str, object]:
     variant_blocks = [row for row in blocks if _has_value(row, "variant_step")]
     comparator_blocks = [row for row in blocks if _has_value(row, "comparator_step")]
@@ -169,7 +176,14 @@ def _case_row(
         "seed": _optional_int(phase34_case, "seed"),
         "variant_id": str(phase34_case.get("variant_id", "")),
         "comparator_variant_id": str(phase34_case.get("comparator_variant_id", "")),
+        "stability_class": str(phase34_case.get("stability_class", "")),
         "summary_reward_gap": _optional_float(phase35_case, "summary_reward_gap"),
+        "spatial_pattern": str(phase34_case.get("spatial_pattern", "")),
+        "action_overlap_pattern": str(phase35_case.get("action_overlap_pattern", "")),
+        "selected_block_jaccard": _optional_float(
+            phase35_case,
+            "selected_block_jaccard",
+        ),
         "base_planning_reward_gap": _gap(
             phase34_case,
             "variant_mean_base_planning_reward",
@@ -186,7 +200,7 @@ def _case_row(
             current_farmland_gap,
             slope_mean_gap,
         ),
-        "action_overlap_pattern": str(phase35_case.get("action_overlap_pattern", "")),
+        "phase36_proxy_validation_status": phase36_status,
         "claim_boundary": PHASE37_DECISION_ALIGNMENT_CLAIM_BOUNDARY,
     }
     return row
@@ -235,7 +249,7 @@ def _case_group_key(row: Mapping[str, object]) -> tuple[str, str, str, str, str,
         str(row.get("eval_tile_id", "")),
         str(row.get("variant_id", "")),
         str(row.get("comparator_variant_id", "")),
-        str(row.get("proxy_alignment_pattern", "")),
+        str(row.get("spatial_pattern", "")),
         str(row.get("action_overlap_pattern", "")),
     )
 
@@ -250,7 +264,7 @@ def _case_group_fields(key: tuple[str, str, str, str, str, str]) -> dict[str, ob
         "group_eval_tile_id": key[1],
         "group_variant_id": key[2],
         "group_comparator_variant_id": key[3],
-        "group_proxy_alignment_pattern": key[4],
+        "group_spatial_pattern": key[4],
         "group_action_overlap_pattern": key[5],
     }
 
@@ -266,7 +280,7 @@ def _summary_row(
         "group_eval_tile_id": group_fields.get("group_eval_tile_id", ""),
         "group_variant_id": group_fields.get("group_variant_id", ""),
         "group_comparator_variant_id": group_fields.get("group_comparator_variant_id", ""),
-        "group_proxy_alignment_pattern": group_fields.get("group_proxy_alignment_pattern", ""),
+        "group_spatial_pattern": group_fields.get("group_spatial_pattern", ""),
         "group_action_overlap_pattern": group_fields.get("group_action_overlap_pattern", ""),
         "case_count": len(rows),
         "mean_summary_reward_gap": _mean_field(rows, "summary_reward_gap"),
@@ -324,12 +338,17 @@ def _phase37_status(case_rows: Sequence[Mapping[str, object]]) -> str:
 def _phase37_interpretation(status: str) -> str:
     if status == "decision_alignment_supported_for_proxy_rebuild":
         return (
-            "Positive Phase 33 cases show reconstructed proxy or weak-label "
-            "alignment while failure cases do not under the status gate. "
-            "This remains a conservative Phase 37 diagnostic rule."
+            "At least one positive Phase 33 case group shows positive "
+            "suitability-proxy or low-slope label alignment, while no "
+            "failure-case group shows the same status-gate signal. This remains "
+            "a conservative Phase 37 diagnostic rule."
         )
     if status == "decision_alignment_not_supported":
-        return "Phase 37 did not find conservative decision-alignment support."
+        return (
+            "Phase 37 did not find conservative decision-alignment support: "
+            "either no positive case group met the status gate, or at least one "
+            "failure-case group also showed a positive status-gate signal."
+        )
     return "Phase 37 could not join enough input cases for decision alignment."
 
 

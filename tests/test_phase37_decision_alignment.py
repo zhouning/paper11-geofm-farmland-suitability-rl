@@ -39,6 +39,7 @@ def test_phase37_builds_decision_alignment_supported_for_proxy_rebuild(tmp_path)
             "variant_id": "N1ZR",
             "comparator_variant_id": "D4P8",
             "stability_class": "flip_to_positive",
+            "spatial_pattern": "variant_selects_higher_base_reward_blocks",
             "variant_mean_base_planning_reward": 0.8,
             "comparator_mean_base_planning_reward": 0.6,
             "variant_mean_suitability_proxy": 0.7,
@@ -54,6 +55,7 @@ def test_phase37_builds_decision_alignment_supported_for_proxy_rebuild(tmp_path)
             "variant_id": "N1ZR",
             "comparator_variant_id": "D4P8",
             "stability_class": "stable_negative",
+            "spatial_pattern": "variant_selects_lower_base_reward_blocks",
             "variant_mean_base_planning_reward": 0.2,
             "comparator_mean_base_planning_reward": 0.3,
             "variant_mean_suitability_proxy": 0.4,
@@ -101,11 +103,13 @@ def test_phase37_builds_decision_alignment_supported_for_proxy_rebuild(tmp_path)
             "case_id": positive_case_id,
             "summary_reward_gap": 0.7,
             "action_overlap_pattern": "disjoint_positive_gap",
+            "selected_block_jaccard": 0.25,
         },
         {
             "case_id": failure_case_id,
             "summary_reward_gap": -0.6,
             "action_overlap_pattern": "disjoint_negative_gap",
+            "selected_block_jaccard": 0.0,
         },
     ]
 
@@ -157,6 +161,17 @@ def test_phase37_builds_decision_alignment_supported_for_proxy_rebuild(tmp_path)
 
     cases = {row["case_id"]: row for row in analysis["case_rows"]}
     assert set(PHASE37_CASE_FIELDNAMES).issuperset(cases[positive_case_id])
+    assert "does not test B2/B3" in PHASE37_DECISION_ALIGNMENT_CLAIM_BOUNDARY
+    assert cases[positive_case_id]["stability_class"] == "flip_to_positive"
+    assert (
+        cases[positive_case_id]["spatial_pattern"]
+        == "variant_selects_higher_base_reward_blocks"
+    )
+    assert cases[positive_case_id]["selected_block_jaccard"] == 0.25
+    assert (
+        cases[positive_case_id]["phase36_proxy_validation_status"]
+        == "proxy_signal_not_supported"
+    )
     assert cases[positive_case_id]["summary_reward_gap"] == 0.7
     assert cases[positive_case_id]["suitability_proxy_gap"] == 0.2
     assert cases[positive_case_id]["low_slope_farmland_label_gap"] == 0.5
@@ -250,16 +265,19 @@ def test_phase37_status_uses_grouped_positive_cases_not_positive_aggregate(tmp_p
             "case_id": aligned_positive_id,
             "summary_reward_gap": 0.4,
             "action_overlap_pattern": "disjoint_positive_gap",
+            "selected_block_jaccard": 0.25,
         },
         {
             "case_id": unaligned_positive_id,
             "summary_reward_gap": 0.2,
             "action_overlap_pattern": "disjoint_positive_gap",
+            "selected_block_jaccard": 0.25,
         },
         {
             "case_id": failure_id,
             "summary_reward_gap": -0.3,
             "action_overlap_pattern": "disjoint_negative_gap",
+            "selected_block_jaccard": 0.0,
         },
     ]
 
@@ -373,6 +391,7 @@ def test_phase37_positive_only_joined_cases_are_inputs_insufficient(tmp_path):
             "case_id": positive_id,
             "summary_reward_gap": 0.5,
             "action_overlap_pattern": "disjoint_positive_gap",
+            "selected_block_jaccard": 0.25,
         },
     ]
 
@@ -490,16 +509,19 @@ def test_phase37_failure_subgroup_alignment_blocks_support(tmp_path):
             "case_id": positive_id,
             "summary_reward_gap": 0.4,
             "action_overlap_pattern": "disjoint_positive_gap",
+            "selected_block_jaccard": 0.25,
         },
         {
             "case_id": aligned_failure_id,
             "summary_reward_gap": -0.2,
             "action_overlap_pattern": "disjoint_negative_gap",
+            "selected_block_jaccard": 0.0,
         },
         {
             "case_id": negative_failure_id,
             "summary_reward_gap": -0.5,
             "action_overlap_pattern": "disjoint_negative_gap",
+            "selected_block_jaccard": 0.0,
         },
     ]
 
@@ -551,6 +573,7 @@ def _write_fixture_inputs(tmp_path: Path) -> dict[str, Path | str]:
             "variant_id": "N1ZR",
             "comparator_variant_id": "D4P8",
             "stability_class": "flip_to_positive",
+            "spatial_pattern": "variant_selects_higher_base_reward_blocks",
             "variant_mean_base_planning_reward": 0.8,
             "comparator_mean_base_planning_reward": 0.6,
             "variant_mean_suitability_proxy": 0.7,
@@ -566,6 +589,7 @@ def _write_fixture_inputs(tmp_path: Path) -> dict[str, Path | str]:
             "variant_id": "N1ZR",
             "comparator_variant_id": "D4P8",
             "stability_class": "stable_negative",
+            "spatial_pattern": "variant_selects_lower_base_reward_blocks",
             "variant_mean_base_planning_reward": 0.2,
             "comparator_mean_base_planning_reward": 0.3,
             "variant_mean_suitability_proxy": 0.4,
@@ -613,11 +637,13 @@ def _write_fixture_inputs(tmp_path: Path) -> dict[str, Path | str]:
             "case_id": positive_case_id,
             "summary_reward_gap": 0.7,
             "action_overlap_pattern": "disjoint_positive_gap",
+            "selected_block_jaccard": 0.25,
         },
         {
             "case_id": failure_case_id,
             "summary_reward_gap": -0.6,
             "action_overlap_pattern": "disjoint_negative_gap",
+            "selected_block_jaccard": 0.0,
         },
     ]
 
@@ -762,6 +788,8 @@ def test_phase37_writer_outputs_csv_json_and_markdown(tmp_path):
         summary_rows = list(summary_reader)
     assert case_reader.fieldnames == PHASE37_CASE_FIELDNAMES
     assert summary_reader.fieldnames == PHASE37_SUMMARY_FIELDNAMES
+    assert "group_spatial_pattern" in PHASE37_SUMMARY_FIELDNAMES
+    assert "group_proxy_alignment_pattern" not in PHASE37_SUMMARY_FIELDNAMES
     assert case_rows
     assert summary_rows
 
@@ -776,6 +804,7 @@ def test_phase37_writer_outputs_csv_json_and_markdown(tmp_path):
     assert "## Interpretation" in markdown
     assert "## Claim Boundary" in markdown
     assert "does not enable suitability reward" in markdown
+    assert "does not test B2/B3" in markdown
 
 
 def test_phase37_cli_writes_outputs(tmp_path):
