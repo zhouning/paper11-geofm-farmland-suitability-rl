@@ -5,8 +5,9 @@
 Paper11 remains experiment-first. Phase 33 completed the bounded `3 tiles x 3
 seeds` matched robustness check over the Phase 30 normalized-B1 branch. Phase
 34 and Phase 35 then localized the result with spatial-composition and
-action-overlap diagnostics. The current continuation adds Phase 36: a read-only
-suitability-proxy validation gate before any B2/B3 reward work.
+action-overlap diagnostics. Phase 36 added a read-only suitability-proxy
+validation gate before any B2/B3 reward work, and Phase 37 added a read-only
+decision-alignment audit over Phase 34, Phase 35, and Phase 36 artifacts.
 
 Repository state when the Phase 36 continuation started:
 
@@ -257,6 +258,56 @@ The next branch should obtain independent labels or rebuild a supervised or
 semi-supervised suitability proxy under spatial held-out validation. More PPO
 budget is not the right next move until that proxy gate improves.
 
+
+## Phase 37 Decision-Alignment Continuation
+
+Phase 37 completed the decision-alignment audit over the existing Phase 34
+case-map outputs, Phase 35 action-overlap cases, and Phase 36 suitability-proxy
+diagnosis. It is read-only, does not run policy training, and does not alter
+reward logic.
+
+Local ignored Phase 37 output:
+
+```text
+experiments/phase37_decision_alignment/outputs/real_bishan_5120_phase33_9run
+```
+
+Artifacts:
+
+```text
+phase37_decision_alignment_cases.csv
+phase37_decision_alignment_summary.csv
+phase37_decision_alignment.json
+phase37_decision_alignment.md
+```
+
+Status and row counts:
+
+- status: `decision_alignment_not_supported`
+- Phase 36 status: `proxy_signal_not_supported`
+- Phase 34 case rows: `54`
+- Phase 34 selected-block rows: `857`
+- Phase 35 case rows: `54`
+- Phase 37 joined case rows: `54`
+- Phase 37 summary rows: `42`
+
+Main diagnostic result:
+
+- all joined cases: mean summary reward gap `-0.4109646286`, mean
+  suitability-proxy gap `-0.0066127380`, mean low-slope farmland-label gap
+  `-0.0486111111`, and `39 / 54` proxy-or-label alignment cases
+- positive Phase 33 cases: `24` cases, mean summary reward gap
+  `0.5822555613`, and `22 / 24` proxy-or-label alignment cases
+- failure Phase 33 cases: `30` cases, mean summary reward gap
+  `-1.2055407806`, and `17 / 30` proxy-or-label alignment cases
+
+Interpretation: Phase 37 did not find conservative decision-alignment support.
+The positive cases often align with available proxy or weak environmental
+diagnostics, but many failure cases also show proxy-or-label alignment while
+remaining strongly negative. This keeps Phase 37 diagnostic-only and does not
+support a proxy-rebuild success claim. Phase 36 still blocks B2/B3 suitability
+reward because its status remains `proxy_signal_not_supported`.
+
 ## Tracked Docs Updated
 
 Updated in the Phase 33 window:
@@ -303,9 +354,23 @@ experiments/phase36_suitability_proxy_validation/run_phase36_suitability_proxy_v
 tests/test_phase36_suitability_proxy_validation.py
 ```
 
+Updated in the Phase 37 continuation:
+
+```text
+README.md
+paper/phase28_results/README.md
+paper/phase28_results/11_phase37_decision_alignment.md
+reproducibility/FILE_MANIFEST.tsv
+docs/superpowers/phase33_current_progress_handoff.md
+```
+
 Do not describe Phase 33 as generally `budget_closes_compressed_gap`. That is
 only true for the `tile_r002_c003` three-seed aggregate, not for the complete
 bounded aggregate.
+
+Do not describe Phase 37 as supporting B2/B3, suitability reward, reward
+changes, policy training, or final planning-performance claims. Its real status
+is `decision_alignment_not_supported`.
 
 ## Verification Run
 
@@ -314,7 +379,6 @@ Fresh verification completed after the full 9-run aggregate:
 ```powershell
 python -m pytest tests\test_phase33_budget_robustness.py tests\test_phase32_action_order_diagnostics.py tests\test_phase30_normalized_b1_ablation.py -q --basetemp=.pytest_tmp_phase33_full_cover -p no:cacheprovider
 ```
-
 Result:
 
 ```text

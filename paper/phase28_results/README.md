@@ -37,6 +37,9 @@ base-reward protocol.
 - `10_phase36_suitability_proxy_validation.md`: read-only weak-label
   suitability-proxy validation over existing Phase 2, Phase 8, and Phase 30
   feature tables before any B2/B3 reward work.
+- `11_phase37_decision_alignment.md`: read-only decision-alignment audit
+  joining Phase 34, Phase 35, and Phase 36 artifacts to test whether Phase 33
+  decisions separate in available proxy, slope, and weak farmland diagnostics.
 
 ## Reproduction Link
 
@@ -205,6 +208,26 @@ are usable, but they are DLTB/slope-derived and flagged for explicit-feature
 leakage risk. The current scalar `suitability_proxy` is not supported as a
 reward term; the next branch should use independent labels or rebuild a
 supervised/semi-supervised suitability proxy.
+
+
+The Phase 37 decision-alignment audit is read-only. It joins Phase 34 case-map
+rows, Phase 34 selected-block rows, Phase 35 action-overlap cases, and the
+Phase 36 diagnosis before any B2/B3 reward integration:
+
+```powershell
+python experiments\phase37_decision_alignment\run_phase37_decision_alignment.py --phase34-cases-csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_cases.csv --phase34-blocks-csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_blocks.csv --phase35-cases-csv experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run\phase35_action_overlap_cases.csv --phase36-diagnosis-json experiments\phase36_suitability_proxy_validation\outputs\real_bishan\phase36_suitability_proxy_validation.json --output-dir experiments\phase37_decision_alignment\outputs\real_bishan_5120_phase33_9run
+```
+
+Expected local Phase 37 artifacts:
+
+- `phase37_decision_alignment_cases.csv`
+- `phase37_decision_alignment_summary.csv`
+- `phase37_decision_alignment.json`
+- `phase37_decision_alignment.md`
+
+The current Phase 37 status is `decision_alignment_not_supported` with `54`
+joined case rows and `42` summary rows. Phase 36 remains
+`proxy_signal_not_supported`, so B2/B3 suitability reward remains blocked.
 
 ## Claim Boundary
 

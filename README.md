@@ -56,7 +56,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase34_case_map_diagnostics/`: executable read-only Phase 34 case-map diagnostic runner over existing Phase 33 matched pilot artifacts.
 - `experiments/phase35_phase33_action_overlap_diagnostics/`: executable read-only Phase 35 action-overlap diagnostic runner over existing Phase 33 matched pilot artifacts.
 - `experiments/phase36_suitability_proxy_validation/`: executable read-only Phase 36 suitability-proxy validation runner over existing Phase 2, Phase 8, and Phase 30 feature tables.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, and Phase 36 suitability-proxy validation.
+- `experiments/phase37_decision_alignment/`: executable read-only Phase 37 decision-alignment diagnostic runner over existing Phase 34, Phase 35, and Phase 36 artifacts.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, and Phase 37 decision-alignment diagnostics.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -485,6 +486,19 @@ scores, while `suitability_proxy_only` is near random. The narrow raw-GeoFM
 association with `low_slope_farmland_label` is useful for proxy-rebuild work,
 but it does not justify enabling the current B2/B3 suitability reward.
 
+Run the read-only Phase 37 decision-alignment diagnostic after the Phase 34,
+Phase 35, and Phase 36 real outputs exist:
+
+```powershell
+python experiments\phase37_decision_alignment\run_phase37_decision_alignment.py --phase34-cases-csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_cases.csv --phase34-blocks-csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_blocks.csv --phase35-cases-csv experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run\phase35_action_overlap_cases.csv --phase36-diagnosis-json experiments\phase36_suitability_proxy_validation\outputs\real_bishan\phase36_suitability_proxy_validation.json --output-dir experiments\phase37_decision_alignment\outputs\real_bishan_5120_phase33_9run
+```
+
+The current Phase 37 status is `decision_alignment_not_supported` with `54`
+joined case rows and `42` summary rows. Phase 37 is diagnostic-only: it does
+not run policy training, alter rewards, enable suitability reward, test B2/B3,
+or support final planning-performance claims. Phase 36 still blocks B2/B3
+suitability reward use because its status remains `proxy_signal_not_supported`.
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -504,6 +518,7 @@ but it does not justify enabling the current B2/B3 suitability reward.
 - Phase 34 case-map diagnostics: `paper/phase28_results/08_phase34_case_map_diagnostics.md`
 - Phase 35 Phase 33 action-overlap diagnostics: `paper/phase28_results/09_phase35_phase33_action_overlap_diagnostics.md`
 - Phase 36 suitability-proxy validation: `paper/phase28_results/10_phase36_suitability_proxy_validation.md`
+- Phase 37 decision-alignment audit: `paper/phase28_results/11_phase37_decision_alignment.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -556,6 +571,8 @@ but it does not justify enabling the current B2/B3 suitability reward.
 - Phase 35 Phase 33 action-overlap diagnostics module: `src/paper11_geofm/phase35_phase33_action_overlap_diagnostics.py`
 - Phase 36 suitability-proxy validation runner: `experiments/phase36_suitability_proxy_validation/run_phase36_suitability_proxy_validation.py`
 - Phase 36 suitability-proxy validation module: `src/paper11_geofm/phase36_suitability_proxy_validation.py`
+- Phase 37 decision-alignment runner: `experiments/phase37_decision_alignment/run_phase37_decision_alignment.py`
+- Phase 37 decision-alignment module: `src/paper11_geofm/phase37_decision_alignment.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`
