@@ -31,6 +31,33 @@ start from the Phase 37 proxy-rebuild or decision-alignment branch described
 below. Local generated outputs under `experiments/**/outputs/` remain ignored
 and should not be committed.
 
+## Phase 37 Window-Close Save State
+
+Phase 37 has been merged back to `main` locally. The temporary
+`phase37-decision-alignment` worktree was removed and the local feature branch
+was deleted after the fast-forward merge.
+
+Latest Phase 37 commits on `main`:
+
+```text
+f82a9db fix: align Phase 37 artifact contract
+0930280 docs: record Phase 37 decision-alignment result
+005cb81 feat: add Phase 37 decision-alignment runner
+```
+
+Post-merge verification on `main`:
+
+```text
+python -m pytest tests\test_phase37_decision_alignment.py tests\test_phase36_suitability_proxy_validation.py -q --basetemp=.pytest_tmp_phase37_main_merge -p no:cacheprovider
+13 passed
+
+python scripts\smoke_check.py
+Paper11 smoke check passed.
+```
+
+Current Phase 37 real-run status is `decision_alignment_not_supported` with
+`54` joined case rows and `37` summary rows. Phase 36 remains
+`proxy_signal_not_supported`, so B2/B3 suitability reward remains blocked.
 ## What Was Run This Window
 
 The earlier Phase 33 state only had a positive local pilot:
