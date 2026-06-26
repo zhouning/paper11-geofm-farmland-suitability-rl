@@ -15,6 +15,21 @@ Repository state when the Phase 36 continuation started:
 - latest commit before Phase 36 continuation: `6f94881 docs: record Phase 33 full-grid budget result`
 - starting tracked edits: none
 
+## Window-Close Save State
+
+Before closing this window, the Phase 36 implementation was committed and
+pushed as:
+
+```text
+461683a feat: add Phase 36 suitability proxy validation
+```
+
+The current Phase 36 conclusion remains `proxy_signal_not_supported`, so the
+current B2/B3 suitability reward remains blocked. The next continuation should
+start from the Phase 37 proxy-rebuild or decision-alignment branch described
+below. Local generated outputs under `experiments/**/outputs/` remain ignored
+and should not be committed.
+
 ## What Was Run This Window
 
 The earlier Phase 33 state only had a positive local pilot:
