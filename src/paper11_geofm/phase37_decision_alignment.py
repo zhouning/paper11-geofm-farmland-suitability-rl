@@ -275,14 +275,15 @@ def _phase37_status(case_rows: Sequence[Mapping[str, object]]) -> str:
         for row in case_rows
         if str(row.get("case_role", "")) == "phase33_failure_case"
     ]
+    if not positive_rows or not failure_rows:
+        return "decision_alignment_inputs_insufficient"
+    # The support gate is narrower than proxy_alignment_pattern by design.
+    gate_fields = ("suitability_proxy_gap", "low_slope_farmland_label_gap")
     positive_supported = any(
-        _mean_positive(group_rows, ("suitability_proxy_gap", "low_slope_farmland_label_gap"))
+        _proxy_rebuild_signal_positive(group_rows, gate_fields)
         for group_rows in _case_groups(positive_rows).values()
     )
-    failure_supported = _mean_positive(
-        failure_rows,
-        ("suitability_proxy_gap", "low_slope_farmland_label_gap"),
-    )
+    failure_supported = _proxy_rebuild_signal_positive(failure_rows, gate_fields)
     if positive_supported and not failure_supported:
         return "decision_alignment_supported_for_proxy_rebuild"
     return "decision_alignment_not_supported"
@@ -374,7 +375,10 @@ def _proxy_alignment_pattern(
     return "no_proxy_alignment"
 
 
-def _mean_positive(rows: Sequence[Mapping[str, object]], fields: Sequence[str]) -> bool:
+def _proxy_rebuild_signal_positive(
+    rows: Sequence[Mapping[str, object]],
+    fields: Sequence[str],
+) -> bool:
     return any(_is_positive(_mean_field(rows, field)) for field in fields)
 
 

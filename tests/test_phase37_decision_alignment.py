@@ -170,6 +170,7 @@ def test_phase37_builds_decision_alignment_supported_for_proxy_rebuild(tmp_path)
     assert cases[failure_case_id]["current_farmland_label_gap"] == -1.0
     assert cases[failure_case_id]["proxy_alignment_pattern"] == "no_proxy_alignment"
 
+
 def test_phase37_status_uses_grouped_positive_cases_not_positive_aggregate(tmp_path):
     from paper11_geofm.phase37_decision_alignment import build_phase37_decision_alignment
 
@@ -292,4 +293,118 @@ def test_phase37_status_uses_grouped_positive_cases_not_positive_aggregate(tmp_p
     assert (
         analysis["phase37_decision_alignment_status"]
         == "decision_alignment_supported_for_proxy_rebuild"
+    )
+
+
+def test_phase37_positive_only_joined_cases_are_inputs_insufficient(tmp_path):
+    from paper11_geofm.phase37_decision_alignment import build_phase37_decision_alignment
+
+    positive_id = "tile_positive_only|0|N1ZR|D4P8"
+    unjoined_failure_id = "tile_unjoined_failure|0|N1ZR|D4P8"
+    phase34_cases = [
+        {
+            "case_id": positive_id,
+            "case_role": "phase33_positive_case",
+            "eval_tile_id": "tile_positive_only",
+            "seed": 0,
+            "variant_id": "N1ZR",
+            "comparator_variant_id": "D4P8",
+            "variant_mean_base_planning_reward": 0.8,
+            "comparator_mean_base_planning_reward": 0.6,
+            "variant_mean_suitability_proxy": 0.9,
+            "comparator_mean_suitability_proxy": 0.4,
+            "variant_mean_low_slope_farmland_label": 0.8,
+            "comparator_mean_low_slope_farmland_label": 0.3,
+        },
+        {
+            "case_id": unjoined_failure_id,
+            "case_role": "phase33_failure_case",
+            "eval_tile_id": "tile_unjoined_failure",
+            "seed": 0,
+            "variant_id": "N1ZR",
+            "comparator_variant_id": "D4P8",
+            "variant_mean_base_planning_reward": 0.2,
+            "comparator_mean_base_planning_reward": 0.4,
+            "variant_mean_suitability_proxy": 0.2,
+            "comparator_mean_suitability_proxy": 0.5,
+            "variant_mean_low_slope_farmland_label": 0.1,
+            "comparator_mean_low_slope_farmland_label": 0.4,
+        },
+    ]
+    phase34_blocks = [
+        {
+            "case_id": positive_id,
+            "block_id": "positive_variant",
+            "variant_step": 1,
+            "current_farmland_label": 1.0,
+            "slope_mean": 5.0,
+            "slope_max": 10.0,
+        },
+        {
+            "case_id": positive_id,
+            "block_id": "positive_comparator",
+            "comparator_step": 1,
+            "current_farmland_label": 0.0,
+            "slope_mean": 12.0,
+            "slope_max": 18.0,
+        },
+        {
+            "case_id": unjoined_failure_id,
+            "block_id": "failure_variant",
+            "variant_step": 1,
+            "current_farmland_label": 0.0,
+            "slope_mean": 12.0,
+            "slope_max": 18.0,
+        },
+        {
+            "case_id": unjoined_failure_id,
+            "block_id": "failure_comparator",
+            "comparator_step": 1,
+            "current_farmland_label": 1.0,
+            "slope_mean": 6.0,
+            "slope_max": 11.0,
+        },
+    ]
+    phase35_cases = [
+        {
+            "case_id": positive_id,
+            "summary_reward_gap": 0.5,
+            "action_overlap_pattern": "disjoint_positive_gap",
+        },
+    ]
+
+    phase34_cases_csv = _write_csv(
+        tmp_path / "phase34_case_map_cases.csv",
+        phase34_cases,
+        list(phase34_cases[0].keys()),
+    )
+    phase34_blocks_csv = _write_csv(
+        tmp_path / "phase34_case_map_blocks.csv",
+        phase34_blocks,
+        [
+            "case_id",
+            "block_id",
+            "variant_step",
+            "comparator_step",
+            "current_farmland_label",
+            "slope_mean",
+            "slope_max",
+        ],
+    )
+    phase35_cases_csv = _write_csv(
+        tmp_path / "phase35_action_overlap_cases.csv",
+        phase35_cases,
+        list(phase35_cases[0].keys()),
+    )
+
+    analysis = build_phase37_decision_alignment(
+        phase34_cases_csv,
+        phase34_blocks_csv,
+        phase35_cases_csv,
+    )
+
+    assert analysis["row_counts"]["case_rows"] == 1
+    assert (
+        analysis["phase37_decision_alignment_status"]
+        == "decision_alignment_inputs_insufficient"
     )
