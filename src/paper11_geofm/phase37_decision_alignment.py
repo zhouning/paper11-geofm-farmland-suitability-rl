@@ -113,15 +113,11 @@ def write_phase37_decision_alignment_artifacts(
     analysis: Mapping[str, object],
     output_dir: Path | str,
 ) -> dict[str, Path]:
+    case_rows = _validate_mapping_rows(analysis.get("case_rows"), "case_rows")
+    summary_rows = _validate_mapping_rows(analysis.get("summary_rows"), "summary_rows")
+
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
-
-    case_rows = analysis.get("case_rows")
-    summary_rows = analysis.get("summary_rows")
-    if not isinstance(case_rows, list):
-        raise ValueError("analysis['case_rows'] must be a list")
-    if not isinstance(summary_rows, list):
-        raise ValueError("analysis['summary_rows'] must be a list")
 
     artifacts = {
         "case_alignment_csv": output_path / "phase37_decision_alignment_cases.csv",
@@ -140,6 +136,7 @@ def write_phase37_decision_alignment_artifacts(
         encoding="utf-8",
     )
     return artifacts
+
 
 def _case_row(
     case_id: str,
@@ -336,6 +333,15 @@ def _phase37_interpretation(status: str) -> str:
     return "Phase 37 could not join enough input cases for decision alignment."
 
 
+def _validate_mapping_rows(value: object, key: str) -> list[Mapping[str, object]]:
+    if not isinstance(value, list):
+        raise ValueError(f"analysis['{key}'] must be a list")
+    for index, row in enumerate(value):
+        if not isinstance(row, Mapping):
+            raise ValueError(f"analysis['{key}'][{index}] must be a Mapping")
+    return value
+
+
 def _write_csv_rows(
     path: Path,
     rows: Sequence[Mapping[str, object]],
@@ -421,6 +427,7 @@ def _summary_markdown_table(rows: Sequence[Mapping[str, object]]) -> list[str]:
 
 def _markdown_cell(value: object) -> str:
     return str(value).replace("|", "\\|").replace("\n", " ")
+
 
 def _read_csv_rows(path: Path, label: str) -> list[dict[str, str]]:
     if not path.exists():

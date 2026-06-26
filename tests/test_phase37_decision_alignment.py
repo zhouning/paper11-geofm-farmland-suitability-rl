@@ -3,6 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -711,6 +713,8 @@ def test_phase37_marks_inputs_insufficient_when_cases_do_not_join(tmp_path):
 
 def test_phase37_writer_outputs_csv_json_and_markdown(tmp_path):
     from paper11_geofm.phase37_decision_alignment import (
+        PHASE37_CASE_FIELDNAMES,
+        PHASE37_SUMMARY_FIELDNAMES,
         build_phase37_decision_alignment,
         write_phase37_decision_alignment_artifacts,
     )
@@ -723,8 +727,11 @@ def test_phase37_writer_outputs_csv_json_and_markdown(tmp_path):
         phase36_diagnosis_json=fixture["phase36_json"],
     )
 
+    analysis_with_path = dict(analysis)
+    analysis_with_path["path_probe"] = tmp_path / "path-probe"
+
     artifacts = write_phase37_decision_alignment_artifacts(
-        analysis,
+        analysis_with_path,
         tmp_path / "outputs",
     )
 
@@ -738,10 +745,48 @@ def test_phase37_writer_outputs_csv_json_and_markdown(tmp_path):
     }
     assert all(path.exists() for path in artifacts.values())
 
+    with artifacts["case_alignment_csv"].open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        case_reader = csv.DictReader(handle)
+        case_rows = list(case_reader)
+    with artifacts["summary_csv"].open(
+        "r",
+        encoding="utf-8",
+        newline="",
+    ) as handle:
+        summary_reader = csv.DictReader(handle)
+        summary_rows = list(summary_reader)
+    assert case_reader.fieldnames == PHASE37_CASE_FIELDNAMES
+    assert summary_reader.fieldnames == PHASE37_SUMMARY_FIELDNAMES
+    assert case_rows
+    assert summary_rows
+
     payload = json.loads(artifacts["diagnosis_json"].read_text(encoding="utf-8"))
     assert payload["phase"] == "phase37_decision_alignment"
+    assert payload["path_probe"] == str(tmp_path / "path-probe")
 
     markdown = artifacts["diagnosis_md"].read_text(encoding="utf-8")
     assert "Phase 37 Decision-Alignment" in markdown
     assert "decision_alignment_supported_for_proxy_rebuild" in markdown
+    assert "proxy_signal_not_supported" in markdown
+    assert "## Interpretation" in markdown
+    assert "## Claim Boundary" in markdown
     assert "does not enable suitability reward" in markdown
+
+
+def test_phase37_writer_rejects_non_mapping_rows_before_writing(tmp_path):
+    from paper11_geofm.phase37_decision_alignment import (
+        write_phase37_decision_alignment_artifacts,
+    )
+
+    output_dir = tmp_path / "outputs"
+    with pytest.raises(ValueError, match="case_rows.*Mapping"):
+        write_phase37_decision_alignment_artifacts(
+            {"case_rows": [None], "summary_rows": []},
+            output_dir,
+        )
+
+    assert not output_dir.exists()
