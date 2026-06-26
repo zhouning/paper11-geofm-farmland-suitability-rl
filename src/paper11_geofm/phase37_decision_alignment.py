@@ -109,6 +109,38 @@ def build_phase37_decision_alignment(
     }
 
 
+def write_phase37_decision_alignment_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    case_rows = analysis.get("case_rows")
+    summary_rows = analysis.get("summary_rows")
+    if not isinstance(case_rows, list):
+        raise ValueError("analysis['case_rows'] must be a list")
+    if not isinstance(summary_rows, list):
+        raise ValueError("analysis['summary_rows'] must be a list")
+
+    artifacts = {
+        "case_alignment_csv": output_path / "phase37_decision_alignment_cases.csv",
+        "summary_csv": output_path / "phase37_decision_alignment_summary.csv",
+        "diagnosis_json": output_path / "phase37_decision_alignment.json",
+        "diagnosis_md": output_path / "phase37_decision_alignment.md",
+    }
+    _write_csv_rows(artifacts["case_alignment_csv"], case_rows, PHASE37_CASE_FIELDNAMES)
+    _write_csv_rows(artifacts["summary_csv"], summary_rows, PHASE37_SUMMARY_FIELDNAMES)
+    artifacts["diagnosis_json"].write_text(
+        json.dumps(_json_ready(analysis), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    artifacts["diagnosis_md"].write_text(
+        _decision_alignment_markdown(analysis),
+        encoding="utf-8",
+    )
+    return artifacts
+
 def _case_row(
     case_id: str,
     phase34_case: Mapping[str, object],
@@ -303,6 +335,92 @@ def _phase37_interpretation(status: str) -> str:
         return "Phase 37 did not find conservative decision-alignment support."
     return "Phase 37 could not join enough input cases for decision alignment."
 
+
+def _write_csv_rows(
+    path: Path,
+    rows: Sequence[Mapping[str, object]],
+    fieldnames: Sequence[str],
+) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, tuple):
+        return [_json_ready(item) for item in value]
+    return value
+
+
+def _decision_alignment_markdown(analysis: Mapping[str, object]) -> str:
+    status = str(analysis.get("phase37_decision_alignment_status", ""))
+    phase36_status = str(analysis.get("phase36_proxy_validation_status", ""))
+    interpretation = str(analysis.get("interpretation", ""))
+    claim_boundary = str(
+        analysis.get("claim_boundary", PHASE37_DECISION_ALIGNMENT_CLAIM_BOUNDARY)
+    )
+    summary_rows = analysis.get("summary_rows")
+    if not isinstance(summary_rows, list):
+        raise ValueError("analysis['summary_rows'] must be a list")
+
+    lines = [
+        "# Phase 37 Decision-Alignment",
+        "",
+        f"Status: {status}",
+        f"Phase36 status: {phase36_status}",
+        "",
+        "## Case Summary",
+        "",
+    ]
+    lines.extend(_summary_markdown_table(summary_rows))
+    lines.extend(
+        [
+            "",
+            "## Interpretation",
+            "",
+            interpretation,
+            "",
+            "## Claim Boundary",
+            "",
+            claim_boundary,
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _summary_markdown_table(rows: Sequence[Mapping[str, object]]) -> list[str]:
+    columns = [
+        "summary_group",
+        "case_count",
+        "mean_summary_reward_gap",
+        "mean_suitability_proxy_gap",
+        "mean_low_slope_farmland_label_gap",
+        "proxy_or_label_alignment_count",
+    ]
+    table = [
+        "| " + " | ".join(columns) + " |",
+        "| " + " | ".join("---" for _ in columns) + " |",
+    ]
+    for row in rows:
+        table.append(
+            "| "
+            + " | ".join(_markdown_cell(row.get(column, "")) for column in columns)
+            + " |"
+        )
+    return table
+
+
+def _markdown_cell(value: object) -> str:
+    return str(value).replace("|", "\\|").replace("\n", " ")
 
 def _read_csv_rows(path: Path, label: str) -> list[dict[str, str]]:
     if not path.exists():

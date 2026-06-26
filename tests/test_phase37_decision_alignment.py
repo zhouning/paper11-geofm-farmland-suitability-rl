@@ -707,3 +707,41 @@ def test_phase37_marks_inputs_insufficient_when_cases_do_not_join(tmp_path):
         == "decision_alignment_inputs_insufficient"
     )
     assert analysis["row_counts"]["case_rows"] == 0
+
+
+def test_phase37_writer_outputs_csv_json_and_markdown(tmp_path):
+    from paper11_geofm.phase37_decision_alignment import (
+        build_phase37_decision_alignment,
+        write_phase37_decision_alignment_artifacts,
+    )
+
+    fixture = _write_fixture_inputs(tmp_path)
+    analysis = build_phase37_decision_alignment(
+        fixture["phase34_cases_csv"],
+        fixture["phase34_blocks_csv"],
+        fixture["phase35_cases_csv"],
+        phase36_diagnosis_json=fixture["phase36_json"],
+    )
+
+    artifacts = write_phase37_decision_alignment_artifacts(
+        analysis,
+        tmp_path / "outputs",
+    )
+
+    assert {
+        key: path.name for key, path in artifacts.items()
+    } == {
+        "case_alignment_csv": "phase37_decision_alignment_cases.csv",
+        "summary_csv": "phase37_decision_alignment_summary.csv",
+        "diagnosis_json": "phase37_decision_alignment.json",
+        "diagnosis_md": "phase37_decision_alignment.md",
+    }
+    assert all(path.exists() for path in artifacts.values())
+
+    payload = json.loads(artifacts["diagnosis_json"].read_text(encoding="utf-8"))
+    assert payload["phase"] == "phase37_decision_alignment"
+
+    markdown = artifacts["diagnosis_md"].read_text(encoding="utf-8")
+    assert "Phase 37 Decision-Alignment" in markdown
+    assert "decision_alignment_supported_for_proxy_rebuild" in markdown
+    assert "does not enable suitability reward" in markdown
