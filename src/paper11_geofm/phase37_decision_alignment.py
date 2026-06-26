@@ -35,6 +35,12 @@ PHASE37_CASE_FIELDNAMES = [
 
 PHASE37_SUMMARY_FIELDNAMES = [
     "summary_group",
+    "group_case_role",
+    "group_eval_tile_id",
+    "group_variant_id",
+    "group_comparator_variant_id",
+    "group_proxy_alignment_pattern",
+    "group_action_overlap_pattern",
     "case_count",
     "mean_summary_reward_gap",
     "mean_base_planning_reward_gap",
@@ -158,10 +164,11 @@ def _case_row(
 
 
 def _summary_rows(case_rows: Sequence[Mapping[str, object]]) -> list[dict[str, object]]:
-    groups = [
-        ("all_cases", list(case_rows)),
+    groups: list[tuple[str, dict[str, object], list[Mapping[str, object]]]] = [
+        ("all_cases", {}, list(case_rows)),
         (
             "phase33_positive_case",
+            {"group_case_role": "phase33_positive_case"},
             [
                 row
                 for row in case_rows
@@ -170,6 +177,7 @@ def _summary_rows(case_rows: Sequence[Mapping[str, object]]) -> list[dict[str, o
         ),
         (
             "phase33_failure_case",
+            {"group_case_role": "phase33_failure_case"},
             [
                 row
                 for row in case_rows
@@ -177,12 +185,60 @@ def _summary_rows(case_rows: Sequence[Mapping[str, object]]) -> list[dict[str, o
             ],
         ),
     ]
-    return [_summary_row(name, rows) for name, rows in groups if rows]
+    for key, rows in _case_groups(case_rows).items():
+        groups.append((_case_group_name(key), _case_group_fields(key), rows))
+    return [_summary_row(name, fields, rows) for name, fields, rows in groups if rows]
 
 
-def _summary_row(name: str, rows: Sequence[Mapping[str, object]]) -> dict[str, object]:
+def _case_groups(
+    rows: Sequence[Mapping[str, object]],
+) -> dict[tuple[str, str, str, str, str, str], list[Mapping[str, object]]]:
+    grouped: dict[tuple[str, str, str, str, str, str], list[Mapping[str, object]]] = {}
+    for row in rows:
+        key = _case_group_key(row)
+        grouped.setdefault(key, []).append(row)
+    return grouped
+
+
+def _case_group_key(row: Mapping[str, object]) -> tuple[str, str, str, str, str, str]:
+    return (
+        str(row.get("case_role", "")),
+        str(row.get("eval_tile_id", "")),
+        str(row.get("variant_id", "")),
+        str(row.get("comparator_variant_id", "")),
+        str(row.get("proxy_alignment_pattern", "")),
+        str(row.get("action_overlap_pattern", "")),
+    )
+
+
+def _case_group_name(key: tuple[str, str, str, str, str, str]) -> str:
+    return "case_group|" + "|".join(key)
+
+
+def _case_group_fields(key: tuple[str, str, str, str, str, str]) -> dict[str, object]:
+    return {
+        "group_case_role": key[0],
+        "group_eval_tile_id": key[1],
+        "group_variant_id": key[2],
+        "group_comparator_variant_id": key[3],
+        "group_proxy_alignment_pattern": key[4],
+        "group_action_overlap_pattern": key[5],
+    }
+
+
+def _summary_row(
+    name: str,
+    group_fields: Mapping[str, object],
+    rows: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
     return {
         "summary_group": name,
+        "group_case_role": group_fields.get("group_case_role", ""),
+        "group_eval_tile_id": group_fields.get("group_eval_tile_id", ""),
+        "group_variant_id": group_fields.get("group_variant_id", ""),
+        "group_comparator_variant_id": group_fields.get("group_comparator_variant_id", ""),
+        "group_proxy_alignment_pattern": group_fields.get("group_proxy_alignment_pattern", ""),
+        "group_action_overlap_pattern": group_fields.get("group_action_overlap_pattern", ""),
         "case_count": len(rows),
         "mean_summary_reward_gap": _mean_field(rows, "summary_reward_gap"),
         "mean_base_planning_reward_gap": _mean_field(rows, "base_planning_reward_gap"),
@@ -219,9 +275,9 @@ def _phase37_status(case_rows: Sequence[Mapping[str, object]]) -> str:
         for row in case_rows
         if str(row.get("case_role", "")) == "phase33_failure_case"
     ]
-    positive_supported = _mean_positive(
-        positive_rows,
-        ("suitability_proxy_gap", "low_slope_farmland_label_gap"),
+    positive_supported = any(
+        _mean_positive(group_rows, ("suitability_proxy_gap", "low_slope_farmland_label_gap"))
+        for group_rows in _case_groups(positive_rows).values()
     )
     failure_supported = _mean_positive(
         failure_rows,
