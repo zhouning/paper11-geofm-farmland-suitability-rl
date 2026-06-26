@@ -1,5 +1,6 @@
 import csv
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -776,6 +777,45 @@ def test_phase37_writer_outputs_csv_json_and_markdown(tmp_path):
     assert "## Claim Boundary" in markdown
     assert "does not enable suitability reward" in markdown
 
+
+def test_phase37_cli_writes_outputs(tmp_path):
+    fixture = _write_fixture_inputs(tmp_path)
+    script = (
+        ROOT
+        / "experiments"
+        / "phase37_decision_alignment"
+        / "run_phase37_decision_alignment.py"
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--phase34-cases-csv",
+            str(fixture["phase34_cases_csv"]),
+            "--phase34-blocks-csv",
+            str(fixture["phase34_blocks_csv"]),
+            "--phase35-cases-csv",
+            str(fixture["phase35_cases_csv"]),
+            "--phase36-diagnosis-json",
+            str(fixture["phase36_json"]),
+            "--output-dir",
+            str(tmp_path / "cli_outputs"),
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Phase 37 decision-alignment status:" in result.stdout
+    assert "Claim boundary:" in result.stdout
+    assert (
+        tmp_path
+        / "cli_outputs"
+        / "phase37_decision_alignment.json"
+    ).exists()
 
 def test_phase37_writer_rejects_non_mapping_rows_before_writing(tmp_path):
     from paper11_geofm.phase37_decision_alignment import (
