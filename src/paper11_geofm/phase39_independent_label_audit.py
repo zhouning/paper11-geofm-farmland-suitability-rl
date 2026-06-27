@@ -1,7 +1,8 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 import csv
+import json
 from pathlib import Path
 
 
@@ -64,6 +65,44 @@ PHASE39_REGISTRY_FIELDNAMES = (
     "external_source_name",
     "independence_rationale",
     "allowed_for_phase38_rerun",
+)
+
+
+PHASE39_LABEL_INVENTORY_FIELDNAMES = (
+    "label_column",
+    "provenance_class",
+    "registry_entry_present",
+    "source_path",
+    "description",
+    "external_source_name",
+    "independence_rationale",
+)
+
+PHASE39_LABEL_READINESS_FIELDNAMES = (
+    "label_column",
+    "provenance_class",
+    "registry_entry_present",
+    "source_path",
+    "description",
+    "external_source_name",
+    "independence_rationale",
+    "registry_allowed_for_phase38_rerun",
+    "join_missing_count",
+    "usable",
+    "valid_label_count",
+    "positive_count",
+    "negative_count",
+    "positive_rate",
+    "train_count",
+    "eval_count",
+    "train_positive_count",
+    "train_negative_count",
+    "eval_positive_count",
+    "eval_negative_count",
+    "split_source",
+    "allowed_for_phase38_rerun",
+    "decision_reason",
+    "claim_boundary",
 )
 
 
@@ -159,6 +198,146 @@ def build_phase39_independent_label_audit(
         "claim_boundary": PHASE39_INDEPENDENT_LABEL_AUDIT_CLAIM_BOUNDARY,
     }
 
+
+def write_phase39_independent_label_audit_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    artifacts = {
+        "label_inventory_csv": output_path / "phase39_label_inventory.csv",
+        "label_readiness_csv": output_path / "phase39_label_readiness.csv",
+        "registry_template_csv": output_path / "phase39_label_registry_template.csv",
+        "diagnosis_json": output_path / "phase39_independent_label_audit.json",
+        "diagnosis_md": output_path / "phase39_independent_label_audit.md",
+    }
+
+    _write_csv_mapping_rows(
+        artifacts["label_inventory_csv"],
+        PHASE39_LABEL_INVENTORY_FIELDNAMES,
+        analysis.get("label_inventory_rows"),
+        "Phase 39 label inventory rows",
+    )
+    _write_csv_mapping_rows(
+        artifacts["label_readiness_csv"],
+        PHASE39_LABEL_READINESS_FIELDNAMES,
+        analysis.get("label_readiness_rows"),
+        "Phase 39 label readiness rows",
+    )
+    _write_csv_mapping_rows(
+        artifacts["registry_template_csv"],
+        PHASE39_REGISTRY_FIELDNAMES,
+        analysis.get("registry_template_rows"),
+        "Phase 39 label registry template rows",
+    )
+    artifacts["diagnosis_json"].write_text(
+        json.dumps(
+            _json_ready(analysis),
+            indent=2,
+            sort_keys=True,
+            allow_nan=False,
+        ),
+        encoding="utf-8",
+    )
+    artifacts["diagnosis_md"].write_text(_phase39_markdown(analysis), encoding="utf-8")
+    return artifacts
+
+
+def _write_csv_mapping_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: object,
+    label: str,
+) -> None:
+    if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
+        raise ValueError(f"{label} must be a list of mappings")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(
+                {field: _csv_value(row.get(field, "")) for field in fieldnames}
+            )
+
+
+def _csv_value(value: object) -> object:
+    if isinstance(value, (Mapping, list, tuple)):
+        return json.dumps(_json_ready(value), sort_keys=True, allow_nan=False)
+    return _json_ready(value)
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    return value
+
+
+def _phase39_markdown(analysis: Mapping[str, object]) -> str:
+    inventory_rows = analysis.get("label_inventory_rows", [])
+    readiness_rows = analysis.get("label_readiness_rows", [])
+    inventory_table_rows = inventory_rows if isinstance(inventory_rows, list) else []
+    readiness_table_rows = readiness_rows if isinstance(readiness_rows, list) else []
+    lines = [
+        "# Phase 39 Independent Label Audit",
+        "",
+        f"Status: {analysis.get('phase39_independent_label_audit_status', '')}",
+        "",
+        "## Label Inventory",
+        "",
+        *_markdown_table(PHASE39_LABEL_INVENTORY_FIELDNAMES, inventory_table_rows),
+        "",
+        "## Label Readiness",
+        "",
+        *_markdown_table(
+            (
+                "label_column",
+                "provenance_class",
+                "usable",
+                "allowed_for_phase38_rerun",
+                "decision_reason",
+            ),
+            readiness_table_rows,
+        ),
+        "",
+        "## Interpretation",
+        "",
+        str(analysis.get("interpretation", "")),
+        "",
+        "## Boundary",
+        "",
+        str(analysis.get("claim_boundary", PHASE39_INDEPENDENT_LABEL_AUDIT_CLAIM_BOUNDARY)),
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _markdown_table(
+    fieldnames: Sequence[str],
+    rows: Sequence[object],
+) -> list[str]:
+    header = [str(field) for field in fieldnames]
+    lines = [
+        "| " + " | ".join(header) + " |",
+        "| " + " | ".join("---" for _ in header) + " |",
+    ]
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        lines.append(
+            "| "
+            + " | ".join(_markdown_cell(row.get(field, "")) for field in fieldnames)
+            + " |"
+        )
+    return lines
+
+
+def _markdown_cell(value: object) -> str:
+    return str(_csv_value(value)).replace("|", "\\|").replace("\n", " ")
 
 def _read_csv_table(path: Path, label: str) -> tuple[list[str], list[dict[str, str]]]:
     if not path.exists():

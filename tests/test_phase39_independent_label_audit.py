@@ -124,6 +124,68 @@ def test_phase39_current_labels_remain_missing_independent_inputs(tmp_path):
         assert readiness[label]["allowed_for_phase38_rerun"] is False
     assert "does not train PPO" in analysis["claim_boundary"]
 
+def test_phase39_writer_outputs_csv_json_markdown_and_template(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+        write_phase39_independent_label_audit_artifacts,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        label_columns="current_farmland_label",
+    )
+
+    output_dir = tmp_path / "outputs"
+    artifacts = write_phase39_independent_label_audit_artifacts(analysis, output_dir)
+
+    expected_names = {
+        "phase39_label_inventory.csv",
+        "phase39_label_readiness.csv",
+        "phase39_independent_label_audit.json",
+        "phase39_independent_label_audit.md",
+        "phase39_label_registry_template.csv",
+    }
+    assert {path.name for path in artifacts.values()} == expected_names
+    for artifact_name in expected_names:
+        assert (output_dir / artifact_name).exists()
+
+    diagnosis = json.loads(
+        (output_dir / "phase39_independent_label_audit.json").read_text()
+    )
+    assert diagnosis["phase"] == "phase39_independent_label_audit"
+    markdown = (output_dir / "phase39_independent_label_audit.md").read_text()
+    assert "Phase 39 Independent Label Audit" in markdown
+    assert "independent_label_inputs_missing" in markdown
+
+
+def test_phase39_cli_writes_outputs(tmp_path):
+    phase2_dir = _phase2_dir(tmp_path)
+    output_dir = tmp_path / "outputs"
+    runner = ROOT / "experiments" / "phase39_independent_label_audit" / (
+        "run_phase39_independent_label_audit.py"
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(runner),
+            "--phase2-output-dir",
+            str(phase2_dir),
+            "--output-dir",
+            str(output_dir),
+            "--label-columns",
+            "current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label",
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Phase 39 independent-label audit status:" in result.stdout
+    assert "Claim boundary:" in result.stdout
+    assert (output_dir / "phase39_independent_label_audit.json").exists()
+    assert (output_dir / "phase39_label_registry_template.csv").exists()
 
 def test_phase39_source_fields_are_leakage_risks(tmp_path):
     from paper11_geofm.phase39_independent_label_audit import (
@@ -376,3 +438,4 @@ def test_phase39_single_class_candidate_is_insufficient(tmp_path):
     assert row["usable"] is False
     assert row["allowed_for_phase38_rerun"] is False
     assert "both positive and negative labels" in row["decision_reason"]
+
