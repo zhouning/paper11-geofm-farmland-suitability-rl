@@ -13,6 +13,44 @@ Phase 2, Phase 8, and Phase 30 feature tables. Phase 39 added an
 independent-label audit over the real Phase 2 feature table and found that
 independent label inputs are still missing.
 
+## Phase 39 Final Merge / Window-Close Save
+
+Phase 39 has been fast-forward merged back to local `main`. The temporary
+`phase39-independent-label-audit` worktree was removed and the local feature
+branch was deleted after merge.
+
+Latest Phase 39 merged head before this handoff-doc save:
+
+```text
+237b789 fix: close Phase 39 label audit review gaps
+```
+
+Current Phase 39 status remains `independent_label_inputs_missing`: the real
+Bishan Phase 2 table still contains only leakage-risk labels or source metadata,
+not a defensible independent non-DLTB validation label. Phase 38 therefore
+cannot yet be rerun with a stronger non-leakage label, and B2/B3 suitability
+reward remains blocked.
+
+Post-merge verification on `main`:
+
+```text
+python -m pytest tests\test_phase39_independent_label_audit.py tests\test_phase38_proxy_rebuild.py -q --basetemp=.pytest_tmp_phase39_main_merge -p no:cacheprovider
+28 passed, 84 warnings
+
+python scripts\smoke_check.py
+Paper11 smoke check passed.
+
+git diff --check HEAD~1..HEAD
+clean
+```
+
+The review fix closed two Phase 39 contract gaps:
+
+- `valid` is no longer treated as an evaluation split; only `test`, `eval`,
+  `evaluation`, `validation`, and `val` count as eval roles.
+- label registries now support CSV and JSON, including JSON object lists and
+  objects keyed by `label_column`, with the same provenance validation as CSV.
+
 Repository state when the Phase 36 continuation started:
 
 - branch: `main`
@@ -683,7 +721,7 @@ Do not move directly to manuscript claims. Next work should stay experiment-firs
 ## Useful Commands For Next Window
 
 ```powershell
-cd D:\test\paper11-geofm-farmland-suitability-rl\.worktrees\phase39-independent-label-audit
+cd D:\test\paper11-geofm-farmland-suitability-rl
 git status --short --branch
 Get-Content docs\superpowers\phase33_current_progress_handoff.md
 Get-Content paper\phase28_results\13_phase39_independent_label_audit.md
