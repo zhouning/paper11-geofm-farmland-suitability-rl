@@ -425,6 +425,49 @@ def test_phase39_unknown_or_blank_splits_do_not_create_eval_coverage(tmp_path):
     assert row["allowed_for_phase38_rerun"] is False
 
 
+def test_phase39_valid_split_does_not_create_eval_coverage(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    rows = []
+    for index in range(8):
+        rows.append(
+            {
+                "block_id": f"b{index:03d}",
+                "current_farmland_label": 1 if index % 2 == 0 else 0,
+                "farmland_or_orchard_label": 1 if index % 3 == 0 else 0,
+                "low_slope_farmland_label": 1 if index % 4 == 0 else 0,
+                "source_bsm": f"s{index:03d}",
+                "source_category": "farmland" if index % 2 == 0 else "other",
+                "source_dlbm": "0101" if index % 2 == 0 else "0301",
+                "source_dlmc": "paddy" if index % 2 == 0 else "forest",
+                "split": "train" if index < 4 else "valid",
+            }
+        )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path, rows=rows),
+        external_label_csvs=[
+            _external_labels(
+                tmp_path / "external_irrigation.csv",
+                [1, 0, 1, 0, 1, 0, 1, 0],
+                block_ids=[f"b{index:03d}" for index in range(8)],
+            )
+        ],
+        label_registry=_registry(tmp_path / "registry.csv", "candidate_independent_proxy"),
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_insufficient"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["train_positive_count"] == 2
+    assert row["train_negative_count"] == 2
+    assert row["eval_count"] == 0
+    assert row["usable"] is False
+    assert row["allowed_for_phase38_rerun"] is False
+
+
 def test_phase39_partial_external_candidate_coverage_is_insufficient(tmp_path):
     from paper11_geofm.phase39_independent_label_audit import (
         build_phase39_independent_label_audit,
@@ -501,6 +544,48 @@ def test_phase39_unclassified_external_label_needs_review(tmp_path):
     assert row["allowed_for_phase38_rerun"] is False
 
 
+def test_phase39_json_registry_can_clear_phase38_rerun_gate(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    registry = tmp_path / "registry.json"
+    registry.write_text(
+        json.dumps(
+            [
+                {
+                    "label_column": "irrigation_proxy_label",
+                    "source_path": "external_irrigation.csv",
+                    "provenance_class": "candidate_independent_proxy",
+                    "description": "Synthetic non-DLTB irrigation proxy label",
+                    "external_source_name": "synthetic_irrigation_fixture",
+                    "independence_rationale": "not derived from DLTB, slope, or explicit planning features",
+                    "allowed_for_phase38_rerun": "true",
+                }
+            ]
+        ),
+        encoding="utf-8",
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        external_label_csvs=[
+            _external_labels(
+                tmp_path / "external_irrigation.csv",
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+            )
+        ],
+        label_registry=registry,
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "independent_labels_ready_for_phase38_rerun"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["registry_entry_present"] is True
+    assert row["provenance_class"] == "candidate_independent_proxy"
+    assert row["allowed_for_phase38_rerun"] is True
+
+
 def test_phase39_rejects_blank_or_missing_registry_label_column(tmp_path):
     from paper11_geofm.phase39_independent_label_audit import (
         build_phase39_independent_label_audit,
@@ -548,6 +633,61 @@ def test_phase39_rejects_blank_or_missing_registry_label_column(tmp_path):
             raise AssertionError("blank or missing registry label_column should raise")
 
 
+def test_phase39_rejects_unsupported_csv_registry_provenance(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    try:
+        build_phase39_independent_label_audit(
+            phase2_output_dir=_phase2_dir(tmp_path),
+            label_registry=_registry(tmp_path / "registry.csv", "dl_frequency_proxy"),
+            label_columns=["current_farmland_label"],
+        )
+    except ValueError as exc:
+        message = str(exc)
+        assert "unsupported provenance class" in message
+        assert "dl_frequency_proxy" in message
+    else:
+        raise AssertionError("unsupported registry provenance should raise")
+
+
+def test_phase39_rejects_unsupported_json_registry_provenance(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    registry = tmp_path / "registry.json"
+    registry.write_text(
+        json.dumps(
+            {
+                "irrigation_proxy_label": {
+                    "source_path": "external_irrigation.csv",
+                    "provenance_class": "dl_frequency_proxy",
+                    "description": "Synthetic non-DLTB irrigation proxy label",
+                    "external_source_name": "synthetic_irrigation_fixture",
+                    "independence_rationale": "not derived from DLTB, slope, or explicit planning features",
+                    "allowed_for_phase38_rerun": "true",
+                }
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    try:
+        build_phase39_independent_label_audit(
+            phase2_output_dir=_phase2_dir(tmp_path),
+            label_registry=registry,
+            label_columns=["current_farmland_label"],
+        )
+    except ValueError as exc:
+        message = str(exc)
+        assert "unsupported provenance class" in message
+        assert "dl_frequency_proxy" in message
+    else:
+        raise AssertionError("unsupported JSON registry provenance should raise")
+
+
 def test_phase39_single_class_candidate_is_insufficient(tmp_path):
     from paper11_geofm.phase39_independent_label_audit import (
         build_phase39_independent_label_audit,
@@ -565,4 +705,3 @@ def test_phase39_single_class_candidate_is_insufficient(tmp_path):
     assert row["usable"] is False
     assert row["allowed_for_phase38_rerun"] is False
     assert "both positive and negative labels" in row["decision_reason"]
-

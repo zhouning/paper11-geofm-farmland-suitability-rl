@@ -55,7 +55,6 @@ PHASE39_EVAL_SPLIT_VALUES = {
     "evaluation",
     "validation",
     "val",
-    "valid",
 }
 
 PHASE39_REGISTRY_FIELDNAMES = (
@@ -411,7 +410,7 @@ def _read_label_registry(
     if label_registry is None:
         return {}
     registry_path = Path(label_registry)
-    _, registry_rows = _read_csv_table(registry_path, "Phase 39 label registry CSV")
+    registry_rows = _read_label_registry_rows(registry_path)
     entries: dict[str, dict[str, str]] = {}
     for row_index, row in enumerate(registry_rows, start=2):
         label_column = str(row.get("label_column", "")).strip()
@@ -435,6 +434,71 @@ def _read_label_registry(
             for field in PHASE39_REGISTRY_FIELDNAMES
         }
     return entries
+
+
+def _read_label_registry_rows(registry_path: Path) -> list[dict[str, object]]:
+    if _label_registry_is_json(registry_path):
+        return _read_json_label_registry_rows(registry_path)
+    _, registry_rows = _read_csv_table(registry_path, "Phase 39 label registry CSV")
+    return [dict(row) for row in registry_rows]
+
+
+def _label_registry_is_json(registry_path: Path) -> bool:
+    suffix = registry_path.suffix.lower()
+    if suffix == ".json":
+        return True
+    if suffix == ".csv":
+        return False
+    if not registry_path.exists():
+        return False
+    with registry_path.open("r", encoding="utf-8") as handle:
+        while True:
+            character = handle.read(1)
+            if character == "":
+                return False
+            if character.isspace():
+                continue
+            return character in {"[", "{"}
+
+
+def _read_json_label_registry_rows(registry_path: Path) -> list[dict[str, object]]:
+    if not registry_path.exists():
+        raise ValueError(f"Missing Phase 39 label registry JSON: {registry_path}")
+    try:
+        payload = json.loads(registry_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Phase 39 label registry JSON is invalid: {registry_path}"
+        ) from exc
+
+    if isinstance(payload, list):
+        rows = []
+        for row_index, row in enumerate(payload, start=1):
+            if not isinstance(row, Mapping):
+                raise ValueError(
+                    "Phase 39 label registry JSON row "
+                    f"{row_index} is not an object: {registry_path}"
+                )
+            rows.append(dict(row))
+        return rows
+
+    if isinstance(payload, Mapping):
+        rows = []
+        for label_column, row in payload.items():
+            if not isinstance(row, Mapping):
+                raise ValueError(
+                    "Phase 39 label registry JSON entry "
+                    f"{label_column!r} is not an object: {registry_path}"
+                )
+            normalized = dict(row)
+            normalized.setdefault("label_column", str(label_column))
+            rows.append(normalized)
+        return rows
+
+    raise ValueError(
+        "Phase 39 label registry JSON must be a list of objects or an object "
+        f"keyed by label_column: {registry_path}"
+    )
 
 
 def _provenance_for_label(
