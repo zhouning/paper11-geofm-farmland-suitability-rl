@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 import csv
 import json
+import math
 from pathlib import Path
 
 
@@ -268,6 +269,8 @@ def _csv_value(value: object) -> object:
 
 
 def _json_ready(value: object) -> object:
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, Mapping):

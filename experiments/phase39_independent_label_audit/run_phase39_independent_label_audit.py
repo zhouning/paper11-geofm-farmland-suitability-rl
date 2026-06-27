@@ -11,14 +11,13 @@ if str(SRC) not in sys.path:
     sys.path.insert(0, str(SRC))
 
 from paper11_geofm.phase39_independent_label_audit import (
+    DEFAULT_PHASE39_LABEL_COLUMNS,
     build_phase39_independent_label_audit,
     write_phase39_independent_label_audit_artifacts,
 )
 
 
-DEFAULT_CLI_LABEL_COLUMNS = (
-    "current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label"
-)
+DEFAULT_CLI_LABEL_COLUMNS = ",".join(DEFAULT_PHASE39_LABEL_COLUMNS)
 
 
 def main(argv: list[str] | None = None) -> int:

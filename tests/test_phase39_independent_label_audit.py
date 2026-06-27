@@ -149,6 +149,67 @@ def test_phase39_writer_outputs_csv_json_markdown_and_template(tmp_path):
     for artifact_name in expected_names:
         assert (output_dir / artifact_name).exists()
 
+    with (output_dir / "phase39_label_inventory.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        inventory_reader = csv.reader(handle)
+        assert next(inventory_reader) == [
+            "label_column",
+            "provenance_class",
+            "registry_entry_present",
+            "source_path",
+            "description",
+            "external_source_name",
+            "independence_rationale",
+        ]
+    with (output_dir / "phase39_label_readiness.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        readiness_reader = csv.DictReader(handle)
+        assert readiness_reader.fieldnames == [
+            "label_column",
+            "provenance_class",
+            "registry_entry_present",
+            "source_path",
+            "description",
+            "external_source_name",
+            "independence_rationale",
+            "registry_allowed_for_phase38_rerun",
+            "join_missing_count",
+            "usable",
+            "valid_label_count",
+            "positive_count",
+            "negative_count",
+            "positive_rate",
+            "train_count",
+            "eval_count",
+            "train_positive_count",
+            "train_negative_count",
+            "eval_positive_count",
+            "eval_negative_count",
+            "split_source",
+            "allowed_for_phase38_rerun",
+            "decision_reason",
+            "claim_boundary",
+        ]
+        readiness_rows = list(readiness_reader)
+    assert readiness_rows[0]["label_column"] == "current_farmland_label"
+    assert readiness_rows[0]["provenance_class"] == "explicit_label_leakage_risk"
+    assert readiness_rows[0]["allowed_for_phase38_rerun"] == "False"
+    with (output_dir / "phase39_label_registry_template.csv").open(
+        "r", encoding="utf-8", newline=""
+    ) as handle:
+        registry_reader = csv.reader(handle)
+        assert next(registry_reader) == [
+            "label_column",
+            "source_path",
+            "provenance_class",
+            "description",
+            "external_source_name",
+            "independence_rationale",
+            "allowed_for_phase38_rerun",
+        ]
+
     diagnosis = json.loads(
         (output_dir / "phase39_independent_label_audit.json").read_text()
     )
@@ -157,6 +218,72 @@ def test_phase39_writer_outputs_csv_json_markdown_and_template(tmp_path):
     assert "Phase 39 Independent Label Audit" in markdown
     assert "independent_label_inputs_missing" in markdown
 
+
+def test_phase39_writer_serializes_nonfinite_floats_as_null(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+        write_phase39_independent_label_audit_artifacts,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        label_columns="current_farmland_label",
+    )
+    analysis["nonfinite_values"] = {
+        "nan_value": float("nan"),
+        "inf_value": float("inf"),
+        "negative_inf_value": float("-inf"),
+    }
+
+    artifacts = write_phase39_independent_label_audit_artifacts(
+        analysis,
+        tmp_path / "outputs",
+    )
+
+    saved = json.loads(artifacts["diagnosis_json"].read_text(encoding="utf-8"))
+    assert saved["nonfinite_values"] == {
+        "nan_value": None,
+        "inf_value": None,
+        "negative_inf_value": None,
+    }
+
+
+def test_phase39_cli_default_labels_use_module_default(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        DEFAULT_PHASE39_LABEL_COLUMNS,
+    )
+
+    phase2_dir = _phase2_dir(tmp_path)
+    output_dir = tmp_path / "outputs"
+    runner = ROOT / "experiments" / "phase39_independent_label_audit" / (
+        "run_phase39_independent_label_audit.py"
+    )
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(runner),
+            "--phase2-output-dir",
+            str(phase2_dir),
+            "--output-dir",
+            str(output_dir),
+        ],
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    saved = json.loads(
+        (output_dir / "phase39_independent_label_audit.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert saved["label_columns_requested"] == list(DEFAULT_PHASE39_LABEL_COLUMNS)
+    assert "source_bsm" in saved["label_columns_requested"]
+    assert "source_category" in saved["label_columns_requested"]
+    assert "source_dlbm" in saved["label_columns_requested"]
+    assert "source_dlmc" in saved["label_columns_requested"]
 
 def test_phase39_cli_writes_outputs(tmp_path):
     phase2_dir = _phase2_dir(tmp_path)
