@@ -260,3 +260,95 @@ def test_phase38_missing_label_raises(tmp_path):
         assert "no requested label columns are available" in str(exc)
     else:
         raise AssertionError("missing label should raise")
+
+
+def test_phase38_rejects_unknown_model_family(tmp_path):
+    from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
+
+    paths = _fixture_inputs(tmp_path)
+    try:
+        build_phase38_proxy_rebuild(
+            phase2_output_dir=paths["phase2_dir"],
+            label_columns=["current_farmland_label"],
+            model_families="logistic_elastic_net,unknown_model",
+        )
+    except ValueError as exc:
+        assert "unknown model families" in str(exc)
+    else:
+        raise AssertionError("unknown model family should raise")
+
+
+def test_phase38_raises_when_no_feature_families_load(tmp_path):
+    from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
+
+    phase2_dir = tmp_path / "phase2"
+    rows = [
+        _base_row(index, split="train" if index < 16 else "test")
+        for index in range(24)
+    ]
+    _write_csv(
+        phase2_dir / "block_geofm_features.csv",
+        rows,
+        ["block_id", "current_farmland_label", "split"],
+    )
+
+    try:
+        build_phase38_proxy_rebuild(
+            phase2_output_dir=phase2_dir,
+            label_columns=["current_farmland_label"],
+        )
+    except ValueError as exc:
+        assert "found no usable feature families" in str(exc)
+    else:
+        raise AssertionError("missing feature families should raise")
+
+
+def test_phase38_model_rows_include_calibration_and_diagnostics(tmp_path):
+    from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
+
+    paths = _fixture_inputs(tmp_path)
+    analysis = build_phase38_proxy_rebuild(
+        phase2_output_dir=paths["phase2_dir"],
+        phase8_output_dir=paths["phase8_dir"],
+        normalized_controls_dir=paths["normalized_dir"],
+        label_columns=["independent_proxy_label"],
+        label_classifications={"independent_proxy_label": "candidate_independent_proxy"},
+        model_families=[
+            "logistic_elastic_net",
+            "random_forest",
+            "hist_gradient_boosting",
+        ],
+        min_auc_delta=0.01,
+        min_ap_delta=0.01,
+    )
+
+    evaluated = [
+        row for row in analysis["model_rows"] if row["validation_status"] == "evaluated"
+    ]
+    assert evaluated
+    for row in evaluated:
+        assert isinstance(row["calibration_bins"], list)
+        assert row["calibration_bins"]
+        first_bin = row["calibration_bins"][0]
+        assert {
+            "bin",
+            "count",
+            "mean_probability",
+            "positive_rate",
+        }.issubset(first_bin)
+        assert isinstance(row["top_diagnostics"], list)
+
+    logistic = next(
+        row for row in evaluated if row["model_family"] == "logistic_elastic_net"
+    )
+    random_forest = next(
+        row for row in evaluated if row["model_family"] == "random_forest"
+    )
+    hist_gradient = next(
+        row for row in evaluated if row["model_family"] == "hist_gradient_boosting"
+    )
+    assert logistic["top_diagnostics"]
+    assert {"feature", "coefficient"}.issubset(logistic["top_diagnostics"][0])
+    assert random_forest["top_diagnostics"]
+    assert {"feature", "importance"}.issubset(random_forest["top_diagnostics"][0])
+    assert hist_gradient["top_diagnostics"] == []

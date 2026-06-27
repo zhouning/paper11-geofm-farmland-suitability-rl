@@ -81,6 +81,7 @@ def build_phase38_proxy_rebuild(
     )
     requested_labels = _normalize_csvish_values(label_columns)
     requested_models = _normalize_csvish_values(model_families)
+    _validate_model_families(requested_models)
     classifications = _classifications_for_labels(
         requested_labels,
         _parse_label_classifications(label_classifications),
@@ -96,6 +97,8 @@ def build_phase38_proxy_rebuild(
         Path(phase8_output_dir) if phase8_output_dir is not None else None,
         Path(normalized_controls_dir) if normalized_controls_dir is not None else None,
     )
+    if not feature_families:
+        raise ValueError("Phase 38 found no usable feature families")
 
     label_summaries: dict[str, dict[str, object]] = {}
     model_rows: list[dict[str, object]] = []
@@ -333,6 +336,8 @@ def _evaluate_family(
                 "average_precision": "",
                 "balanced_accuracy": "",
                 "accuracy": "",
+                "calibration_bins": [],
+                "top_diagnostics": [],
             },
             [],
         )
@@ -354,6 +359,8 @@ def _evaluate_family(
             balanced_accuracy_score(eval_y, predictions)
         ),
         "accuracy": _round_float(accuracy_score(eval_y, predictions)),
+        "calibration_bins": _calibration_bins(eval_probabilities, eval_y),
+        "top_diagnostics": _top_diagnostics(model, model_family, family),
     }
 
     all_indexes = [
@@ -381,6 +388,18 @@ def _evaluate_family(
         for block_id, probability in zip(all_ids, all_probabilities, strict=True)
     ]
     return model_row, score_rows
+
+
+def _validate_model_families(model_families: Sequence[str]) -> None:
+    invalid = sorted(
+        {
+            model_family
+            for model_family in model_families
+            if model_family not in DEFAULT_MODEL_FAMILIES
+        }
+    )
+    if invalid:
+        raise ValueError(f"Phase 38 unknown model families: {invalid}")
 
 
 def _model_for_family(model_family: str):
@@ -412,6 +431,74 @@ def _model_for_family(model_family: str):
         )
     raise ValueError(f"Unknown Phase 38 model family: {model_family}")
 
+
+def _calibration_bins(
+    probabilities: Sequence[float] | np.ndarray,
+    labels: Sequence[int] | np.ndarray,
+    bin_count: int = 5,
+) -> list[dict[str, object]]:
+    probability_array = np.asarray(probabilities, dtype=float)
+    label_array = np.asarray(labels, dtype=int)
+    bins: list[dict[str, object]] = []
+    edges = np.linspace(0.0, 1.0, bin_count + 1)
+    for index in range(bin_count):
+        lower = float(edges[index])
+        upper = float(edges[index + 1])
+        if index == bin_count - 1:
+            mask = (probability_array >= lower) & (probability_array <= upper)
+        else:
+            mask = (probability_array >= lower) & (probability_array < upper)
+        if not np.any(mask):
+            bins.append(
+                {
+                    "bin": index,
+                    "count": 0,
+                    "mean_probability": "",
+                    "positive_rate": "",
+                }
+            )
+            continue
+        bins.append(
+            {
+                "bin": index,
+                "count": int(np.sum(mask)),
+                "mean_probability": _round_float(
+                    float(np.mean(probability_array[mask]))
+                ),
+                "positive_rate": _round_float(float(np.mean(label_array[mask]))),
+            }
+        )
+    return bins
+
+
+def _top_diagnostics(
+    model,
+    model_family: str,
+    family: Mapping[str, object],
+    limit: int = 5,
+) -> list[dict[str, object]]:
+    feature_columns = [str(column) for column in family["feature_columns"]]
+    if model_family == "logistic_elastic_net":
+        estimator = model.named_steps.get("logisticregression")
+        if estimator is None or not hasattr(estimator, "coef_"):
+            return []
+        values = np.asarray(estimator.coef_[0], dtype=float)
+        label = "coefficient"
+    elif model_family == "random_forest" and hasattr(model, "feature_importances_"):
+        values = np.asarray(model.feature_importances_, dtype=float)
+        label = "importance"
+    else:
+        return []
+    indexes = np.argsort(np.abs(values))[::-1][:limit]
+    return [
+        {
+            "feature": feature_columns[int(index)]
+            if int(index) < len(feature_columns)
+            else str(index),
+            label: _round_float(values[int(index)]),
+        }
+        for index in indexes
+    ]
 
 def _positive_probabilities(model, matrix: np.ndarray) -> np.ndarray:
     probabilities = model.predict_proba(matrix)
