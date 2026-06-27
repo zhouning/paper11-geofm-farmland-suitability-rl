@@ -702,6 +702,17 @@ def _parse_label_classifications(
     )
     if invalid:
         raise ValueError(f"Invalid Phase 38 label classification names: {invalid}")
+    unsafe_leakage_overrides = sorted(
+        label
+        for label, classification in parsed.items()
+        if label in LEAKAGE_RISK_LABELS
+        and classification != "explicit_label_leakage_risk"
+    )
+    if unsafe_leakage_overrides:
+        raise ValueError(
+            "Phase 38 leakage-risk label overrides must remain "
+            f"explicit_label_leakage_risk: {unsafe_leakage_overrides}"
+        )
     return {label: classification for label, classification in parsed.items() if label}
 
 

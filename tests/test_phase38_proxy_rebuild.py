@@ -267,6 +267,25 @@ def test_phase38_unclassified_custom_label_cannot_unlock_support(tmp_path):
     )
 
 
+def test_phase38_rejects_leakage_label_promotion(tmp_path):
+    from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
+
+    paths = _fixture_inputs(tmp_path)
+    try:
+        build_phase38_proxy_rebuild(
+            phase2_output_dir=paths["phase2_dir"],
+            phase8_output_dir=paths["phase8_dir"],
+            normalized_controls_dir=paths["normalized_dir"],
+            label_columns=["current_farmland_label"],
+            label_classifications="current_farmland_label:candidate_independent_proxy",
+            model_families=["logistic_elastic_net"],
+        )
+    except ValueError as exc:
+        assert "leakage-risk label" in str(exc)
+    else:
+        raise AssertionError("leakage-risk label promotion should raise")
+
+
 def test_phase38_leakage_only_result_stays_diagnostic(tmp_path):
     from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
 
