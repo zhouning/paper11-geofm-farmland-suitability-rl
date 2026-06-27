@@ -496,3 +496,43 @@ def test_phase38_writer_outputs_csv_json_and_markdown(tmp_path):
         assert "Phase 38 label summary rows" in str(exc)
     else:
         raise AssertionError("missing label summary rows should raise")
+
+
+def test_phase38_cli_writes_outputs(tmp_path):
+    paths = _fixture_inputs(tmp_path)
+    script = ROOT / "experiments" / "phase38_proxy_rebuild" / "run_phase38_proxy_rebuild.py"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--phase2-output-dir",
+            str(paths["phase2_dir"]),
+            "--phase8-output-dir",
+            str(paths["phase8_dir"]),
+            "--normalized-controls-dir",
+            str(paths["normalized_dir"]),
+            "--output-dir",
+            str(tmp_path / "cli_outputs"),
+            "--label-columns",
+            "current_farmland_label,independent_proxy_label",
+            "--label-classifications",
+            "independent_proxy_label:candidate_independent_proxy",
+            "--model-families",
+            "logistic_elastic_net",
+            "--min-auc-delta",
+            "0.01",
+            "--min-ap-delta",
+            "0.01",
+        ],
+        cwd=ROOT,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Phase 38 proxy-rebuild status:" in result.stdout
+    assert "Claim boundary:" in result.stdout
+    assert (tmp_path / "cli_outputs" / "phase38_proxy_rebuild.json").exists()
+    assert (tmp_path / "cli_outputs" / "phase38_rebuilt_proxy_scores.csv").exists()
