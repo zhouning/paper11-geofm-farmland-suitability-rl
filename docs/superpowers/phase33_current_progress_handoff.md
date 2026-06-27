@@ -6,8 +6,10 @@ Paper11 remains experiment-first. Phase 33 completed the bounded `3 tiles x 3
 seeds` matched robustness check over the Phase 30 normalized-B1 branch. Phase
 34 and Phase 35 then localized the result with spatial-composition and
 action-overlap diagnostics. Phase 36 added a read-only suitability-proxy
-validation gate before any B2/B3 reward work, and Phase 37 added a read-only
-decision-alignment audit over Phase 34, Phase 35, and Phase 36 artifacts.
+validation gate before any B2/B3 reward work, Phase 37 added a read-only
+decision-alignment audit over Phase 34, Phase 35, and Phase 36 artifacts,
+and Phase 38 added a leakage-aware proxy-rebuild diagnostic over the real
+Phase 2, Phase 8, and Phase 30 feature tables.
 
 Repository state when the Phase 36 continuation started:
 
@@ -58,6 +60,83 @@ Paper11 smoke check passed.
 Current Phase 37 real-run status is `decision_alignment_not_supported` with
 `54` joined case rows and `37` summary rows. Phase 36 remains
 `proxy_signal_not_supported`, so B2/B3 suitability reward remains blocked.
+
+## Phase 38 Proxy-Rebuild Continuation
+
+Phase 38 completed the leakage-aware proxy-rebuild diagnostic on the
+`phase38-proxy-rebuild` worktree. It rebuilds lightweight diagnostic proxy
+classifiers over existing feature tables, writes full rebuilt proxy scores to
+CSV, and keeps B2/B3 reward blocked unless non-leakage labels clear the control
+gate.
+
+Latest Phase 38 commits on the worktree branch:
+
+```text
+25db7cf fix: cap Phase 38 JSON score preview
+d07810c feat: add Phase 38 proxy rebuild runner
+ce2dce3 fix: harden Phase 38 artifact writer
+f56ef0f feat: write Phase 38 proxy rebuild artifacts
+41ae5f1 fix: prevent leakage label promotion
+```
+
+Local ignored Phase 38 output:
+
+```text
+experiments/phase38_proxy_rebuild/outputs/real_bishan
+```
+
+Artifacts:
+
+```text
+phase38_label_summary.csv
+phase38_model_summary.csv
+phase38_rebuilt_proxy_scores.csv
+phase38_proxy_rebuild.json
+phase38_proxy_rebuild.md
+```
+
+Status and row counts:
+
+- status: `proxy_rebuild_diagnostic_only`
+- block rows: `64984`
+- feature families: `11`
+- label summary rows: `3`
+- model rows: `99`
+- rebuilt proxy score rows: `6433416`
+- JSON score preview rows: `20`, with full rows in `phase38_rebuilt_proxy_scores.csv`
+
+Interpretation: Phase 38 remains diagnostic only: either evaluated labels were
+explicit leakage risks or GeoFM-derived rebuilt proxies did not clear the
+control thresholds.
+
+All current real labels are `explicit_label_leakage_risk`:
+
+- `current_farmland_label`
+- `farmland_or_orchard_label`
+- `low_slope_farmland_label`
+
+Therefore B2/B3 suitability reward remains blocked. Phase 38 does not support
+a bounded B2/B3 smoke claim with the current label set, does not run PPO, does
+not alter rewards, and does not support final planning-performance claims.
+
+Verification and real run:
+
+```text
+python -m pytest tests\test_phase38_proxy_rebuild.py tests\test_phase36_suitability_proxy_validation.py -q --basetemp=.pytest_tmp_phase38_json_contract_after_review -p no:cacheprovider
+15 passed, 84 warnings
+
+python experiments\phase38_proxy_rebuild\run_phase38_proxy_rebuild.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --normalized-controls-dir experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\derived_normalized_controls --output-dir experiments\phase38_proxy_rebuild\outputs\real_bishan --label-columns current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label --model-families logistic_elastic_net,random_forest,hist_gradient_boosting
+Phase 38 proxy-rebuild status: proxy_rebuild_diagnostic_only
+
+python -m pytest tests\test_phase38_proxy_rebuild.py tests\test_phase36_suitability_proxy_validation.py -q --basetemp=.pytest_tmp_phase38_final2 -p no:cacheprovider
+15 passed, 84 warnings
+
+python scripts\smoke_check.py
+Paper11 smoke check passed.
+Sample years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+Embedding shape: (67, 70, 64)
+```
+
 ## What Was Run This Window
 
 The earlier Phase 33 state only had a positive local pilot:
@@ -391,6 +470,16 @@ reproducibility/FILE_MANIFEST.tsv
 docs/superpowers/phase33_current_progress_handoff.md
 ```
 
+Updated in the Phase 38 continuation:
+
+```text
+README.md
+paper/phase28_results/README.md
+paper/phase28_results/12_phase38_proxy_rebuild.md
+reproducibility/FILE_MANIFEST.tsv
+docs/superpowers/phase33_current_progress_handoff.md
+```
+
 Do not describe Phase 33 as generally `budget_closes_compressed_gap`. That is
 only true for the `tile_r002_c003` three-seed aggregate, not for the complete
 bounded aggregate.
@@ -398,6 +487,10 @@ bounded aggregate.
 Do not describe Phase 37 as supporting B2/B3, suitability reward, reward
 changes, policy training, or final planning-performance claims. Its real status
 is `decision_alignment_not_supported`.
+
+Do not describe Phase 38 as supporting B2/B3, suitability reward, reward
+changes, policy training, agronomic validity, or final planning-performance
+claims. Its real status is `proxy_rebuild_diagnostic_only`.
 
 ## Verification Run
 
@@ -456,13 +549,12 @@ Embedding shape: (67, 70, 64)
 
 Do not move directly to manuscript claims. Next work should stay experiment-first:
 
-1. Build a Phase 37 proxy-rebuild or decision-alignment branch with more
-   independent labels, such as high-standard farmland, retention/productivity,
-   irrigation/water-proximity, external soil/yield proxy, or another defensible
-   non-DLTB label source.
-2. Train or calibrate the rebuilt suitability proxy under spatial held-out
-   validation, then test whether Phase 33/34/35 selected block sets are ordered
-   by that proxy.
+1. Obtain or construct defensible non-DLTB labels, such as high-standard
+   farmland, retention/productivity, irrigation/water-proximity, external
+   soil/yield proxy, or another independent label source.
+2. Re-run the proxy-rebuild gate with those independent labels under spatial
+   held-out validation, then test whether Phase 33/34/35 selected block sets
+   are ordered by the rebuilt proxy.
 3. Use Phase 34/35 as spatial and action-overlap diagnostic support only; do
    not convert them into manuscript-level performance claims.
 4. Treat `8192` only as a later, chunked/resumable experiment if the rebuilt

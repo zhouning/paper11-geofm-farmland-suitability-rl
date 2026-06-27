@@ -40,6 +40,8 @@ base-reward protocol.
 - `11_phase37_decision_alignment.md`: read-only decision-alignment audit
   joining Phase 34, Phase 35, and Phase 36 artifacts to test whether Phase 33
   decisions separate in available proxy, slope, and weak farmland diagnostics.
+- `12_phase38_proxy_rebuild.md`: leakage-aware proxy-rebuild diagnostic
+  over existing Phase 2, Phase 8, and Phase 30 feature tables before any B2/B3 reward integration.
 
 ## Reproduction Link
 
@@ -228,6 +230,27 @@ Expected local Phase 37 artifacts:
 The current Phase 37 status is `decision_alignment_not_supported` with `54`
 joined case rows and `37` summary rows. Phase 36 remains
 `proxy_signal_not_supported`, so B2/B3 suitability reward remains blocked.
+
+The Phase 38 proxy-rebuild diagnostic is read-only with respect to rewards and
+policy training. It rebuilds diagnostic proxy classifiers from existing real
+feature tables and writes full per-block rebuilt scores to CSV:
+
+```powershell
+python experiments\phase38_proxy_rebuild\run_phase38_proxy_rebuild.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --normalized-controls-dir experiments\phase30_normalized_b1_ablation\outputs\real_bishan_4096_incremental\derived_normalized_controls --output-dir experiments\phase38_proxy_rebuild\outputs\real_bishan --label-columns current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label --model-families logistic_elastic_net,random_forest,hist_gradient_boosting
+```
+
+Expected local Phase 38 artifacts:
+
+- `phase38_label_summary.csv`
+- `phase38_model_summary.csv`
+- `phase38_rebuilt_proxy_scores.csv`
+- `phase38_proxy_rebuild.json`
+- `phase38_proxy_rebuild.md`
+
+The current Phase 38 status is `proxy_rebuild_diagnostic_only` with `64984`
+block rows, `99` model rows, and `6433416` rebuilt proxy score rows. All
+current labels are classified as `explicit_label_leakage_risk`, so B2/B3
+suitability reward remains blocked.
 
 ## Claim Boundary
 
