@@ -58,7 +58,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase36_suitability_proxy_validation/`: executable read-only Phase 36 suitability-proxy validation runner over existing Phase 2, Phase 8, and Phase 30 feature tables.
 - `experiments/phase37_decision_alignment/`: executable read-only Phase 37 decision-alignment diagnostic runner over existing Phase 34, Phase 35, and Phase 36 artifacts.
 - `experiments/phase38_proxy_rebuild/`: executable leakage-aware Phase 38 suitability-proxy rebuild diagnostic runner over existing Phase 2, Phase 8, and Phase 30 feature tables.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, and Phase 38 proxy-rebuild diagnostics.
+- `experiments/phase39_independent_label_audit/`: executable read-only Phase 39 independent-label audit runner over existing Phase 2 real feature tables before any Phase 38 rerun with non-leakage labels.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, and Phase 39 independent-label audits.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -514,6 +515,27 @@ in `phase38_rebuilt_proxy_scores.csv`. All current labels are
 `explicit_label_leakage_risk`, so B2/B3 suitability reward remains blocked and
 Phase 38 does not support final planning-performance claims.
 
+Run the Phase 39 independent-label audit after the Phase 2 real feature table
+exists:
+
+```powershell
+python experiments\phase39_independent_label_audit\run_phase39_independent_label_audit.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase39_independent_label_audit\outputs\real_bishan
+```
+
+The current Phase 39 status is `independent_label_inputs_missing` with `64984`
+block rows, `7` label inventory rows, `7` label readiness rows, and `0`
+registry rows. The audited default labels are `current_farmland_label`,
+`farmland_or_orchard_label`, `low_slope_farmland_label`, `source_bsm`,
+`source_category`, `source_dlbm`, and `source_dlmc`. Expected local artifacts
+are `phase39_label_inventory.csv`, `phase39_label_readiness.csv`,
+`phase39_label_registry_template.csv`, `phase39_independent_label_audit.json`,
+and `phase39_independent_label_audit.md`.
+
+Phase 39 does not run PPO, alter rewards, enable B2/B3, prove agronomic
+validity, or support planning-performance claims. Phase 38 cannot yet be rerun
+with a stronger non-leakage label and B2/B3 remains blocked.
+
+
 ## Key Entry Points
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
@@ -535,6 +557,7 @@ Phase 38 does not support final planning-performance claims.
 - Phase 36 suitability-proxy validation: `paper/phase28_results/10_phase36_suitability_proxy_validation.md`
 - Phase 37 decision-alignment audit: `paper/phase28_results/11_phase37_decision_alignment.md`
 - Phase 38 proxy-rebuild diagnostic: `paper/phase28_results/12_phase38_proxy_rebuild.md`
+- Phase 39 independent-label audit: `paper/phase28_results/13_phase39_independent_label_audit.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -591,6 +614,8 @@ Phase 38 does not support final planning-performance claims.
 - Phase 37 decision-alignment module: `src/paper11_geofm/phase37_decision_alignment.py`
 - Phase 38 proxy-rebuild runner: `experiments/phase38_proxy_rebuild/run_phase38_proxy_rebuild.py`
 - Phase 38 proxy-rebuild module: `src/paper11_geofm/phase38_proxy_rebuild.py`
+- Phase 39 independent-label audit runner: `experiments/phase39_independent_label_audit/run_phase39_independent_label_audit.py`
+- Phase 39 independent-label audit module: `src/paper11_geofm/phase39_independent_label_audit.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

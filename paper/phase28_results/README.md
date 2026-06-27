@@ -42,6 +42,9 @@ base-reward protocol.
   decisions separate in available proxy, slope, and weak farmland diagnostics.
 - `12_phase38_proxy_rebuild.md`: leakage-aware proxy-rebuild diagnostic
   over existing Phase 2, Phase 8, and Phase 30 feature tables before any B2/B3 reward integration.
+- `13_phase39_independent_label_audit.md`: independent-label inventory and
+  readiness audit over the Phase 2 real feature table before any Phase 38 rerun
+  with non-leakage labels.
 
 ## Reproduction Link
 
@@ -251,6 +254,33 @@ The current Phase 38 status is `proxy_rebuild_diagnostic_only` with `64984`
 block rows, `99` model rows, and `6433416` rebuilt proxy score rows. All
 current labels are classified as `explicit_label_leakage_risk`, so B2/B3
 suitability reward remains blocked.
+
+The Phase 39 independent-label audit is read-only with respect to rewards and
+policy training. It inventories available label-like columns in the Phase 2
+real feature table and writes a registry template for future independent label
+sources:
+
+```powershell
+python experiments\phase39_independent_label_audit\run_phase39_independent_label_audit.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase39_independent_label_audit\outputs\real_bishan
+```
+
+Expected local Phase 39 artifacts:
+
+- `phase39_label_inventory.csv`
+- `phase39_label_readiness.csv`
+- `phase39_label_registry_template.csv`
+- `phase39_independent_label_audit.json`
+- `phase39_independent_label_audit.md`
+
+The current Phase 39 status is `independent_label_inputs_missing` with `64984`
+block rows, `7` label inventory rows, `7` label readiness rows, and `0`
+registry rows. The audited default labels are `current_farmland_label`,
+`farmland_or_orchard_label`, `low_slope_farmland_label`, `source_bsm`,
+`source_category`, `source_dlbm`, and `source_dlmc`.
+
+Phase 39 does not run PPO, alter rewards, enable B2/B3, prove agronomic
+validity, or support planning-performance claims. Phase 38 cannot yet be rerun
+with a stronger non-leakage label and B2/B3 remains blocked.
 
 ## Claim Boundary
 

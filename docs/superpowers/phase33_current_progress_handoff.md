@@ -9,7 +9,9 @@ action-overlap diagnostics. Phase 36 added a read-only suitability-proxy
 validation gate before any B2/B3 reward work, Phase 37 added a read-only
 decision-alignment audit over Phase 34, Phase 35, and Phase 36 artifacts,
 and Phase 38 added a leakage-aware proxy-rebuild diagnostic over the real
-Phase 2, Phase 8, and Phase 30 feature tables.
+Phase 2, Phase 8, and Phase 30 feature tables. Phase 39 added an
+independent-label audit over the real Phase 2 feature table and found that
+independent label inputs are still missing.
 
 Repository state when the Phase 36 continuation started:
 
@@ -168,6 +170,77 @@ Current Phase 38 real-run status is `proxy_rebuild_diagnostic_only` with
 `64984` block rows, `99` model rows, and `6433416` rebuilt proxy score rows.
 All current real labels remain `explicit_label_leakage_risk`, so B2/B3
 suitability reward remains blocked.
+
+## Phase 39 Independent-Label Audit Continuation
+
+Phase 39 completed the independent-label audit on the
+`phase39-independent-label-audit` worktree. It inventories available default
+label-like columns in the Phase 2 real feature table, writes a registry
+template for future independent label sources, and keeps Phase 38 rerun work
+blocked until a stronger non-leakage label exists.
+
+Local ignored Phase 39 output:
+
+```text
+experiments/phase39_independent_label_audit/outputs/real_bishan
+```
+
+Artifacts:
+
+```text
+phase39_label_inventory.csv
+phase39_label_readiness.csv
+phase39_label_registry_template.csv
+phase39_independent_label_audit.json
+phase39_independent_label_audit.md
+```
+
+Status and row counts:
+
+- status: `independent_label_inputs_missing`
+- block rows: `64984`
+- label inventory rows: `7`
+- label readiness rows: `7`
+- registry rows: `0`
+
+Audited default labels:
+
+- `current_farmland_label`
+- `farmland_or_orchard_label`
+- `low_slope_farmland_label`
+- `source_bsm`
+- `source_category`
+- `source_dlbm`
+- `source_dlmc`
+
+Verification and real run:
+
+```text
+python experiments\phase39_independent_label_audit\run_phase39_independent_label_audit.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase39_independent_label_audit\outputs\real_bishan
+Phase 39 independent-label audit status: independent_label_inputs_missing
+```
+
+Docs-branch verification:
+
+```text
+$pattern = 'T' + 'BD|TO' + 'DO|REPLACE_' + 'WITH|PLACE' + 'HOLDER'
+rg -n $pattern README.md paper\phase28_results\README.md paper\phase28_results\13_phase39_independent_label_audit.md docs\superpowers\phase33_current_progress_handoff.md
+no matches
+python -m pytest tests\test_phase39_independent_label_audit.py tests\test_phase38_proxy_rebuild.py -q --basetemp=.pytest_tmp_phase39_docs_final -p no:cacheprovider
+24 passed, 84 warnings
+python scripts\smoke_check.py
+Paper11 smoke check passed.
+Sample years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+Embedding shape: (67, 70, 64)
+```
+
+Interpretation: Phase 39 does not run PPO, alter rewards, enable B2/B3, prove
+agronomic validity, or support planning-performance claims. Phase 38 cannot yet
+be rerun with a stronger non-leakage label and B2/B3 remains blocked.
+
+Next step: obtain or register defensible independent labels, then rerun the
+independent-label audit before any Phase 38 proxy-rebuild rerun.
+
 ## What Was Run This Window
 
 The earlier Phase 33 state only had a positive local pilot:
@@ -511,6 +584,16 @@ reproducibility/FILE_MANIFEST.tsv
 docs/superpowers/phase33_current_progress_handoff.md
 ```
 
+Updated in the Phase 39 continuation:
+
+```text
+README.md
+paper/phase28_results/README.md
+paper/phase28_results/13_phase39_independent_label_audit.md
+reproducibility/FILE_MANIFEST.tsv
+docs/superpowers/phase33_current_progress_handoff.md
+```
+
 Do not describe Phase 33 as generally `budget_closes_compressed_gap`. That is
 only true for the `tile_r002_c003` three-seed aggregate, not for the complete
 bounded aggregate.
@@ -522,6 +605,11 @@ is `decision_alignment_not_supported`.
 Do not describe Phase 38 as supporting B2/B3, suitability reward, reward
 changes, policy training, agronomic validity, or final planning-performance
 claims. Its real status is `proxy_rebuild_diagnostic_only`.
+
+Do not describe Phase 39 as supporting B2/B3, suitability reward, reward
+changes, policy training, agronomic validity, or final planning-performance
+claims. Its real status is `independent_label_inputs_missing`, and Phase 38
+cannot yet be rerun with a stronger non-leakage label.
 
 ## Verification Run
 
