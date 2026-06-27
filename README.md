@@ -52,6 +52,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase28_compression_diagnosis/`: executable read-only Phase 28 compression diagnosis runner for existing 4096-step representation-control outputs.
 - `experiments/phase29_representation_scale_diagnosis/`: executable read-only Phase 29 representation-scale diagnosis runner for B1/D4 feature tables.
 - `experiments/phase30_normalized_b1_ablation/`: executable Phase 30 normalized-B1 held-out ablation runner with optional reuse of Phase 28 control summaries.
+- `experiments/phase31_case_diagnostics/`: executable read-only Phase 31 case diagnostics runner over existing Phase 30 summary, trace, and spatial feature inputs.
+- `experiments/phase32_action_order_diagnostics/`: executable read-only Phase 32 action-order diagnostic runner over Phase 31 cases and trace artifacts.
 - `experiments/phase33_budget_robustness/`: executable Phase 33 bounded budget-robustness follow-up over existing Phase 30 normalized-B1 artifacts.
 - `experiments/phase34_case_map_diagnostics/`: executable read-only Phase 34 case-map diagnostic runner over existing Phase 33 matched pilot artifacts.
 - `experiments/phase35_phase33_action_overlap_diagnostics/`: executable read-only Phase 35 action-overlap diagnostic runner over existing Phase 33 matched pilot artifacts.
@@ -59,7 +61,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase37_decision_alignment/`: executable read-only Phase 37 decision-alignment diagnostic runner over existing Phase 34, Phase 35, and Phase 36 artifacts.
 - `experiments/phase38_proxy_rebuild/`: executable leakage-aware Phase 38 suitability-proxy rebuild diagnostic runner over existing Phase 2, Phase 8, and Phase 30 feature tables.
 - `experiments/phase39_independent_label_audit/`: executable read-only Phase 39 independent-label audit runner over existing Phase 2 real feature tables before any Phase 38 rerun with non-leakage labels.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, and Phase 39 independent-label audits.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 31 case diagnostics, Phase 32 action-order diagnostics, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, and Phase 39 independent-label audits.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -551,6 +553,8 @@ with a stronger non-leakage label and B2/B3 remains blocked.
 - Phase 28 compression diagnosis: `paper/phase28_results/02_phase28_compression_diagnosis.md`
 - Phase 29 representation-scale diagnosis: `paper/phase28_results/03_phase29_representation_scale_diagnosis.md`
 - Phase 30 normalized-B1 ablation: `paper/phase28_results/04_phase30_normalized_b1_ablation.md`
+- Phase 31 case diagnostics: `paper/phase28_results/05_phase31_case_diagnostics.md`
+- Phase 32 action-order diagnostics: `paper/phase28_results/06_phase32_action_order_diagnostics.md`
 - Phase 33 budget robustness: `paper/phase28_results/07_phase33_budget_robustness.md`
 - Phase 34 case-map diagnostics: `paper/phase28_results/08_phase34_case_map_diagnostics.md`
 - Phase 35 Phase 33 action-overlap diagnostics: `paper/phase28_results/09_phase35_phase33_action_overlap_diagnostics.md`
@@ -602,6 +606,10 @@ with a stronger non-leakage label and B2/B3 remains blocked.
 - Phase 29 representation-scale diagnosis module: `src/paper11_geofm/phase29_representation_scale_diagnosis.py`
 - Phase 30 normalized-B1 ablation runner: `experiments/phase30_normalized_b1_ablation/run_phase30_normalized_b1_ablation.py`
 - Phase 30 normalized-B1 ablation module: `src/paper11_geofm/phase30_normalized_b1_ablation.py`
+- Phase 31 case diagnostics runner: `experiments/phase31_case_diagnostics/run_phase31_case_diagnostics.py`
+- Phase 31 case diagnostics module: `src/paper11_geofm/phase31_case_diagnostics.py`
+- Phase 32 action-order diagnostics runner: `experiments/phase32_action_order_diagnostics/run_phase32_action_order_diagnostics.py`
+- Phase 32 action-order diagnostics module: `src/paper11_geofm/phase32_action_order_diagnostics.py`
 - Phase 33 budget-robustness runner: `experiments/phase33_budget_robustness/run_phase33_budget_robustness.py`
 - Phase 33 budget-robustness module: `src/paper11_geofm/phase33_budget_robustness.py`
 - Phase 34 case-map diagnostics runner: `experiments/phase34_case_map_diagnostics/run_phase34_case_map_diagnostics.py`
