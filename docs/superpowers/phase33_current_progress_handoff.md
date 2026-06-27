@@ -683,20 +683,23 @@ Do not move directly to manuscript claims. Next work should stay experiment-firs
 ## Useful Commands For Next Window
 
 ```powershell
-cd D:\test\paper11-geofm-farmland-suitability-rl
+cd D:\test\paper11-geofm-farmland-suitability-rl\.worktrees\phase39-independent-label-audit
 git status --short --branch
 Get-Content docs\superpowers\phase33_current_progress_handoff.md
+Get-Content paper\phase28_results\13_phase39_independent_label_audit.md
+Get-Content paper\phase28_results\12_phase38_proxy_rebuild.md
+Get-ChildItem -Force experiments\phase39_independent_label_audit\outputs\real_bishan
+Get-Content experiments\phase39_independent_label_audit\outputs\real_bishan\phase39_independent_label_audit.md
+Get-Content experiments\phase39_independent_label_audit\outputs\real_bishan\phase39_independent_label_audit.json
+Import-Csv experiments\phase39_independent_label_audit\outputs\real_bishan\phase39_label_inventory.csv | Format-Table -AutoSize
+Import-Csv experiments\phase39_independent_label_audit\outputs\real_bishan\phase39_label_readiness.csv | Format-Table -AutoSize
+Import-Csv experiments\phase39_independent_label_audit\outputs\real_bishan\phase39_label_registry_template.csv | Measure-Object
+python experiments\phase39_independent_label_audit\run_phase39_independent_label_audit.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase39_independent_label_audit\outputs\real_bishan
 Get-Content paper\phase28_results\07_phase33_budget_robustness.md
-Get-Content paper\phase28_results\08_phase34_case_map_diagnostics.md
-Get-Content paper\phase28_results\10_phase36_suitability_proxy_validation.md
 Get-ChildItem -Force experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run
 Get-ChildItem -Force experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run
-Get-ChildItem -Force experiments\phase36_suitability_proxy_validation\outputs\real_bishan
-Get-Content experiments\phase36_suitability_proxy_validation\outputs\real_bishan\phase36_suitability_proxy_validation.md
-Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_focal_gap_transition.csv | Format-Table -AutoSize
-Import-Csv experiments\phase33_budget_robustness\outputs\real_bishan_5120_pilot_3tiles_3seeds_9run_aggregate\phase33_tile_seed_stability.csv | Group-Object stability_class | Select-Object Name,Count
 Import-Csv experiments\phase34_case_map_diagnostics\outputs\real_bishan_5120_phase33_9run\phase34_case_map_cases.csv | Group-Object eval_tile_id,spatial_pattern | Select-Object Name,Count
 Import-Csv experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_bishan_5120_phase33_9run\phase35_action_overlap_cases.csv | Group-Object eval_tile_id,action_overlap_pattern | Select-Object Name,Count
-python -m pytest tests\test_phase36_suitability_proxy_validation.py tests\test_phase9_proxy_validation.py tests\test_phase10_reward_readiness.py -q --basetemp=.pytest_tmp_phase36_resume -p no:cacheprovider
+python -m pytest tests\test_phase39_independent_label_audit.py tests\test_phase38_proxy_rebuild.py -q --basetemp=.pytest_tmp_phase39_resume -p no:cacheprovider
 python scripts\smoke_check.py
 ```
