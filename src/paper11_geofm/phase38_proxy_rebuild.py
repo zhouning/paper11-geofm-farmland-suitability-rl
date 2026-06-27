@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 import csv
 import json
+import math
 from pathlib import Path
 
 import numpy as np
@@ -231,23 +232,23 @@ def write_phase38_proxy_rebuild_artifacts(
     _write_csv_mapping_rows(
         artifacts["label_summary_csv"],
         PHASE38_LABEL_FIELDNAMES,
-        analysis.get("label_summary_rows", []),
+        analysis.get("label_summary_rows"),
         "Phase 38 label summary rows",
     )
     _write_csv_mapping_rows(
         artifacts["model_summary_csv"],
         PHASE38_MODEL_FIELDNAMES,
-        analysis.get("model_rows", []),
+        analysis.get("model_rows"),
         "Phase 38 model summary rows",
     )
     _write_csv_mapping_rows(
         artifacts["rebuilt_proxy_scores_csv"],
         PHASE38_SCORE_FIELDNAMES,
-        analysis.get("rebuilt_proxy_score_rows", []),
+        analysis.get("rebuilt_proxy_score_rows"),
         "Phase 38 rebuilt proxy score rows",
     )
     artifacts["diagnosis_json"].write_text(
-        json.dumps(_json_ready(analysis), indent=2, sort_keys=True),
+        json.dumps(_json_ready(analysis), indent=2, sort_keys=True, allow_nan=False),
         encoding="utf-8",
     )
     artifacts["diagnosis_md"].write_text(_phase38_markdown(analysis), encoding="utf-8")
@@ -261,7 +262,7 @@ def _write_csv_mapping_rows(
     label: str,
 ) -> None:
     if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
-        raise TypeError(f"{label} must be a list of mappings")
+        raise ValueError(f"{label} must be a list of mappings")
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
         writer.writeheader()
@@ -273,7 +274,7 @@ def _write_csv_mapping_rows(
 
 def _csv_value(value: object) -> object:
     if isinstance(value, (list, tuple, dict)):
-        return json.dumps(_json_ready(value), sort_keys=True)
+        return json.dumps(_json_ready(value), sort_keys=True, allow_nan=False)
     return _json_ready(value)
 
 
@@ -281,7 +282,9 @@ def _json_ready(value: object) -> object:
     if isinstance(value, Path):
         return str(value)
     if isinstance(value, np.generic):
-        return value.item()
+        return _json_ready(value.item())
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
     if isinstance(value, np.ndarray):
         return [_json_ready(item) for item in value.tolist()]
     if isinstance(value, Mapping):

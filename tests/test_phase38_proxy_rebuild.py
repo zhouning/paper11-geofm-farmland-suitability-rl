@@ -413,6 +413,9 @@ def test_phase38_model_rows_include_calibration_and_diagnostics(tmp_path):
 
 def test_phase38_writer_outputs_csv_json_and_markdown(tmp_path):
     from paper11_geofm.phase38_proxy_rebuild import (
+        PHASE38_LABEL_FIELDNAMES,
+        PHASE38_MODEL_FIELDNAMES,
+        PHASE38_SCORE_FIELDNAMES,
         build_phase38_proxy_rebuild,
         write_phase38_proxy_rebuild_artifacts,
     )
@@ -428,6 +431,8 @@ def test_phase38_writer_outputs_csv_json_and_markdown(tmp_path):
         min_auc_delta=0.01,
         min_ap_delta=0.01,
     )
+    analysis["nonfinite_metric"] = float("inf")
+    analysis["nested_nonfinite_metric"] = {"value": float("nan")}
 
     artifacts = write_phase38_proxy_rebuild_artifacts(analysis, tmp_path / "outputs")
 
@@ -437,8 +442,57 @@ def test_phase38_writer_outputs_csv_json_and_markdown(tmp_path):
     assert artifacts["diagnosis_json"].name == "phase38_proxy_rebuild.json"
     assert artifacts["diagnosis_md"].name == "phase38_proxy_rebuild.md"
     assert all(path.exists() for path in artifacts.values())
-    saved = json.loads(artifacts["diagnosis_json"].read_text(encoding="utf-8"))
+
+    with artifacts["label_summary_csv"].open("r", encoding="utf-8", newline="") as handle:
+        label_reader = csv.DictReader(handle)
+        label_rows = list(label_reader)
+    assert label_reader.fieldnames == list(PHASE38_LABEL_FIELDNAMES)
+    assert label_rows
+
+    with artifacts["model_summary_csv"].open("r", encoding="utf-8", newline="") as handle:
+        model_reader = csv.DictReader(handle)
+        model_rows = list(model_reader)
+    assert model_reader.fieldnames == list(PHASE38_MODEL_FIELDNAMES)
+    assert model_rows
+    representative_model = next(
+        row for row in model_rows if row["top_diagnostics"] != "[]"
+    )
+    calibration_bins = json.loads(representative_model["calibration_bins"])
+    top_diagnostics = json.loads(representative_model["top_diagnostics"])
+    assert calibration_bins
+    assert {"bin", "count", "mean_probability", "positive_rate"}.issubset(
+        calibration_bins[0]
+    )
+    assert top_diagnostics
+    assert "feature" in top_diagnostics[0]
+
+    with artifacts["rebuilt_proxy_scores_csv"].open("r", encoding="utf-8", newline="") as handle:
+        score_reader = csv.DictReader(handle)
+        score_rows = list(score_reader)
+    assert score_reader.fieldnames == list(PHASE38_SCORE_FIELDNAMES)
+    assert score_rows
+    assert score_rows[0]["rebuilt_proxy_score"] != ""
+    float(score_rows[0]["rebuilt_proxy_score"])
+
+    json_text = artifacts["diagnosis_json"].read_text(encoding="utf-8")
+    assert "Infinity" not in json_text
+    assert "NaN" not in json_text
+    saved = json.loads(json_text)
     assert saved["phase"] == "phase38_proxy_rebuild"
+    assert saved["nonfinite_metric"] is None
+    assert saved["nested_nonfinite_metric"]["value"] is None
     markdown = artifacts["diagnosis_md"].read_text(encoding="utf-8")
     assert "Phase 38 Proxy-Rebuild" in markdown
     assert "proxy_rebuild_supported_for_bounded_b2_b3_smoke" in markdown
+
+    incomplete_analysis = dict(analysis)
+    del incomplete_analysis["label_summary_rows"]
+    try:
+        write_phase38_proxy_rebuild_artifacts(
+            incomplete_analysis,
+            tmp_path / "missing-label-summary",
+        )
+    except ValueError as exc:
+        assert "Phase 38 label summary rows" in str(exc)
+    else:
+        raise AssertionError("missing label summary rows should raise")
