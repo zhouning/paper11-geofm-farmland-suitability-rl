@@ -45,6 +45,17 @@ INDEPENDENT_PHASE39_PROVENANCE_CLASSES = {
     "independent_validation_label",
 }
 
+PHASE39_TRAIN_SPLIT_VALUES = {"train", "training"}
+
+PHASE39_EVAL_SPLIT_VALUES = {
+    "test",
+    "eval",
+    "evaluation",
+    "validation",
+    "val",
+    "valid",
+}
+
 PHASE39_REGISTRY_FIELDNAMES = (
     "label_column",
     "source_path",
@@ -264,7 +275,7 @@ def _label_readiness_row(
     external_sources_by_label: dict[str, list[str]],
 ) -> dict[str, object]:
     labels_by_block: dict[str, int] = {}
-    split_by_block: dict[str, str] = {}
+    split_by_block: dict[str, str | None] = {}
     for row in block_rows:
         block_id = str(row.get("block_id", "")).strip()
         if not block_id:
@@ -439,11 +450,13 @@ def _registry_value(registry_entry: dict[str, str] | None, key: str) -> str:
     return str(registry_entry.get(key, "")).strip()
 
 
-def _split_role(value: object) -> str:
+def _split_role(value: object) -> str | None:
     split_text = str(value or "").strip().lower()
-    if split_text in {"train", "training"}:
+    if split_text in PHASE39_TRAIN_SPLIT_VALUES:
         return "train"
-    return "eval"
+    if split_text in PHASE39_EVAL_SPLIT_VALUES:
+        return "eval"
+    return None
 
 
 def _join_missing_count(

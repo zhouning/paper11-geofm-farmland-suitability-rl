@@ -187,6 +187,55 @@ def test_phase39_external_candidate_label_clears_phase38_rerun_gate(tmp_path):
     assert row["eval_positive_count"] == 1
 
 
+def test_phase39_unknown_or_blank_splits_do_not_create_eval_coverage(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    rows = []
+    for index in range(8):
+        if index < 4:
+            split = "train"
+        elif index % 2 == 0:
+            split = ""
+        else:
+            split = "holdout"
+        rows.append(
+            {
+                "block_id": f"b{index:03d}",
+                "current_farmland_label": 1 if index % 2 == 0 else 0,
+                "farmland_or_orchard_label": 1 if index % 3 == 0 else 0,
+                "low_slope_farmland_label": 1 if index % 4 == 0 else 0,
+                "source_bsm": f"s{index:03d}",
+                "source_category": "farmland" if index % 2 == 0 else "other",
+                "source_dlbm": "0101" if index % 2 == 0 else "0301",
+                "source_dlmc": "paddy" if index % 2 == 0 else "forest",
+                "split": split,
+            }
+        )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path, rows=rows),
+        external_label_csvs=[
+            _external_labels(
+                tmp_path / "external_irrigation.csv",
+                [1, 0, 1, 0, 1, 0, 1, 0],
+                block_ids=[f"b{index:03d}" for index in range(8)],
+            )
+        ],
+        label_registry=_registry(tmp_path / "registry.csv", "candidate_independent_proxy"),
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_insufficient"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["train_positive_count"] == 2
+    assert row["train_negative_count"] == 2
+    assert row["eval_count"] == 0
+    assert row["usable"] is False
+    assert row["allowed_for_phase38_rerun"] is False
+
+
 def test_phase39_partial_external_candidate_coverage_is_insufficient(tmp_path):
     from paper11_geofm.phase39_independent_label_audit import (
         build_phase39_independent_label_audit,
