@@ -4,6 +4,7 @@ requirements.txt	environment	Python dependencies for smoke checks and full RL/ru
 pytest.ini	environment	Pytest configuration that keeps temporary test files inside the workspace sandbox.
 .gitignore	repository	Ignore rules for local environments, caches, generated outputs, and large artifacts.
 docs/source_notes/paper11_design_thought.md	source_note	Original Paper11 design thought copied from the source Paper58 workspace.
+docs/superpowers/phase33_current_progress_handoff.md	documentation	Phase 33-39 handoff and progress notes.
 docs/superpowers/specs/2026-06-08-phase1-bishan-geofm-baseline-design.md	design	Approved Phase 1 design for an executable Bishan GeoFM representation baseline.
 docs/superpowers/specs/2026-06-09-phase2-block-geofm-feature-assembly-design.md	design	Phase 2 design for block-level GeoFM feature assembly and B0/B1/B2/B3-ready output tables.
 docs/superpowers/specs/2026-06-09-phase3-drl-input-adapter-design.md	design	Phase 3 design for converting ready Phase 2 variant CSV exports into later-DRL input matrices without policy training.
