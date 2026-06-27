@@ -409,3 +409,36 @@ def test_phase38_model_rows_include_calibration_and_diagnostics(tmp_path):
     assert random_forest["top_diagnostics"]
     assert {"feature", "importance"}.issubset(random_forest["top_diagnostics"][0])
     assert hist_gradient["top_diagnostics"] == []
+
+
+def test_phase38_writer_outputs_csv_json_and_markdown(tmp_path):
+    from paper11_geofm.phase38_proxy_rebuild import (
+        build_phase38_proxy_rebuild,
+        write_phase38_proxy_rebuild_artifacts,
+    )
+
+    paths = _fixture_inputs(tmp_path)
+    analysis = build_phase38_proxy_rebuild(
+        phase2_output_dir=paths["phase2_dir"],
+        phase8_output_dir=paths["phase8_dir"],
+        normalized_controls_dir=paths["normalized_dir"],
+        label_columns=["current_farmland_label", "independent_proxy_label"],
+        label_classifications="independent_proxy_label:candidate_independent_proxy",
+        model_families=["logistic_elastic_net"],
+        min_auc_delta=0.01,
+        min_ap_delta=0.01,
+    )
+
+    artifacts = write_phase38_proxy_rebuild_artifacts(analysis, tmp_path / "outputs")
+
+    assert artifacts["label_summary_csv"].name == "phase38_label_summary.csv"
+    assert artifacts["model_summary_csv"].name == "phase38_model_summary.csv"
+    assert artifacts["rebuilt_proxy_scores_csv"].name == "phase38_rebuilt_proxy_scores.csv"
+    assert artifacts["diagnosis_json"].name == "phase38_proxy_rebuild.json"
+    assert artifacts["diagnosis_md"].name == "phase38_proxy_rebuild.md"
+    assert all(path.exists() for path in artifacts.values())
+    saved = json.loads(artifacts["diagnosis_json"].read_text(encoding="utf-8"))
+    assert saved["phase"] == "phase38_proxy_rebuild"
+    markdown = artifacts["diagnosis_md"].read_text(encoding="utf-8")
+    assert "Phase 38 Proxy-Rebuild" in markdown
+    assert "proxy_rebuild_supported_for_bounded_b2_b3_smoke" in markdown

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 import csv
+import json
 from pathlib import Path
 
 import numpy as np
@@ -61,6 +62,55 @@ CONTROL_FAMILIES = {
     "explicit_plus_random_geofm",
     "explicit_plus_shuffled_geofm",
 }
+
+PHASE38_LABEL_FIELDNAMES = (
+    "label_column",
+    "label_classification",
+    "available",
+    "usable",
+    "valid_label_count",
+    "positive_count",
+    "negative_count",
+    "positive_rate",
+    "train_count",
+    "eval_count",
+    "train_positive_count",
+    "train_negative_count",
+    "eval_positive_count",
+    "eval_negative_count",
+    "split_source",
+    "claim_boundary",
+)
+
+PHASE38_MODEL_FIELDNAMES = (
+    "label_column",
+    "label_classification",
+    "model_family",
+    "feature_family",
+    "feature_count",
+    "train_count",
+    "eval_count",
+    "positive_rate_eval",
+    "validation_status",
+    "roc_auc",
+    "average_precision",
+    "balanced_accuracy",
+    "accuracy",
+    "calibration_bins",
+    "top_diagnostics",
+    "claim_boundary",
+)
+
+PHASE38_SCORE_FIELDNAMES = (
+    "label_column",
+    "label_classification",
+    "model_family",
+    "feature_family",
+    "block_id",
+    "split_role",
+    "label_value",
+    "rebuilt_proxy_score",
+)
 
 
 def build_phase38_proxy_rebuild(
@@ -162,6 +212,168 @@ def build_phase38_proxy_rebuild(
         "interpretation": _phase38_interpretation(status),
         "claim_boundary": PHASE38_PROXY_REBUILD_CLAIM_BOUNDARY,
     }
+
+
+def write_phase38_proxy_rebuild_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    artifacts = {
+        "label_summary_csv": output_path / "phase38_label_summary.csv",
+        "model_summary_csv": output_path / "phase38_model_summary.csv",
+        "rebuilt_proxy_scores_csv": output_path / "phase38_rebuilt_proxy_scores.csv",
+        "diagnosis_json": output_path / "phase38_proxy_rebuild.json",
+        "diagnosis_md": output_path / "phase38_proxy_rebuild.md",
+    }
+
+    _write_csv_mapping_rows(
+        artifacts["label_summary_csv"],
+        PHASE38_LABEL_FIELDNAMES,
+        analysis.get("label_summary_rows", []),
+        "Phase 38 label summary rows",
+    )
+    _write_csv_mapping_rows(
+        artifacts["model_summary_csv"],
+        PHASE38_MODEL_FIELDNAMES,
+        analysis.get("model_rows", []),
+        "Phase 38 model summary rows",
+    )
+    _write_csv_mapping_rows(
+        artifacts["rebuilt_proxy_scores_csv"],
+        PHASE38_SCORE_FIELDNAMES,
+        analysis.get("rebuilt_proxy_score_rows", []),
+        "Phase 38 rebuilt proxy score rows",
+    )
+    artifacts["diagnosis_json"].write_text(
+        json.dumps(_json_ready(analysis), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    artifacts["diagnosis_md"].write_text(_phase38_markdown(analysis), encoding="utf-8")
+    return artifacts
+
+
+def _write_csv_mapping_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: object,
+    label: str,
+) -> None:
+    if not isinstance(rows, list) or not all(isinstance(row, Mapping) for row in rows):
+        raise TypeError(f"{label} must be a list of mappings")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(
+                {field: _csv_value(row.get(field, "")) for field in fieldnames}
+            )
+
+
+def _csv_value(value: object) -> object:
+    if isinstance(value, (list, tuple, dict)):
+        return json.dumps(_json_ready(value), sort_keys=True)
+    return _json_ready(value)
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return [_json_ready(item) for item in value.tolist()]
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    return value
+
+
+def _phase38_markdown(analysis: Mapping[str, object]) -> str:
+    status = str(analysis.get("phase38_proxy_rebuild_status", ""))
+    label_rows = analysis.get("label_summary_rows", [])
+    model_rows = analysis.get("model_rows", [])
+    lines = [
+        "# Phase 38 Proxy-Rebuild",
+        "",
+        f"Status: {status}",
+        "",
+        "## Label Summary",
+        "",
+        *_markdown_table(
+            PHASE38_LABEL_FIELDNAMES[:8],
+            label_rows if isinstance(label_rows, list) else [],
+        ),
+        "",
+        "## Model Summary",
+        "",
+    ]
+    grouped: dict[str, list[Mapping[str, object]]] = {}
+    if isinstance(model_rows, list):
+        for row in model_rows:
+            if isinstance(row, Mapping):
+                grouped.setdefault(str(row.get("label_column", "")), []).append(row)
+    for label_column in sorted(grouped):
+        lines.extend(
+            [
+                f"### {label_column}",
+                "",
+                *_markdown_table(
+                    (
+                        "model_family",
+                        "feature_family",
+                        "validation_status",
+                        "roc_auc",
+                        "average_precision",
+                        "balanced_accuracy",
+                        "accuracy",
+                    ),
+                    grouped[label_column],
+                ),
+                "",
+            ]
+        )
+    if not grouped:
+        lines.extend(["No model rows were evaluated.", ""])
+    lines.extend(
+        [
+            "## Interpretation",
+            "",
+            str(analysis.get("interpretation", "")),
+            "",
+            "Leakage-risk labels may validate the pipeline but must not unlock B2/B3 reward.",
+            "",
+            "## Boundary",
+            "",
+            str(analysis.get("claim_boundary", PHASE38_PROXY_REBUILD_CLAIM_BOUNDARY)),
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _markdown_table(
+    fieldnames: Sequence[str],
+    rows: Sequence[Mapping[str, object]],
+) -> list[str]:
+    header = [str(field) for field in fieldnames]
+    lines = [
+        "| " + " | ".join(header) + " |",
+        "| " + " | ".join("---" for _ in header) + " |",
+    ]
+    for row in rows:
+        lines.append(
+            "| "
+            + " | ".join(_markdown_cell(row.get(field, "")) for field in fieldnames)
+            + " |"
+        )
+    return lines
+
+
+def _markdown_cell(value: object) -> str:
+    return str(_csv_value(value)).replace("|", "\\|").replace("\n", " ")
 
 
 def _build_feature_families(
