@@ -288,6 +288,11 @@ def _label_readiness_row(
     train_negative_count = sum(1 for label in train_labels if label == 0)
     eval_positive_count = sum(1 for label in eval_labels if label == 1)
     eval_negative_count = sum(1 for label in eval_labels if label == 0)
+    join_missing_count = (
+        _join_missing_count(block_rows, label_column)
+        if label_column in external_sources_by_label
+        else 0
+    )
     usable = (
         train_positive_count > 0
         and train_negative_count > 0
@@ -305,6 +310,7 @@ def _label_readiness_row(
         and registry_entry_present
         and registry_allows_rerun
         and provenance_class in INDEPENDENT_PHASE39_PROVENANCE_CLASSES
+        and join_missing_count == 0
     )
     return {
         "label_column": label_column,
@@ -325,6 +331,7 @@ def _label_readiness_row(
             "independence_rationale",
         ),
         "registry_allowed_for_phase38_rerun": registry_allows_rerun,
+        "join_missing_count": join_missing_count,
         "usable": usable,
         "valid_label_count": len(labels_by_block),
         "positive_count": positive_count,
@@ -350,6 +357,7 @@ def _label_readiness_row(
             provenance_class,
             registry_entry_present,
             registry_allows_rerun,
+            join_missing_count,
         ),
         "claim_boundary": PHASE39_INDEPENDENT_LABEL_AUDIT_CLAIM_BOUNDARY,
     }
@@ -435,6 +443,17 @@ def _split_role(value: object) -> str:
     return "eval"
 
 
+def _join_missing_count(
+    block_rows: Sequence[dict[str, str]],
+    label_column: str,
+) -> int:
+    return sum(
+        1
+        for row in block_rows
+        if str(row.get(label_column, "")).strip() == ""
+    )
+
+
 def _parse_binary_label(value: object) -> int | None:
     if value is None:
         return None
@@ -461,7 +480,10 @@ def _decision_reason(
     provenance_class: str,
     registry_entry_present: bool,
     registry_allows_rerun: bool,
+    join_missing_count: int,
 ) -> str:
+    if join_missing_count > 0:
+        return f"label has {join_missing_count} missing joined labels from external sources"
     if usable and provenance_class in INDEPENDENT_PHASE39_PROVENANCE_CLASSES:
         if registry_entry_present and registry_allows_rerun:
             return (
@@ -489,17 +511,22 @@ def _phase39_status(label_readiness_rows: Sequence[dict[str, object]]) -> str:
     if any(bool(row.get("allowed_for_phase38_rerun")) for row in label_readiness_rows):
         return "independent_labels_ready_for_phase38_rerun"
     if any(
-        bool(row.get("usable"))
-        and str(row.get("provenance_class")) == "unclassified"
-        for row in label_readiness_rows
-    ):
-        return "candidate_proxy_labels_need_review"
-    if any(
         str(row.get("provenance_class")) in INDEPENDENT_PHASE39_PROVENANCE_CLASSES
-        and not bool(row.get("usable"))
+        and (
+            not bool(row.get("usable"))
+            or int(row.get("join_missing_count") or 0) > 0
+        )
         for row in label_readiness_rows
     ):
         return "independent_label_inputs_insufficient"
+    if any(
+        bool(row.get("usable"))
+        and str(row.get("provenance_class"))
+        in {"unclassified", *INDEPENDENT_PHASE39_PROVENANCE_CLASSES}
+        and not bool(row.get("allowed_for_phase38_rerun"))
+        for row in label_readiness_rows
+    ):
+        return "candidate_proxy_labels_need_review"
     return "independent_label_inputs_missing"
 
 
@@ -511,8 +538,8 @@ def _phase39_interpretation(status: str) -> str:
         )
     if status == "candidate_proxy_labels_need_review":
         return (
-            "At least one usable unclassified label exists, but it needs registry "
-            "provenance review before Phase 38 can treat it as independent."
+            "At least one usable non-leakage label exists, but it needs registry "
+            "review or an explicit registry allowance before Phase 38 can use it."
         )
     if status == "independent_label_inputs_insufficient":
         return (

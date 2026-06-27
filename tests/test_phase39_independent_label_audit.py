@@ -69,7 +69,11 @@ def _external_labels(
     return _write_csv(path, rows, ["block_id", "irrigation_proxy_label"])
 
 
-def _registry(path: Path, provenance_class: str) -> Path:
+def _registry(
+    path: Path,
+    provenance_class: str,
+    allowed_for_phase38_rerun: str = "true",
+) -> Path:
     rows = [
         {
             "label_column": "irrigation_proxy_label",
@@ -78,7 +82,7 @@ def _registry(path: Path, provenance_class: str) -> Path:
             "description": "Synthetic non-DLTB irrigation proxy label",
             "external_source_name": "synthetic_irrigation_fixture",
             "independence_rationale": "not derived from DLTB, slope, or explicit planning features",
-            "allowed_for_phase38_rerun": "true",
+            "allowed_for_phase38_rerun": allowed_for_phase38_rerun,
         }
     ]
     return _write_csv(
@@ -181,6 +185,60 @@ def test_phase39_external_candidate_label_clears_phase38_rerun_gate(tmp_path):
     assert row["allowed_for_phase38_rerun"] is True
     assert row["train_positive_count"] == 3
     assert row["eval_positive_count"] == 1
+
+
+def test_phase39_partial_external_candidate_coverage_is_insufficient(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        external_label_csvs=[
+            _external_labels(
+                tmp_path / "external_irrigation.csv",
+                [1, 0, 1, 0, 1, 0],
+                block_ids=["b000", "b001", "b002", "b008", "b009", "b010"],
+            )
+        ],
+        label_registry=_registry(tmp_path / "registry.csv", "candidate_independent_proxy"),
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_insufficient"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["usable"] is True
+    assert row["join_missing_count"] == 6
+    assert row["allowed_for_phase38_rerun"] is False
+    assert "missing joined labels" in row["decision_reason"]
+
+
+def test_phase39_registry_denied_usable_candidate_needs_review(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        external_label_csvs=[
+            _external_labels(
+                tmp_path / "external_irrigation.csv",
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+            )
+        ],
+        label_registry=_registry(
+            tmp_path / "registry.csv",
+            "candidate_independent_proxy",
+            allowed_for_phase38_rerun="false",
+        ),
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "candidate_proxy_labels_need_review"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["usable"] is True
+    assert row["registry_allowed_for_phase38_rerun"] is False
+    assert row["allowed_for_phase38_rerun"] is False
 
 
 def test_phase39_unclassified_external_label_needs_review(tmp_path):
