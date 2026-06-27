@@ -53,10 +53,18 @@ def _phase2_dir(tmp_path: Path, rows: list[dict[str, object]] | None = None) -> 
     ).parent
 
 
-def _external_labels(path: Path, values: list[int]) -> Path:
+def _external_labels(
+    path: Path,
+    values: list[int],
+    block_ids: list[str] | None = None,
+) -> Path:
+    if block_ids is None:
+        block_ids = [f"b{index:03d}" for index in range(len(values))]
+    if len(block_ids) != len(values):
+        raise ValueError("block_ids and values must have the same length")
     rows = [
-        {"block_id": f"b{index:03d}", "irrigation_proxy_label": value}
-        for index, value in enumerate(values)
+        {"block_id": block_id, "irrigation_proxy_label": value}
+        for block_id, value in zip(block_ids, values)
     ]
     return _write_csv(path, rows, ["block_id", "irrigation_proxy_label"])
 
@@ -93,15 +101,23 @@ def test_phase39_current_labels_remain_missing_independent_inputs(tmp_path):
         build_phase39_independent_label_audit,
     )
 
+    requested_labels = [
+        "current_farmland_label",
+        "farmland_or_orchard_label",
+        "low_slope_farmland_label",
+    ]
     analysis = build_phase39_independent_label_audit(
         phase2_output_dir=_phase2_dir(tmp_path),
-        label_columns="current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label",
+        label_columns=",".join(requested_labels),
     )
 
     assert analysis["phase"] == "phase39_independent_label_audit"
     assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_missing"
-    assert analysis["label_readiness"]["current_farmland_label"]["provenance_class"] == "explicit_label_leakage_risk"
-    assert analysis["label_readiness"]["current_farmland_label"]["allowed_for_phase38_rerun"] is False
+    readiness = analysis["label_readiness"]
+    assert set(requested_labels).issubset(readiness)
+    for label in requested_labels:
+        assert readiness[label]["provenance_class"] == "explicit_label_leakage_risk"
+        assert readiness[label]["allowed_for_phase38_rerun"] is False
     assert "does not train PPO" in analysis["claim_boundary"]
 
 
@@ -110,14 +126,18 @@ def test_phase39_source_fields_are_leakage_risks(tmp_path):
         build_phase39_independent_label_audit,
     )
 
+    requested_labels = ["source_category", "source_dlbm", "source_dlmc"]
     analysis = build_phase39_independent_label_audit(
         phase2_output_dir=_phase2_dir(tmp_path),
-        label_columns=["source_category", "source_dlbm", "source_dlmc"],
+        label_columns=requested_labels,
     )
 
     assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_missing"
-    assert analysis["label_readiness"]["source_category"]["provenance_class"] == "source_field_leakage_risk"
-    assert analysis["label_readiness"]["source_dlbm"]["allowed_for_phase38_rerun"] is False
+    readiness = analysis["label_readiness"]
+    assert set(requested_labels).issubset(readiness)
+    for label in requested_labels:
+        assert readiness[label]["provenance_class"] == "source_field_leakage_risk"
+        assert readiness[label]["allowed_for_phase38_rerun"] is False
 
 
 def test_phase39_external_candidate_label_clears_phase38_rerun_gate(tmp_path):
@@ -126,9 +146,24 @@ def test_phase39_external_candidate_label_clears_phase38_rerun_gate(tmp_path):
     )
 
     phase2_dir = _phase2_dir(tmp_path)
+    shuffled_block_ids = [
+        "b009",
+        "b003",
+        "b001",
+        "b007",
+        "b010",
+        "b000",
+        "b008",
+        "b004",
+        "b002",
+        "b006",
+        "b011",
+        "b005",
+    ]
     external = _external_labels(
         tmp_path / "external_irrigation.csv",
-        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+        [1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+        block_ids=shuffled_block_ids,
     )
     registry = _registry(tmp_path / "registry.csv", "candidate_independent_proxy")
 
@@ -144,8 +179,8 @@ def test_phase39_external_candidate_label_clears_phase38_rerun_gate(tmp_path):
     assert row["provenance_class"] == "candidate_independent_proxy"
     assert row["registry_entry_present"] is True
     assert row["allowed_for_phase38_rerun"] is True
-    assert row["train_positive_count"] == 4
-    assert row["eval_positive_count"] == 2
+    assert row["train_positive_count"] == 3
+    assert row["eval_positive_count"] == 1
 
 
 def test_phase39_unclassified_external_label_needs_review(tmp_path):
