@@ -1,0 +1,189 @@
+import csv
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
+
+
+def _write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+    return path
+
+
+def _phase2_dir(tmp_path: Path, rows: list[dict[str, object]] | None = None) -> Path:
+    phase2_dir = tmp_path / "phase2"
+    if rows is None:
+        rows = [
+            {
+                "block_id": f"b{index:03d}",
+                "current_farmland_label": 1 if index % 2 == 0 else 0,
+                "farmland_or_orchard_label": 1 if index % 3 == 0 else 0,
+                "low_slope_farmland_label": 1 if index % 4 == 0 else 0,
+                "source_bsm": f"s{index:03d}",
+                "source_category": "farmland" if index % 2 == 0 else "other",
+                "source_dlbm": "0101" if index % 2 == 0 else "0301",
+                "source_dlmc": "paddy" if index % 2 == 0 else "forest",
+                "split": "train" if index < 8 else "test",
+            }
+            for index in range(12)
+        ]
+    return _write_csv(
+        phase2_dir / "block_geofm_features.csv",
+        rows,
+        [
+            "block_id",
+            "current_farmland_label",
+            "farmland_or_orchard_label",
+            "low_slope_farmland_label",
+            "source_bsm",
+            "source_category",
+            "source_dlbm",
+            "source_dlmc",
+            "split",
+        ],
+    ).parent
+
+
+def _external_labels(path: Path, values: list[int]) -> Path:
+    rows = [
+        {"block_id": f"b{index:03d}", "irrigation_proxy_label": value}
+        for index, value in enumerate(values)
+    ]
+    return _write_csv(path, rows, ["block_id", "irrigation_proxy_label"])
+
+
+def _registry(path: Path, provenance_class: str) -> Path:
+    rows = [
+        {
+            "label_column": "irrigation_proxy_label",
+            "source_path": "external_irrigation.csv",
+            "provenance_class": provenance_class,
+            "description": "Synthetic non-DLTB irrigation proxy label",
+            "external_source_name": "synthetic_irrigation_fixture",
+            "independence_rationale": "not derived from DLTB, slope, or explicit planning features",
+            "allowed_for_phase38_rerun": "true",
+        }
+    ]
+    return _write_csv(
+        path,
+        rows,
+        [
+            "label_column",
+            "source_path",
+            "provenance_class",
+            "description",
+            "external_source_name",
+            "independence_rationale",
+            "allowed_for_phase38_rerun",
+        ],
+    )
+
+
+def test_phase39_current_labels_remain_missing_independent_inputs(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        label_columns="current_farmland_label,farmland_or_orchard_label,low_slope_farmland_label",
+    )
+
+    assert analysis["phase"] == "phase39_independent_label_audit"
+    assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_missing"
+    assert analysis["label_readiness"]["current_farmland_label"]["provenance_class"] == "explicit_label_leakage_risk"
+    assert analysis["label_readiness"]["current_farmland_label"]["allowed_for_phase38_rerun"] is False
+    assert "does not train PPO" in analysis["claim_boundary"]
+
+
+def test_phase39_source_fields_are_leakage_risks(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        label_columns=["source_category", "source_dlbm", "source_dlmc"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_missing"
+    assert analysis["label_readiness"]["source_category"]["provenance_class"] == "source_field_leakage_risk"
+    assert analysis["label_readiness"]["source_dlbm"]["allowed_for_phase38_rerun"] is False
+
+
+def test_phase39_external_candidate_label_clears_phase38_rerun_gate(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    phase2_dir = _phase2_dir(tmp_path)
+    external = _external_labels(
+        tmp_path / "external_irrigation.csv",
+        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    )
+    registry = _registry(tmp_path / "registry.csv", "candidate_independent_proxy")
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=phase2_dir,
+        external_label_csvs=[external],
+        label_registry=registry,
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "independent_labels_ready_for_phase38_rerun"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["provenance_class"] == "candidate_independent_proxy"
+    assert row["registry_entry_present"] is True
+    assert row["allowed_for_phase38_rerun"] is True
+    assert row["train_positive_count"] == 4
+    assert row["eval_positive_count"] == 2
+
+
+def test_phase39_unclassified_external_label_needs_review(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        external_label_csvs=[
+            _external_labels(
+                tmp_path / "external_irrigation.csv",
+                [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+            )
+        ],
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "candidate_proxy_labels_need_review"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["provenance_class"] == "unclassified"
+    assert row["allowed_for_phase38_rerun"] is False
+
+
+def test_phase39_single_class_candidate_is_insufficient(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    analysis = build_phase39_independent_label_audit(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        external_label_csvs=[_external_labels(tmp_path / "external_irrigation.csv", [1] * 12)],
+        label_registry=_registry(tmp_path / "registry.csv", "candidate_independent_proxy"),
+        label_columns=["irrigation_proxy_label"],
+    )
+
+    assert analysis["phase39_independent_label_audit_status"] == "independent_label_inputs_insufficient"
+    row = analysis["label_readiness"]["irrigation_proxy_label"]
+    assert row["usable"] is False
+    assert row["allowed_for_phase38_rerun"] is False
+    assert "both positive and negative labels" in row["decision_reason"]
