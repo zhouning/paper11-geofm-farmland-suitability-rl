@@ -263,6 +263,53 @@ def test_phase39_unclassified_external_label_needs_review(tmp_path):
     assert row["allowed_for_phase38_rerun"] is False
 
 
+def test_phase39_rejects_blank_or_missing_registry_label_column(tmp_path):
+    from paper11_geofm.phase39_independent_label_audit import (
+        build_phase39_independent_label_audit,
+    )
+
+    fieldnames = [
+        "label_column",
+        "source_path",
+        "provenance_class",
+        "description",
+        "external_source_name",
+        "independence_rationale",
+        "allowed_for_phase38_rerun",
+    ]
+    base_row = {
+        "label_column": "",
+        "source_path": "external_irrigation.csv",
+        "provenance_class": "candidate_independent_proxy",
+        "description": "Synthetic non-DLTB irrigation proxy label",
+        "external_source_name": "synthetic_irrigation_fixture",
+        "independence_rationale": "not derived from DLTB, slope, or explicit planning features",
+        "allowed_for_phase38_rerun": "true",
+    }
+    registries = [
+        _write_csv(tmp_path / "blank_label_registry.csv", [base_row], fieldnames),
+        _write_csv(
+            tmp_path / "missing_label_registry.csv",
+            [base_row],
+            [field for field in fieldnames if field != "label_column"],
+        ),
+    ]
+
+    for registry in registries:
+        try:
+            build_phase39_independent_label_audit(
+                phase2_output_dir=_phase2_dir(tmp_path),
+                label_registry=registry,
+                label_columns=["current_farmland_label"],
+            )
+        except ValueError as exc:
+            message = str(exc)
+            assert "label_column" in message
+            assert "blank or missing" in message
+        else:
+            raise AssertionError("blank or missing registry label_column should raise")
+
+
 def test_phase39_single_class_candidate_is_insufficient(tmp_path):
     from paper11_geofm.phase39_independent_label_audit import (
         build_phase39_independent_label_audit,

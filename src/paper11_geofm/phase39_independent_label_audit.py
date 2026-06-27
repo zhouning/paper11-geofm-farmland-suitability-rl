@@ -220,10 +220,13 @@ def _read_label_registry(
     registry_path = Path(label_registry)
     _, registry_rows = _read_csv_table(registry_path, "Phase 39 label registry CSV")
     entries: dict[str, dict[str, str]] = {}
-    for row in registry_rows:
+    for row_index, row in enumerate(registry_rows, start=2):
         label_column = str(row.get("label_column", "")).strip()
         if not label_column:
-            continue
+            raise ValueError(
+                "Phase 39 label registry row "
+                f"{row_index} has blank or missing label_column: {registry_path}"
+            )
         provenance_class = str(row.get("provenance_class", "")).strip()
         if provenance_class not in VALID_PHASE39_PROVENANCE_CLASSES:
             raise ValueError(
