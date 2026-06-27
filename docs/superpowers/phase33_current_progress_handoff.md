@@ -136,7 +136,38 @@ Paper11 smoke check passed.
 Sample years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
 Embedding shape: (67, 70, 64)
 ```
+## Phase 38 Window-Close Save State
 
+Phase 38 has been merged back to `main` locally. The temporary
+`phase38-proxy-rebuild` worktree was removed and the local feature branch was
+deleted after the fast-forward merge.
+
+Latest Phase 38 commits on `main` before this handoff save:
+
+```text
+96dc762 docs: record Phase 38 proxy rebuild result
+25db7cf fix: cap Phase 38 JSON score preview
+d07810c feat: add Phase 38 proxy rebuild runner
+ce2dce3 fix: harden Phase 38 artifact writer
+f56ef0f feat: write Phase 38 proxy rebuild artifacts
+```
+
+Post-merge verification on `main`:
+
+```text
+python -m pytest tests\test_phase38_proxy_rebuild.py tests\test_phase36_suitability_proxy_validation.py -q --basetemp=.pytest_tmp_phase38_main_merge -p no:cacheprovider
+15 passed, 84 warnings
+
+python scripts\smoke_check.py
+Paper11 smoke check passed.
+Sample years: [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024]
+Embedding shape: (67, 70, 64)
+```
+
+Current Phase 38 real-run status is `proxy_rebuild_diagnostic_only` with
+`64984` block rows, `99` model rows, and `6433416` rebuilt proxy score rows.
+All current real labels remain `explicit_label_leakage_risk`, so B2/B3
+suitability reward remains blocked.
 ## What Was Run This Window
 
 The earlier Phase 33 state only had a positive local pilot:
