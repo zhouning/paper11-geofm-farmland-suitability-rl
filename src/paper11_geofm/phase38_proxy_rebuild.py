@@ -58,7 +58,6 @@ GEOFM_CANDIDATE_FAMILIES = {
 }
 
 CONTROL_FAMILIES = {
-    "explicit_only",
     "explicit_plus_random_geofm",
     "explicit_plus_shuffled_geofm",
 }
@@ -500,6 +499,7 @@ def _top_diagnostics(
         for index in indexes
     ]
 
+
 def _positive_probabilities(model, matrix: np.ndarray) -> np.ndarray:
     probabilities = model.predict_proba(matrix)
     if probabilities.ndim == 1:
@@ -541,19 +541,19 @@ def _phase38_status(
         explicit = rows.get("explicit_only")
         if explicit is None:
             continue
+        missing_controls = [
+            family for family in CONTROL_FAMILIES if family not in rows
+        ]
+        if missing_controls:
+            continue
         explicit_auc = _metric(explicit, "roc_auc")
         explicit_ap = _metric(explicit, "average_precision")
         control_auc = max(
-            [_metric(rows[family], "roc_auc") for family in CONTROL_FAMILIES if family in rows],
-            default=explicit_auc,
+            _metric(rows[family], "roc_auc") for family in CONTROL_FAMILIES
         )
         control_ap = max(
-            [
-                _metric(rows[family], "average_precision")
-                for family in CONTROL_FAMILIES
-                if family in rows
-            ],
-            default=explicit_ap,
+            _metric(rows[family], "average_precision")
+            for family in CONTROL_FAMILIES
         )
         for family_id in GEOFM_CANDIDATE_FAMILIES:
             candidate = rows.get(family_id)
@@ -716,7 +716,7 @@ def _classifications_for_labels(
         elif label in LEAKAGE_RISK_LABELS:
             classifications[label] = "explicit_label_leakage_risk"
         else:
-            classifications[label] = "candidate_independent_proxy"
+            classifications[label] = "explicit_label_leakage_risk"
     return classifications
 
 

@@ -229,6 +229,44 @@ def test_phase38_classifies_label_boundaries_and_blocks_reward_unlock(tmp_path):
     assert "does not run PPO" in analysis["claim_boundary"]
 
 
+def test_phase38_requires_random_and_shuffled_controls_for_support(tmp_path):
+    from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
+
+    paths = _fixture_inputs(tmp_path)
+    analysis = build_phase38_proxy_rebuild(
+        phase2_output_dir=paths["phase2_dir"],
+        normalized_controls_dir=paths["normalized_dir"],
+        label_columns=["independent_proxy_label"],
+        label_classifications="independent_proxy_label:candidate_independent_proxy",
+        model_families=["logistic_elastic_net"],
+        min_auc_delta=0.01,
+        min_ap_delta=0.01,
+    )
+
+    assert analysis["phase38_proxy_rebuild_status"] == "proxy_rebuild_diagnostic_only"
+
+
+def test_phase38_unclassified_custom_label_cannot_unlock_support(tmp_path):
+    from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
+
+    paths = _fixture_inputs(tmp_path)
+    analysis = build_phase38_proxy_rebuild(
+        phase2_output_dir=paths["phase2_dir"],
+        phase8_output_dir=paths["phase8_dir"],
+        normalized_controls_dir=paths["normalized_dir"],
+        label_columns=["independent_proxy_label"],
+        model_families=["logistic_elastic_net"],
+        min_auc_delta=0.01,
+        min_ap_delta=0.01,
+    )
+
+    assert analysis["phase38_proxy_rebuild_status"] == "proxy_rebuild_diagnostic_only"
+    assert (
+        analysis["label_summaries"]["independent_proxy_label"]["label_classification"]
+        == "explicit_label_leakage_risk"
+    )
+
+
 def test_phase38_leakage_only_result_stays_diagnostic(tmp_path):
     from paper11_geofm.phase38_proxy_rebuild import build_phase38_proxy_rebuild
 
