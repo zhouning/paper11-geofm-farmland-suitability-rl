@@ -470,7 +470,9 @@ def test_phase38_writer_outputs_csv_json_and_markdown(tmp_path):
         score_reader = csv.DictReader(handle)
         score_rows = list(score_reader)
     assert score_reader.fieldnames == list(PHASE38_SCORE_FIELDNAMES)
+    full_score_count = len(analysis["rebuilt_proxy_score_rows"])
     assert score_rows
+    assert len(score_rows) == full_score_count
     assert score_rows[0]["rebuilt_proxy_score"] != ""
     float(score_rows[0]["rebuilt_proxy_score"])
 
@@ -481,6 +483,12 @@ def test_phase38_writer_outputs_csv_json_and_markdown(tmp_path):
     assert saved["phase"] == "phase38_proxy_rebuild"
     assert saved["nonfinite_metric"] is None
     assert saved["nested_nonfinite_metric"]["value"] is None
+    assert full_score_count > 20
+    assert saved["row_counts"]["rebuilt_proxy_score_rows"] == full_score_count
+    assert len(saved["rebuilt_proxy_score_rows"]) == 20
+    assert saved["rebuilt_proxy_score_rows_truncated"] is True
+    assert saved["rebuilt_proxy_score_rows_preview_limit"] == 20
+    assert saved["rebuilt_proxy_score_rows_artifact"] == "phase38_rebuilt_proxy_scores.csv"
     markdown = artifacts["diagnosis_md"].read_text(encoding="utf-8")
     assert "Phase 38 Proxy-Rebuild" in markdown
     assert "proxy_rebuild_supported_for_bounded_b2_b3_smoke" in markdown

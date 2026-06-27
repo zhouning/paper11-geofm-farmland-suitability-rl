@@ -113,6 +113,8 @@ PHASE38_SCORE_FIELDNAMES = (
     "rebuilt_proxy_score",
 )
 
+PHASE38_JSON_SCORE_ROW_PREVIEW_LIMIT = 20
+
 
 def build_phase38_proxy_rebuild(
     phase2_output_dir: Path | str,
@@ -248,12 +250,41 @@ def write_phase38_proxy_rebuild_artifacts(
         "Phase 38 rebuilt proxy score rows",
     )
     artifacts["diagnosis_json"].write_text(
-        json.dumps(_json_ready(analysis), indent=2, sort_keys=True, allow_nan=False),
+        json.dumps(
+            _json_ready(
+                _phase38_json_payload(
+                    analysis,
+                    artifacts["rebuilt_proxy_scores_csv"],
+                )
+            ),
+            indent=2,
+            sort_keys=True,
+            allow_nan=False,
+        ),
         encoding="utf-8",
     )
     artifacts["diagnosis_md"].write_text(_phase38_markdown(analysis), encoding="utf-8")
     return artifacts
 
+
+def _phase38_json_payload(
+    analysis: Mapping[str, object],
+    rebuilt_proxy_scores_csv: Path,
+) -> dict[str, object]:
+    payload = dict(analysis)
+    score_rows = analysis.get("rebuilt_proxy_score_rows")
+    if isinstance(score_rows, list):
+        payload["rebuilt_proxy_score_rows"] = score_rows[
+            :PHASE38_JSON_SCORE_ROW_PREVIEW_LIMIT
+        ]
+        payload["rebuilt_proxy_score_rows_preview_limit"] = (
+            PHASE38_JSON_SCORE_ROW_PREVIEW_LIMIT
+        )
+        payload["rebuilt_proxy_score_rows_truncated"] = (
+            len(score_rows) > PHASE38_JSON_SCORE_ROW_PREVIEW_LIMIT
+        )
+        payload["rebuilt_proxy_score_rows_artifact"] = rebuilt_proxy_scores_csv.name
+    return payload
 
 def _write_csv_mapping_rows(
     path: Path,
