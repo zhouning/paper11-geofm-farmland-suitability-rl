@@ -811,3 +811,28 @@ run. B2/B3 remains blocked until a real independent label registry passes Phase
 
 Phase 41 does not run PPO, alter rewards, enable B2/B3, prove suitability, or
 support final planning-performance claims.
+
+## Phase 42 Local Label Source Audit
+
+Phase 42 searched the local Paper11 workspace and relevant `D:\test` data
+folders for candidate external labels after Phase 41. The search found DLTB and
+slope-derived sources, Paper10 value labels, and Paper58 independent change
+labels, but no external Paper11 Bishan suitability label that can pass Phase 40.
+
+A diagnostic registry with `current_farmland_label`,
+`farmland_or_orchard_label`, and `low_slope_farmland_label` was created under
+ignored Phase 42 outputs and marked as `dltb_derived`/`slope_derived` with
+`leakage_risk` independence.
+
+Diagnostic registry results:
+
+```text
+Phase 40: independent_label_gate_diagnostic_only
+Phase 41: phase41_independent_label_inputs_missing
+```
+
+Decision: local DLTB/slope weak labels are not missing independent labels; they
+remain diagnostic-only. Paper10 value labels and Paper58 change labels are not
+Paper11 Bishan agronomic suitability labels. B2/B3 remains blocked until an
+external soil, irrigation, yield/productivity, high-standard-farmland, field
+survey, or policy-outcome label passes Phase 40 and then Phase 41.

@@ -566,7 +566,13 @@ baseline, shuffled-control, random-control, fold-stability, and calibration
 checks. The current real no-registry run reports
 `phase41_independent_label_inputs_missing`, so no calibrated prior is produced
 and B2/B3 remains blocked.
-performance experiment.
+
+Phase 42 then audits local candidate label sources. The DLTB/slope labels
+can be registered only as diagnostic leakage-risk labels: Phase 40 reports
+`independent_label_gate_diagnostic_only`, and Phase 41 still reports
+`phase41_independent_label_inputs_missing`. No local external soil,
+irrigation, yield, productivity, or high-standard-farmland label was found
+that can pass Phase 40.
 
 
 ## Key Entry Points
@@ -595,6 +601,7 @@ performance experiment.
 - Phase 39 independent-label audit: `paper/phase28_results/13_phase39_independent_label_audit.md`
 - Phase 40 independent-label gate: `paper/phase28_results/14_phase40_independent_label_gate.md`
 - Phase 41 GeoFM suitability-prior gate: `paper/phase28_results/15_phase41_geofm_suitability_prior.md`
+- Phase 42 local label-source audit: `paper/phase28_results/16_phase42_local_label_source_audit.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`

@@ -51,6 +51,9 @@ base-reward protocol.
 - `15_phase41_geofm_suitability_prior.md`: independent-label-calibrated GeoFM
   suitability-prior gate that blocks low-dimensional prior export unless GeoFM
   clears baseline, control, fold-stability, and calibration checks.
+- `16_phase42_local_label_source_audit.md`: local candidate-label source
+  audit showing that available DLTB/slope weak labels remain diagnostic-only
+  and that no Phase 40-passing independent label is present locally.
 
 ## Reproduction Link
 
@@ -324,6 +327,13 @@ Expected local Phase 41 artifacts:
 The current Phase 41 status is `phase41_independent_label_inputs_missing`.
 Phase 41 therefore does not produce a calibrated GeoFM suitability prior for
 the real Bishan run, and B2/B3 remains blocked.
+
+Phase 42 audits local candidate label sources after Phase 41. It records that
+available DLTB/slope-derived labels are diagnostic-only and that unrelated
+Paper10/Paper58 labels cannot be registered as Paper11 Bishan suitability
+labels. A diagnostic registry check returns Phase 40
+`independent_label_gate_diagnostic_only` and Phase 41
+`phase41_independent_label_inputs_missing`.
 
 ## Claim Boundary
 

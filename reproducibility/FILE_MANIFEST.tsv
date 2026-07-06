@@ -283,3 +283,4 @@ src/paper11_geofm/phase41_geofm_suitability_prior.py	source	Phase 41 independent
 experiments/phase41_geofm_suitability_prior/run_phase41_geofm_suitability_prior.py	experiment_runner	Phase 41 GeoFM suitability prior gate CLI runner.
 tests/test_phase41_geofm_suitability_prior.py	test	Tests for Phase 41 prior support, control failure, artifacts, and CLI behavior.
 paper/phase28_results/15_phase41_geofm_suitability_prior.md	results	Reviewer-facing interpretation of the Phase 41 real no-registry prior gate result.
+paper/phase28_results/16_phase42_local_label_source_audit.md	results	Reviewer-facing local label-source audit showing no Phase 40-passing independent suitability label is available locally.
