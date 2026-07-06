@@ -890,3 +890,21 @@ paper/submission/final/README.md
 Do not treat this DOCX as a positive GeoFM-performance manuscript. It is the
 formal conclusion-type file for the current bounded negative/evidence-gated
 route.
+## Phase 45 Cover Letter And Declarations
+
+Phase 45 adds generated delivery files for the non-manuscript submission text:
+
+```text
+paper/submission/final/Paper11_cover_letter_and_declarations.md
+paper/submission/final/Paper11_cover_letter_and_declarations.docx
+```
+
+These files provide a bounded negative/evidence-gated cover letter,
+competing-interest declaration draft, funding and CRediT placeholders,
+ethics statement, data/code availability text, AI-assisted tools statement, and
+upload claim boundary. They still require author-supplied metadata before final
+journal upload.
+
+The Phase 45 DOCX was generated with Pandoc and checked by reading the internal
+`word/document.xml` content for the cover letter title, declaration section,
+Data Availability, and claim-boundary wording.
