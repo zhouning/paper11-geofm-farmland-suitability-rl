@@ -18,8 +18,8 @@ reviewer-code package and the manuscript is evidence-gated.
 - `04_formal_conclusion_manuscript.md`: current Phase 42-synchronized formal
   conclusion manuscript source file for a bounded negative/evidence-gated
   submission route.
-- `final/`: generated delivery files, including the DOCX export of the formal
-  conclusion manuscript.
+- `final/`: generated delivery files, including DOCX exports, editable source
+  copies, SHA256 checksums, and the Phase 46 submission bundle zip.
 
 ## Current Status
 
@@ -31,9 +31,10 @@ registry rows. Phase 41 reports `phase41_independent_label_inputs_missing`, and
 Phase 42 finds no local Phase 40-passing external suitability label.
 
 Do not submit a main research article claiming model superiority. The current
-formal manuscript source file is `04_formal_conclusion_manuscript.md`, and the
+formal manuscript source file is `04_formal_conclusion_manuscript.md`, the
 current generated DOCX file is
-`final/Paper11_formal_conclusion_manuscript.docx`. The source file frames
+`final/Paper11_formal_conclusion_manuscript.docx`, and the current transfer
+archive is `final/Paper11_phase46_submission_bundle.zip`. The package frames
 Paper11 as a bounded negative-results/evidence-gated paper with explicit
 representation-control, suitability-gate, prior-gate, and local label-source
 audit evidence. If the target is a positive IJAEOG-style research article, the

@@ -289,3 +289,7 @@ paper/submission/final/README.md	submission	Index for generated Phase 44 formal 
 paper/submission/final/Paper11_formal_conclusion_manuscript.docx	submission	Pandoc-generated DOCX export of the Phase 44 formal conclusion manuscript.
 paper/submission/final/Paper11_cover_letter_and_declarations.md	submission	Editable Phase 45 cover letter, declarations, data/code availability, AI-assisted tools, and claim-boundary text.
 paper/submission/final/Paper11_cover_letter_and_declarations.docx	submission	Pandoc-generated DOCX export of the Phase 45 cover letter and declarations file.
+paper/submission/final/Paper11_formal_conclusion_manuscript.md	submission	Editable copy of the Phase 43 formal conclusion manuscript source included in the Phase 46 bundle.
+paper/submission/final/Paper11_phase46_submission_contents_sha256.txt	submission	SHA256 checksum list for files included in the Phase 46 submission bundle.
+paper/submission/final/Paper11_phase46_submission_bundle.zip	submission	Phase 46 transfer archive containing formal manuscript, cover letter/declarations, editable sources, and content checksums.
+paper/submission/final/Paper11_phase46_submission_bundle_sha256.txt	submission	SHA256 checksum for the Phase 46 submission bundle zip.

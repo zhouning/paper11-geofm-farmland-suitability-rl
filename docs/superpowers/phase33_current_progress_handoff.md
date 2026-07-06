@@ -908,3 +908,23 @@ journal upload.
 The Phase 45 DOCX was generated with Pandoc and checked by reading the internal
 `word/document.xml` content for the cover letter title, declaration section,
 Data Availability, and claim-boundary wording.
+## Phase 46 Submission Bundle
+
+Phase 46 packages the formal conclusion-type submission files into a transfer
+archive with checksums:
+
+```text
+paper/submission/final/Paper11_phase46_submission_bundle.zip
+paper/submission/final/Paper11_phase46_submission_contents_sha256.txt
+paper/submission/final/Paper11_phase46_submission_bundle_sha256.txt
+```
+
+The bundle contains the formal manuscript DOCX, editable manuscript source copy,
+cover-letter/declarations DOCX, editable cover-letter/declarations source, final
+README, and content-checksum file. This remains a bounded negative/evidence-
+gated submission package, not a positive GeoFM-performance submission.
+
+Before final journal upload, authors still need to supply author metadata,
+funding, CRediT roles, final reference formatting, final external-DLTB access
+wording, figure files if required, and a release tag, immutable commit hash, or
+archive DOI.
