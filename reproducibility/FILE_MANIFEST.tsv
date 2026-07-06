@@ -272,6 +272,7 @@ tests/test_phase37_decision_alignment.py	verification	Pytest checks for Phase 37
 tests/test_phase38_proxy_rebuild.py	verification	Pytest checks for Phase 38 label boundaries, model evaluation, artifact writing, JSON previewing, and CLI behavior.
 tests/test_phase39_independent_label_audit.py	verification	Pytest checks for Phase 39 label inventory, readiness classification, registry template writing, artifacts, and CLI behavior.
 docs/superpowers/specs/2026-07-06-phase40-independent-label-gate-design.md	design	Phase 40 design for a hard independent-label go/no-go gate before Phase 38 or B2/B3.
+docs/superpowers/specs/2026-07-06-phase41-geofm-suitability-prior-design.md	design	Phase 41 design for independent-label-calibrated GeoFM suitability prior gating before any B2/B3 reward experiments.
 docs/superpowers/plans/2026-07-06-phase40-independent-label-gate.md	implementation_plan	Phase 40 implementation plan.
 src/paper11_geofm/phase40_independent_label_gate.py	source	Phase 40 independent-label gate module.
 experiments/phase40_independent_label_gate/run_phase40_independent_label_gate.py	experiment_runner	Phase 40 independent-label gate CLI runner.
