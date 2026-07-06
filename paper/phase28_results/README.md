@@ -45,6 +45,9 @@ base-reward protocol.
 - `13_phase39_independent_label_audit.md`: independent-label inventory and
   readiness audit over the Phase 2 real feature table before any Phase 38 rerun
   with non-leakage labels.
+- `14_phase40_independent_label_gate.md`: hard go/no-go independent-label gate
+  that blocks Phase 38 rerun, B2/B3 reward integration, and positive
+  suitability claims unless an external non-leakage label registry passes.
 
 ## Reproduction Link
 
@@ -281,6 +284,23 @@ registry rows. The audited default labels are `current_farmland_label`,
 Phase 39 does not run PPO, alter rewards, enable B2/B3, prove agronomic
 validity, or support planning-performance claims. Phase 38 cannot yet be rerun
 with a stronger non-leakage label and B2/B3 remains blocked.
+
+The Phase 40 independent-label gate is the hard decision point after Phase 39.
+Run it from the repository root after the Phase 2 real feature table exists:
+
+```powershell
+python experiments\phase40_independent_label_gate\run_phase40_independent_label_gate.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase40_independent_label_gate\outputs\real_bishan_no_registry
+```
+
+Expected local Phase 40 artifacts:
+
+- `phase40_label_gate_summary.csv`
+- `phase40_independent_label_gate.json`
+- `phase40_independent_label_gate.md`
+
+The current Phase 40 status is `independent_label_inputs_missing`. This is a
+hard stop for suitability reward, Phase 38 rerun, and B2/B3 until an external
+independent label registry is supplied and passes the gate.
 
 ## Claim Boundary
 
