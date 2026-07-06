@@ -19,7 +19,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `paper/phase26_results/`: interpretation of the current Phase 26 empirical package and the next diagnostic matrix.
 - `paper/phase27_results/`: interpretation of the Phase 27 B0/B1 budget and tile-seed stability diagnosis.
 - `paper/phase28_results/`: interpretation of the Phase 28 B0/B1/D2/D3/D4 representation-control diagnosis.
-- `paper/submission/`: IJAEOG submission-readiness audit and guarded submission text drafts.
+- `paper/submission/`: IJAEOG submission-readiness audit, guarded submission text drafts, and the Phase 42 formal conclusion manuscript.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
 - `experiments/phase1_bishan_baseline/`: executable Phase 1 Bishan GeoFM representation baseline.
@@ -576,6 +576,8 @@ that can pass Phase 40.
 
 
 ## Key Entry Points
+
+- Formal conclusion manuscript: `paper/submission/04_formal_conclusion_manuscript.md`
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
 - System design: `paper/design/02_system_design.md`

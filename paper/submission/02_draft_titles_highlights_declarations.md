@@ -1,131 +1,108 @@
 # Draft Submission Text
 
-Use this file as guarded starting text. Replace bracketed placeholders only
-after the corresponding evidence or author information exists.
+Use this file as guarded starting text for the Phase 42-synchronized conclusion
+submission route. It supports a bounded negative/evidence-gated manuscript, not
+a positive GeoFM-superiority, B2/B3, suitability-reward, or transfer claim.
 
 ## Title Options
 
 Recommended:
 
-1. GeoFM-enhanced farmland suitability representation for reinforcement-learning-based spatial layout optimization
+1. Evidence-gated rejection of unsupported GeoFM superiority in reinforcement-learning farmland layout optimization
 
-More remote-sensing focused:
+More method focused:
 
-2. Geospatial foundation-model embeddings for farmland suitability representation in spatial layout optimization
+2. Evidence gates for testing GeoFM representations in farmland layout optimization
 
-More planning focused:
+More negative-results focused:
 
-3. Latent remote-sensing suitability proxies for block-level farmland consolidation planning
+3. Representation controls reject unsupported raw GeoFM gains in farmland layout reinforcement learning
 
-Do not use a performance-led title until the experiments support it.
+Do not use a performance-led title unless future independent-label and B2/B3
+experiments overturn the current evidence.
 
 ## Keywords
 
 GeoFM; AlphaEarth embeddings; farmland spatial optimization; reinforcement
-learning; suitability proxy; tiled planning; land-use planning
+learning; suitability proxy; representation control; independent-label gate;
+land-use planning
 
 ## Highlights
 
 Current guarded version:
 
-- A GeoFM-enhanced pipeline links satellite embeddings to farmland planning units.
-- Real Bishan DLTB polygons are converted into reproducible block-level inputs.
-- Tiled environment contracts make large real planning instances tractable.
-- A deterministic base planning reward supports bounded B0/B1 pilot protocols.
-- Multi-seed B0/B1 learned-policy pilots execute with evidence-gated claims.
-- A padded variable-size policy contract enables a bounded held-out Bishan tile learned-policy pilot for B0/B1 under a deterministic planning reward.
-- A main empirical analysis package reports that current B1 learned-policy results do not stably outperform B0 across held-out Bishan tiles and random seeds.
-- A stability diagnosis finds that budget increase alone does not resolve the current negative B1 evidence.
-- Claim-readiness artifacts separate pilot evidence from unsupported claims.
-- An independent-label gate now blocks suitability-reward experiments unless a non-leakage external label source is registered and passes readiness checks.
-
-Before submission, revise the last bullets after ablation,
-suitability-reward, and transfer evidence exists. Do not convert the current
-Phase 26/27 result into a positive performance claim.
+- A reproducible workflow links AlphaEarth embeddings to real Bishan DLTB planning blocks.
+- Tiled and padded policy interfaces make large real planning instances testable.
+- Multi-tile B0/B1 learned-policy evidence does not support raw GeoFM superiority.
+- Representation controls show that compressed GeoFM controls can exceed raw B1.
+- Suitability-reward work is blocked until an independent non-leakage label gate passes.
+- A local Phase 42 label-source audit finds no usable external suitability label for the real Bishan run.
+- The evidence supports a bounded negative conclusion rather than a positive GeoFM-superiority claim.
 
 ## Abstract Scaffold
 
-Farmland spatial layout optimization requires information about both spatial
-configuration and environmental suitability, but explicit soil, irrigation, and
-productivity variables are often unavailable at planning scale. This study
-examines whether geospatial foundation-model (GeoFM) embeddings can provide
-latent remote-sensing proxies for farmland suitability in a block-level
-reinforcement-learning planning workflow.
+Farmland spatial layout optimization requires decisions over many heterogeneous
+planning units, but direct variables for soil quality, irrigation, productivity,
+and long-term suitability are often unavailable at operational planning scale.
+This study tests whether geospatial foundation-model (GeoFM) embeddings provide
+a reliable latent representation for reinforcement-learning farmland layout
+optimization when evaluated with representation controls and leakage-aware
+suitability gates.
 
-We construct a reproducible Paper11 pipeline that aggregates AlphaEarth
-embeddings and explicit planning features to real Bishan DLTB polygons, defines
-B0/B1/B2/B3 representation contracts, and builds tiled environment interfaces
-for large real planning instances. The current repository implements the
-feature pipeline, weak-label diagnostics, real-data tiling, MaskablePPO API
-readiness checks, and a deterministic base planning reward for explicit-feature
-and GeoFM-enhanced base-reward variants. It also runs a bounded same-tile B0/B1
-training pilot that records cross-tile learned-policy evaluation as blocked by
-the current tile-size-specific flat observation design. A subsequent per-block
-scorer pilot trains on one tile and evaluates on a distinct tile, demonstrating
-a variable-block-count interface without claiming final policy performance.
-The current multi-tile, multi-seed scorer pilot broadens this interface check
-across distinct evaluation tiles and seeds while remaining pilot evidence only.
-A multi-seed same-tile B0/B1 MaskablePPO pilot reports a positive B1-B0
-learned-policy mean reward delta under a short training budget, but this remains
-preliminary until longer training, ablations, suitability-reward validation, and
-held-out-region transfer tests are complete. The current IJAEOG evidence
-package summarizes these pilot outputs and remaining gaps without creating new
-policy-performance, transfer, or suitability-reward evidence. A padded
-variable-size held-out Bishan tile B0/B1 learned-policy pilot further shows that
-the learned policy can be trained on one Bishan tile and evaluated on a distinct
-held-out Bishan tile under the deterministic base planning reward, while still
-excluding suitability reward, B2/B3, cross-region transfer, and submission-level
-performance claims. The Phase 26 analysis package converts Phase 25 outputs
-into main empirical tables. The current macOS result sets do not support a
-positive B1-over-B0 learned-policy claim: the 1024-step mean delta is
-`-0.4329022862`, and the 4096-step mean delta is `-0.1318712688` with only
-`3 / 9` positive tile-seed pairs. The Phase 27 stability diagnosis reports
-`budget_not_explanatory`: the higher budget improves the mean delta by
-`0.3010310174`, but the positive tile-seed count falls by `1` and three
-tile-seed pairs flip from positive to non-positive.
+The workflow aggregates AlphaEarth embeddings and explicit planning features to
+`64,984` real Bishan DLTB land-use blocks, constructs tiled and padded planning
+interfaces, and evaluates GeoFM-enhanced B1 against explicit-feature B0 and
+representation controls under a deterministic base planning reward. The current
+held-out B0/B1 result does not support raw GeoFM superiority: at 4096 training
+steps, the B1-B0 mean reward delta is `-0.1318712688`, with only `3 / 9`
+held-out tile-seed pairs favoring B1. Phase 28 reports
+`compression_matches_raw`, and PCA-compressed controls exceed raw B1 in the
+4096-step run. Phase 33 further reports `budget_not_explanatory` for bounded
+5120-step matched normalized-B1 checks.
 
-Subsequent representation-control and suitability diagnostics keep the claim
-boundary negative. Phase 28 reports `compression_matches_raw`; Phase 33 reports
-`budget_not_explanatory`; Phase 36 reports `proxy_signal_not_supported`; Phase
-37 reports `decision_alignment_not_supported`; Phase 38 remains
-`proxy_rebuild_diagnostic_only`; and Phase 40 reports
-`independent_label_inputs_missing` in the current no-registry run. The
-suitability-reward route is not merely incomplete; it is conditionally stopped
-until Phase 40 passes with an independent label registry.
+The suitability branch is also stopped by evidence gates. Phase 36 reports
+`proxy_signal_not_supported`; Phase 38 remains
+`proxy_rebuild_diagnostic_only`; Phase 40 reports
+`independent_label_inputs_missing` in the current no-registry run; and Phase 41
+reports `phase41_independent_label_inputs_missing` for the calibrated GeoFM
+suitability-prior route. Phase 42 audits local candidate label sources and
+finds no local external soil, irrigation, yield, productivity,
+high-standard-farmland, field-survey, or policy-outcome label that can pass
+Phase 40.
 
-[Evidence needed: an independent non-leakage label registry that passes Phase 40,
-a leakage-aware Phase 38 proxy-rebuild pass, B2/B3 training and evaluation
-results, cross-region transfer results, and final spatial diagnostics.]
-
-The final manuscript should conclude only from completed comparisons. Until
-those results exist, the contribution should be framed as a reproducible
-GeoFM-enhanced representation and experiment platform, not as evidence that a
-learned policy improves farmland planning.
+The manuscript should therefore conclude that raw GeoFM state injection and the
+current suitability-reward route are unsupported under the completed Paper11
+evidence gates. It should not claim that GeoFM universally fails, nor that
+GeoFM improves learned farmland planning decisions in the current evidence.
 
 ## Cover Letter Scaffold
 
 Dear Editor,
 
-We submit the manuscript entitled "[final title]" for consideration in
-International Journal of Applied Earth Observation and Geoinformation. The
-paper addresses the need for environmental suitability information in farmland
-spatial layout optimization, where direct soil, irrigation, and productivity
-data are often unavailable.
+We submit the manuscript entitled "Evidence-gated rejection of unsupported GeoFM
+superiority in reinforcement-learning farmland layout optimization" for
+consideration in International Journal of Applied Earth Observation and
+Geoinformation. The paper addresses a practical question for Earth-observation
+and land-use planning research: whether satellite foundation-model embeddings
+can be treated as decision-ready representations for farmland layout
+optimization.
 
-The manuscript introduces a GeoFM-enhanced block-level planning workflow that
-aggregates AlphaEarth embeddings to farmland planning units and evaluates
-whether these latent remote-sensing representations improve reinforcement
-learning-based spatial optimization. The study is designed to retain explicit
-planning constraints while testing whether GeoFM-derived information improves
-representation, suitability-aware decision making, and cross-region transfer.
+The manuscript reports a reproducible Bishan case-study workflow that links
+AlphaEarth embeddings to real DLTB planning blocks and evaluates GeoFM-enhanced
+representations under held-out reinforcement-learning planning protocols,
+representation controls, suitability-proxy diagnostics, and independent-label
+gates. The central finding is negative and evidence-bounded. Raw GeoFM B1 does
+not stably outperform explicit-feature B0, compressed representation controls
+exceed raw B1, normalized-B1 and budget checks do not rescue the claim, and the
+suitability-reward route is stopped by independent-label and calibrated-prior
+gates.
 
-[Evidence needed: one paragraph summarizing completed quantitative results and
-their main implications.]
-
-The work should be of interest to readers of IJAEOG because it connects
-Earth-observation foundation-model representations with a practical land-use
-planning and optimization problem, while keeping clear boundaries around proxy
-suitability and direct agronomic measurement.
+This work should be of interest to IJAEOG readers because it provides a
+reproducible cautionary test for using Earth-observation foundation-model
+embeddings in operational land-use optimization. Rather than assuming that a
+semantically rich remote-sensing embedding is a validated suitability variable,
+the manuscript shows how representation controls and independent-label gates can
+prevent unsupported planning claims.
 
 The manuscript is original, is not under consideration elsewhere, and all
 authors have approved the submission. [Confirm or edit before use.]
@@ -161,16 +138,16 @@ reproduced by authorized users.
 ## Code Availability Draft
 
 All code required for the reviewer-facing smoke tests, reproduction guide, and
-Phase 1-27 workflow is available at:
+Phase 1-42 workflow is available at:
 
 ```text
 https://github.com/zhouning/paper11-geofm-farmland-suitability-rl
 ```
 
 The repository includes a reproducibility guide, file manifest, test suite, and
-lightweight sample data. At the time of this draft, `python scripts\smoke_check.py`
-and `python -m pytest tests -q` pass on the local submission-preparation
-environment.
+lightweight sample data. Before final submission, rerun `python
+scripts\smoke_check.py` and the focused Phase 40/41 tests and record the final
+release commit or DOI.
 
 ## Declaration Drafts
 
@@ -205,36 +182,15 @@ Use of AI-assisted tools:
 
 Current safe boundary:
 
-> AlphaEarth and other GeoFM embeddings are treated as latent remote-sensing
-> proxies for environmental and land-surface conditions related to farmland
-> suitability. They are not described as direct measurements of soil quality,
-> fertility, irrigation access, or productivity.
+> The repository implements a reproducible GeoFM-enhanced farmland-planning
+> workflow and shows that, under the completed Bishan evidence gates, raw GeoFM
+> B1 is not a stable positive learned-policy signal and the suitability-reward
+> route remains blocked by independent-label and calibrated-prior gates.
 
 Current blocked boundary:
 
-> Do not claim learned policy superiority, suitability-reward improvement, or
-> transfer improvement until bounded training, evaluation, ablation, and
-> held-out-region tests have been completed. The current Phase 20 pilot is
-> same-tile only, and Phase 21 is a cross-tile interface pilot rather than
-> final transfer or policy-performance evidence. Phase 22 broadens that scorer
-> interface pilot across multiple evaluation tiles and seeds, but still does
-> not provide final transfer or policy-performance evidence. Phase 23 adds
-> multi-seed same-tile learned-policy evidence, but still does not provide
-> final transfer, suitability-reward, ablation, or submission-level performance
-> evidence. Phase 24 is a synthesis and claim-readiness package only; it
-> records current pilot evidence and remaining gaps, but does not create new
-> policy-performance, transfer, or suitability-reward evidence. Phase 25 adds
-> a padded variable-size held-out Bishan tile B0/B1 learned-policy pilot under
-> deterministic base planning reward, but it still does not enable suitability
-> reward, test B2/B3, demonstrate cross-region transfer, or support
-> submission-level performance claims. Phase 26 adds the main B0/B1 held-out
-> analysis package and the current macOS artifacts do not support positive
-> multi-tile B1-over-B0 results. Phase 27 diagnoses the 1024-step to 4096-step
-> budget transition and reports `budget_not_explanatory`, so the next step is
-> representation controls and stability checks rather than manuscript
-> performance claiming.
-> Phase 40 adds a harder boundary: the suitability-reward route is not merely
-> incomplete; it is conditionally stopped until a registered independent label
-> passes the gate. The current no-registry status is
-> `independent_label_inputs_missing`, so Phase 38 rerun, B2/B3 reward smoke,
-> and positive suitability-reward claims remain blocked.
+> Do not claim GeoFM superiority, B2/B3 readiness, suitability-reward
+> improvement, cross-region transfer, or independent agronomic suitability
+> validation. Phase 40 reports `independent_label_inputs_missing`; Phase 41
+> reports `phase41_independent_label_inputs_missing`; and Phase 42 finds no
+> local external label source that can pass Phase 40.

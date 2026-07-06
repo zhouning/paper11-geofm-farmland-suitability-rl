@@ -1,6 +1,6 @@
 # IJAEOG Submission Readiness Audit
 
-Checked on 2026-06-19. Target journal source:
+Checked on 2026-06-19 and updated on 2026-07-06 after Phase 42. Target journal source:
 
 - International Journal of Applied Earth Observation and Geoinformation,
   Guide for Authors:
@@ -11,13 +11,20 @@ Checked on 2026-06-19. Target journal source:
 This audit uses the guide as a submission-structure reference. Requirements can
 change, so re-check the live guide before final upload.
 
+Phase 42 update: Paper11 now has a defensible conclusion-type formal manuscript
+route in `04_formal_conclusion_manuscript.md`. This route is not a positive
+GeoFM-performance submission. It argues that raw GeoFM state injection and the
+current suitability-reward route are unsupported under the completed Bishan
+protocol, while the positive B2/B3 route remains blocked by Phase 40/41 and the
+Phase 42 local label-source audit.
+
 ## One-Sentence Manuscript Argument
 
-In farmland spatial layout optimization, we test whether frozen GeoFM
-embeddings and weakly supervised suitability proxies improve block-level DRL
-state representation and transfer, using real Bishan DLTB planning units and a
-tiled reproducibility workflow, while treating remote-sensing embeddings as
-latent proxies rather than direct soil, irrigation, or fertility measurements.
+In farmland spatial layout optimization, we show that raw GeoFM state injection
+and the current suitability-reward route are unsupported under the completed
+real Bishan evidence gates, using held-out B0/B1 policy comparisons,
+representation controls, budget checks, independent-label gates, and a local
+label-source audit.
 
 ## Terminology Ledger
 
@@ -62,25 +69,25 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | GeoFM suitability-prior gate | Ready as current no-go evidence | Phase 41 implements the revised GeoFM route: an independent-label-calibrated low-dimensional prior instead of raw 64-dimensional state injection. The current real no-registry run reports `phase41_independent_label_inputs_missing`, so no calibrated prior exists and B2/B3 remains blocked. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled, Phase 36 reports `proxy_signal_not_supported`, and Phase 40 keeps the route stopped until an external independent label registry passes the gate. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
-| Full manuscript claims | Not ready | No longer-budget/full B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
+| Conclusion manuscript route | Ready as formal text | Use `paper/submission/04_formal_conclusion_manuscript.md` for a bounded negative/evidence-gated manuscript. Positive performance, suitability-reward, B2/B3, and transfer claims remain blocked. |
 
 ## Submission Material Checklist
 
 | Material | Current action |
 |---|---|
 | Title page | Use a guarded title from `02_draft_titles_highlights_declarations.md`; add author affiliations manually. |
-| Abstract | Draft only after real training/evaluation results exist; current abstract can only describe design/readiness. |
-| Highlights | Use the guarded draft now; revise after quantitative results. |
+| Abstract | Ready for conclusion route | Use the Phase 42-synchronized abstract in `04_formal_conclusion_manuscript.md` or the scaffold in `02_draft_titles_highlights_declarations.md`; do not convert it into a positive performance abstract. |
+| Highlights | Ready for conclusion route | Use the Phase 42 guarded highlights in `02_draft_titles_highlights_declarations.md`; do not revise into positive performance wording. |
 | Keywords | Use GeoFM, farmland spatial optimization, reinforcement learning, suitability proxy, AlphaEarth, tiled planning. |
-| Main manuscript | Not ready. Results section needs policy-performance evidence before submission. |
-| Figures | Not ready. Need at least method diagram, study area/data flow, main performance, ablation, transfer, and spatial case maps. |
+| Main manuscript | Ready only for conclusion route | `04_formal_conclusion_manuscript.md` is the current formal text. A positive IJAEOG-style performance manuscript remains blocked. |
+| Figures | Pending for final upload | The formal text is available, but final journal upload still needs figure decisions. For the conclusion route, prioritize workflow, evidence-gate, representation-control, and label-gate figures rather than positive transfer/performance figures. |
 | Data availability | Draft available; final version needs repository URL, large-data archive, and external DLTB access constraints. |
 | Code availability | Ready once GitHub URL and final release commit or tag are cited. Do not use an in-file self-reference as the final commit hash. |
 | Declaration of interests | Draft available; authors must confirm. |
 | Funding statement | Missing. Must be supplied by authors. |
 | Author contributions | Missing. Must be supplied by authors. |
 | Ethics statement | Likely not applicable for remote-sensing/planning data, but confirm no human/animal/private-person data. |
-| Cover letter | Skeleton available; final letter must name the completed evidence, not planned experiments. |
+| Cover letter | Phase 42 conclusion skeleton available | Use `02_draft_titles_highlights_declarations.md`; final author and submission metadata must still be supplied. |
 
 ## Claim-Evidence Gate Before Submission
 

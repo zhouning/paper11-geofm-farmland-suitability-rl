@@ -836,3 +836,31 @@ remain diagnostic-only. Paper10 value labels and Paper58 change labels are not
 Paper11 Bishan agronomic suitability labels. B2/B3 remains blocked until an
 external soil, irrigation, yield/productivity, high-standard-farmland, field
 survey, or policy-outcome label passes Phase 40 and then Phase 41.
+## Phase 43 Formal Conclusion Manuscript
+
+Phase 43 converts the defensible Paper11 route from an internal conclusion draft
+to a Phase 42-synchronized formal manuscript file:
+
+```text
+paper/submission/04_formal_conclusion_manuscript.md
+```
+
+Decision: this is the current formal Paper11 text for a bounded
+negative-results/evidence-gated submission route. It is not a positive
+GeoFM-superiority, B2/B3, suitability-reward, or transfer manuscript.
+
+The submission package now records:
+
+```text
+README.md: formal manuscript key entry
+paper/submission/README.md: current formal manuscript path
+paper/submission/01_ijaeog_submission_readiness.md: conclusion route ready as formal text
+paper/submission/02_draft_titles_highlights_declarations.md: Phase 42 conclusion title, abstract, cover letter, declarations, and claim boundary
+reproducibility/FILE_MANIFEST.tsv: 04 formal manuscript manifest row
+```
+
+Current formal conclusion: raw GeoFM state injection and the current
+suitability-reward route are unsupported under the completed Paper11 evidence
+gates. GeoFM is not rejected universally; it remains admissible only through a
+future external independent-label registry that passes Phase 40 and a calibrated
+low-dimensional prior that passes Phase 41.
