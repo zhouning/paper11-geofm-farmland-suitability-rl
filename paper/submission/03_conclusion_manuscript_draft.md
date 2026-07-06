@@ -1,19 +1,20 @@
-# Evidence-Gated GeoFM Representation for Farmland Layout Optimization: A Diagnostic Manuscript Draft
+# Evidence-Gated GeoFM Representation for Farmland Layout Optimization: A Conclusion Manuscript Draft
 
-Manuscript status: formal diagnostic draft, not a positive-performance submission draft.
+Manuscript status: formal conclusion draft. The completed evidence rejects the current positive Paper11 hypothesis under the tested protocol.
 
 Current decision: do not submit this as a manuscript claiming GeoFM superiority,
 suitability-reward improvement, B2/B3 readiness, or cross-region transfer. The
-current evidence supports a diagnostic paper about a reproducible GeoFM-enhanced
-planning pipeline and the failure modes that block stronger claims.
+current evidence directly rejects those claims for the present Paper11 design:
+raw B1 does not stably outperform B0, compressed controls exceed raw B1, and
+suitability-reward work remains blocked by the independent-label gate.
 
 ## Title
 
-Evidence-gated geospatial foundation-model representation for reinforcement-learning farmland layout optimization
+Experimental rejection of unsupported GeoFM superiority in reinforcement-learning farmland layout optimization
 
 ## Short Title
 
-Evidence-gated GeoFM farmland planning
+Unsupported GeoFM superiority in farmland planning
 
 ## Keywords
 
@@ -28,7 +29,7 @@ control; evidence gate; land-use planning
 - Multi-tile B0/B1 learned-policy evidence does not support raw GeoFM superiority.
 - Representation controls show that compressed GeoFM controls can exceed raw B1.
 - Suitability-reward work is blocked until an independent non-leakage label gate passes.
-- The current contribution is a diagnostic framework and claim boundary, not a positive B2/B3 result.
+- The current conclusion rejects the positive GeoFM-superiority and B2/B3-readiness version of Paper11 under the tested protocol.
 
 ## Abstract
 
@@ -46,7 +47,7 @@ representations support learned farmland layout decisions under a deterministic
 base planning reward. The current multi-tile, multi-seed held-out evidence does
 not support a positive raw-GeoFM claim: at 4096 training steps, the learned
 B1-B0 mean reward delta is `-0.1318712688`, with only `3 / 9` held-out
-tile-seed pairs favoring B1. Representation-control diagnostics also report
+tile-seed pairs favoring B1. Representation-control experiments also report
 `compression_matches_raw`, with PCA-compressed controls exceeding raw B1 in the
 4096-step run. A normalized-B1 branch partially improves raw B1 at 4096 steps,
 but a broader 5120-step matched robustness check reports
@@ -54,9 +55,9 @@ but a broader 5120-step matched robustness check reports
 available weak labels are DLTB/slope-derived leakage risks, the scalar
 `suitability_proxy` is not supported as a reward term, and the Phase 40
 independent-label gate reports `independent_label_inputs_missing` with
-`64,984` feature rows and `0` registry rows. These results do not establish a
-GeoFM-improved planning policy. Instead, they define a reproducible diagnostic
-platform and a conservative decision rule: B2/B3 suitability-reward experiments
+`64,984` feature rows and `0` registry rows. These results directly reject the
+current positive Paper11 hypothesis under the tested protocol. The defensible
+conclusion is negative and decision-level: B2/B3 suitability-reward experiments
 should not proceed until an independent non-leakage label registry passes the
 gate and a leakage-aware proxy rebuild clears control checks.
 
@@ -89,13 +90,7 @@ implements random, shuffled, compressed, normalized, suitability-proxy, and
 independent-label gates so that each stronger manuscript claim must pass an
 explicit evidence threshold.
 
-The current evidence does not support the original positive framing that GeoFM
-features improve farmland layout optimization. Instead, the strongest current
-contribution is diagnostic: the repository shows how to build a reproducible
-GeoFM-enhanced planning pipeline, how to test learned-policy behavior on real
-tiled planning units, and how to stop unsupported suitability-reward claims
-before they enter a manuscript. This paper therefore frames the current
-Paper11 result as an evidence-gated diagnostic study.
+The current evidence rejects the original positive framing that GeoFM features improve farmland layout optimization in the tested Paper11 design. The strongest current contribution is a conclusion rather than a promise: under the completed evidence gates, the raw GeoFM representation is not a supported improvement, and suitability reward must not be used. This paper therefore frames the current Paper11 result as an evidence-gated negative finding.
 
 ## 2. Data and Planning Units
 
@@ -153,7 +148,7 @@ manuscript. Phase 26 converts padded held-out policy outputs into
 manuscript-facing B0/B1 summaries. Phase 28 adds representation controls.
 Phase 33 tests whether a modestly higher budget rescues normalized-B1 behavior.
 Phase 36 evaluates suitability-proxy signal against available weak labels.
-Phase 38 rebuilds diagnostic suitability proxies under leakage-aware controls.
+Phase 38 rebuilds suitability proxies under leakage-aware controls.
 Phase 39 audits available label-like columns. Phase 40 adds the hard
 independent-label go/no-go gate before any Phase 38 rerun or B2/B3 reward
 smoke.
@@ -171,7 +166,7 @@ delta of `-0.1318712688`. Only `3 / 9` tile-seed pairs favor B1.
 This result does not support a stable claim that raw GeoFM-enhanced B1
 outperforms explicit-feature B0 under the deterministic base planning reward.
 
-### 4.2 Representation-Control Diagnostics
+### 4.2 Representation-Control Results
 
 Phase 28 compares B1 against B0, D2, D3, D4P8, and D4P16 under the same padded
 held-out protocol at 1024 and 4096 training steps. Both runs report
@@ -225,7 +220,7 @@ validation. GeoFM-only checks are weak: for example, raw GeoFM-only features
 reach ROC AUC `0.6490064144` for `low_slope_farmland_label`, but the scalar
 `suitability_proxy` is near random for that label with ROC AUC `0.4979564572`.
 
-Phase 38 rebuilds diagnostic proxy classifiers but remains
+Phase 38 rebuilds proxy classifiers but remains
 `proxy_rebuild_diagnostic_only` because evaluated labels are leakage risks or
 GeoFM-derived proxies do not clear control thresholds. Phase 39 reports
 `independent_label_inputs_missing` after auditing the real Phase 2 table. Phase
@@ -237,7 +232,7 @@ rows, and reports `independent_label_inputs_missing`.
 
 ## 5. Discussion
 
-The current Paper11 evidence changes the scientific claim. The project began
+The current Paper11 evidence settles the current scientific claim negatively. The project began
 with the question of whether GeoFM embeddings could improve farmland layout
 optimization by adding latent environmental context. The current bounded
 evidence does not support that positive claim. Raw B1 does not stably
@@ -259,7 +254,7 @@ methodological function: it prevents the workflow from converting weak,
 leakage-prone labels into B2/B3 reward claims. This gate is the main practical
 outcome of the current revision.
 
-The study remains limited. It is Bishan-only, uses bounded training budgets,
+The negative conclusion remains bounded. It is Bishan-only, uses bounded training budgets,
 does not provide cross-region transfer evidence, does not enable B2/B3, and
 does not validate agronomic suitability with independent field, soil,
 irrigation, yield, or high-standard-farmland labels. These limitations are not
@@ -269,14 +264,13 @@ paper.
 ## 6. Conclusion
 
 The current Paper11 repository establishes a reproducible workflow for testing
-GeoFM-enhanced farmland layout optimization on real planning units, but it does
-not establish a GeoFM-improved planning policy or a validated suitability
-reward. The strongest supported conclusion is diagnostic: under the current
-Bishan held-out protocol, raw GeoFM B1 is not a stable positive learned-policy
-signal; compressed and normalized controls reveal unresolved representation
-effects; and suitability-reward work must remain blocked until an independent
-non-leakage label registry passes Phase 40 and a leakage-aware proxy rebuild
-clears subsequent controls.
+GeoFM-enhanced farmland layout optimization on real planning units, and the
+completed evidence rejects the current positive Paper11 hypothesis. Under the
+current Bishan held-out protocol, raw GeoFM B1 is not a stable positive
+learned-policy signal; compressed and normalized controls reveal unresolved
+representation effects; and suitability-reward work must remain blocked until
+an independent non-leakage label registry passes Phase 40 and a leakage-aware
+proxy rebuild clears subsequent controls.
 
 ## Claim-Evidence Map
 
@@ -288,7 +282,7 @@ clears subsequent controls.
 | Normalization or more budget resolves the representation problem. | Phase 30 partially improves B1; Phase 33 full bounded aggregate reports `budget_not_explanatory`. | Not supported |
 | Suitability reward is ready for B2/B3. | Phase 36 `proxy_signal_not_supported`; Phase 38 `proxy_rebuild_diagnostic_only`; Phase 40 `independent_label_inputs_missing`. | Not supported |
 | The current paper can be submitted as a positive performance manuscript. | Performance, suitability, B2/B3, and transfer claims remain unsupported. | Not supported |
-| The current paper can be framed as a diagnostic platform and evidence-gate study. | Reproducible code package plus negative representation and suitability-gate results. | Supported with cautious framing |
+| The current paper can make a conclusion-level negative claim. | B1 underperforms or fails controls, normalized/budget checks do not rescue the claim, and suitability reward is blocked by Phase 40. | Supported |
 
 ## Data Availability Draft
 
@@ -317,4 +311,4 @@ The final submitted version should cite a release tag or immutable commit hash.
 - Author contributions.
 - Final data access statement for the external DLTB-with-slope GeoPackage.
 - Reference list and citation formatting for the selected journal.
-- Decision on whether the manuscript is submitted as a diagnostic methods paper, a negative-results research article, or held until independent labels and B2/B3 results exist.
+- Decision on whether to submit this as a negative-results research article now or hold the paper until independent labels and B2/B3 results can support a different conclusion.

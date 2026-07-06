@@ -108,7 +108,7 @@ paper/phase28_results/13_phase39_independent_label_audit.md	documentation	Review
 paper/submission/README.md	submission	Index for Paper11 submission-readiness materials.
 paper/submission/01_ijaeog_submission_readiness.md	submission	IJAEOG target-journal readiness audit, claim-evidence gate, and next experimental phase recommendation.
 paper/submission/02_draft_titles_highlights_declarations.md	submission	Guarded draft titles, highlights, abstract scaffold, cover-letter scaffold, and declaration text.
-paper/submission/03_formal_diagnostic_manuscript_draft.md	submission	Evidence-calibrated formal diagnostic manuscript draft for Paper11; not a positive performance submission draft.
+paper/submission/03_conclusion_manuscript_draft.md	submission	Evidence-calibrated conclusion manuscript draft that rejects the current positive Paper11 hypothesis under the tested protocol.
 src/legacy_runtime/block_definition.py	runtime	Copied block definition utilities from the legacy runtime.
 src/legacy_runtime/block_definition_all.py	runtime	Copied batch/all-region block definition utilities from the legacy runtime.
 src/legacy_runtime/county_env.py	runtime	Copied county-level farmland layout RL environment.

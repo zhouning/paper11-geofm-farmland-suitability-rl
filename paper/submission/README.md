@@ -12,9 +12,10 @@ reviewer-code package, while the manuscript is still evidence-gated.
 - `02_draft_titles_highlights_declarations.md`: guarded title, highlight,
   keyword, cover-letter, and declaration text that can be reused after the
   experimental evidence is complete.
-- `03_formal_diagnostic_manuscript_draft.md`: evidence-calibrated manuscript
-  draft that can be used only as a diagnostic/negative-evidence paper, not as
-  a positive GeoFM-performance or suitability-reward submission.
+- `03_conclusion_manuscript_draft.md`: evidence-calibrated conclusion
+  manuscript draft that rejects the current positive Paper11 hypothesis under
+  the tested protocol; it is not a positive GeoFM-performance or
+  suitability-reward submission.
 
 ## Current Status
 
@@ -27,9 +28,8 @@ registry rows.
 
 Do not submit a main research article claiming model superiority. The only
 formal manuscript file currently defensible is
-`03_formal_diagnostic_manuscript_draft.md`, which frames Paper11 as a
-reproducible diagnostic platform with explicit negative representation and
-suitability-gate evidence. If the target is a positive IJAEOG-style research
-article, the remaining blocker is an external independent non-leakage label
-registry that passes Phase 40, followed by a Phase 38 proxy-rebuild pass and
-B2/B3 reward experiments.
+`03_conclusion_manuscript_draft.md`, which frames Paper11 as a
+conclusion-level negative-results paper with explicit representation-control
+and suitability-gate evidence. If the target is a positive IJAEOG-style
+research article, the remaining blocker is an external independent non-leakage
+label registry plus new B2/B3 experiments.
