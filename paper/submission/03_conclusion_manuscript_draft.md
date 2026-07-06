@@ -257,9 +257,11 @@ outcome of the current revision.
 The negative conclusion remains bounded. It is Bishan-only, uses bounded training budgets,
 does not provide cross-region transfer evidence, does not enable B2/B3, and
 does not validate agronomic suitability with independent field, soil,
-irrigation, yield, or high-standard-farmland labels. These limitations are not
-minor additions to a positive story. They define the boundary of the current
-paper.
+irrigation, yield, or high-standard-farmland labels. Phase 41 defines a future
+route for GeoFM as a calibrated suitability prior, but the current real run
+cannot produce that prior because Phase 40 has no accepted independent label
+registry. These limitations are not minor additions to a positive story. They
+define the boundary of the current paper.
 
 ## 6. Conclusion
 

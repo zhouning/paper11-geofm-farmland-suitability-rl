@@ -62,7 +62,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase38_proxy_rebuild/`: executable leakage-aware Phase 38 suitability-proxy rebuild diagnostic runner over existing Phase 2, Phase 8, and Phase 30 feature tables.
 - `experiments/phase39_independent_label_audit/`: executable read-only Phase 39 independent-label audit runner over existing Phase 2 real feature tables before any Phase 38 rerun with non-leakage labels.
 - `experiments/phase40_independent_label_gate/`: executable Phase 40 hard independent-label go/no-go gate before any Phase 38 rerun or B2/B3 reward integration.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 31 case diagnostics, Phase 32 action-order diagnostics, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, Phase 39 independent-label audits, and Phase 40 independent-label gates.
+- `experiments/phase41_geofm_suitability_prior/`: executable Phase 41 independent-label-calibrated GeoFM suitability-prior gate before any low-dimensional prior export or B2/B3 reward experiment.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 31 case diagnostics, Phase 32 action-order diagnostics, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, Phase 39 independent-label audits, Phase 40 independent-label gates, and Phase 41 GeoFM suitability-prior gates.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -550,6 +551,21 @@ The Phase 40 independent-label gate is a hard go/no-go check for the
 suitability-reward branch. The current real Bishan no-registry run reports
 `independent_label_inputs_missing`, so Phase 38 cannot be rerun with a stronger
 label and B2/B3 remains blocked. This is a decision point, not a policy
+
+Run the Phase 41 GeoFM suitability-prior gate after the Phase 2 real feature
+table exists. This is the revised route for GeoFM: an independent-label-
+calibrated low-dimensional prior rather than raw 64-dimensional policy state:
+
+```powershell
+python experiments\phase41_geofm_suitability_prior\run_phase41_geofm_suitability_prior.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase41_geofm_suitability_prior\outputs\real_bishan_no_registry
+```
+
+Phase 41 implements the revised GeoFM route: GeoFM may be used only as an
+independent-label-calibrated low-dimensional suitability prior that clears
+baseline, shuffled-control, random-control, fold-stability, and calibration
+checks. The current real no-registry run reports
+`phase41_independent_label_inputs_missing`, so no calibrated prior is produced
+and B2/B3 remains blocked.
 performance experiment.
 
 
@@ -578,6 +594,7 @@ performance experiment.
 - Phase 38 proxy-rebuild diagnostic: `paper/phase28_results/12_phase38_proxy_rebuild.md`
 - Phase 39 independent-label audit: `paper/phase28_results/13_phase39_independent_label_audit.md`
 - Phase 40 independent-label gate: `paper/phase28_results/14_phase40_independent_label_gate.md`
+- Phase 41 GeoFM suitability-prior gate: `paper/phase28_results/15_phase41_geofm_suitability_prior.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -640,8 +657,10 @@ performance experiment.
 - Phase 38 proxy-rebuild module: `src/paper11_geofm/phase38_proxy_rebuild.py`
 - Phase 39 independent-label audit runner: `experiments/phase39_independent_label_audit/run_phase39_independent_label_audit.py`
 - Phase 40 independent-label gate runner: `experiments/phase40_independent_label_gate/run_phase40_independent_label_gate.py`
+- Phase 41 GeoFM suitability-prior gate runner: `experiments/phase41_geofm_suitability_prior/run_phase41_geofm_suitability_prior.py`
 - Phase 39 independent-label audit module: `src/paper11_geofm/phase39_independent_label_audit.py`
 - Phase 40 independent-label gate module: `src/paper11_geofm/phase40_independent_label_gate.py`
+- Phase 41 GeoFM suitability-prior gate module: `src/paper11_geofm/phase41_geofm_suitability_prior.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

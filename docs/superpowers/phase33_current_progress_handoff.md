@@ -788,3 +788,26 @@ Import-Csv experiments\phase35_phase33_action_overlap_diagnostics\outputs\real_b
 python -m pytest tests\test_phase39_independent_label_audit.py tests\test_phase38_proxy_rebuild.py -q --basetemp=.pytest_tmp_phase39_resume -p no:cacheprovider
 python scripts\smoke_check.py
 ```
+## Phase 41 GeoFM Suitability Prior Gate
+
+Phase 41 implements the revised route for making GeoFM useful: it blocks raw
+64-dimensional GeoFM state injection and requires an independent-label-
+calibrated low-dimensional prior that clears explicit baseline, shuffled
+control, random control, fold-stability, and calibration checks.
+
+Current real no-registry status:
+
+```text
+phase41_independent_label_inputs_missing
+```
+
+The real no-registry run read `64,984` feature rows, `0` Phase 40 label-gate
+rows, and `0` Phase 40-passed labels. No `block_geofm_suitability_prior.csv`
+was produced.
+
+Decision: no calibrated GeoFM suitability prior exists for the current real
+run. B2/B3 remains blocked until a real independent label registry passes Phase
+40 and Phase 41 reports `geofm_suitability_prior_supported`.
+
+Phase 41 does not run PPO, alter rewards, enable B2/B3, prove suitability, or
+support final planning-performance claims.
