@@ -864,3 +864,29 @@ suitability-reward route are unsupported under the completed Paper11 evidence
 gates. GeoFM is not rejected universally; it remains admissible only through a
 future external independent-label registry that passes Phase 40 and a calibrated
 low-dimensional prior that passes Phase 41.
+
+## Phase 44 Formal DOCX Export
+
+Phase 44 exports the Phase 43 formal conclusion manuscript to a word-processing
+file using Pandoc 3.9.0.1:
+
+```text
+paper/submission/final/Paper11_formal_conclusion_manuscript.docx
+```
+
+The export was checked by reading `word/document.xml` inside the DOCX and
+confirming that the title, Phase 42 local label-source audit, Phase 40/41
+no-go statuses, and the bounded conclusion that GeoFM is not rejected
+universally are present in the generated file.
+
+Current delivery entry points:
+
+```text
+paper/submission/04_formal_conclusion_manuscript.md
+paper/submission/final/Paper11_formal_conclusion_manuscript.docx
+paper/submission/final/README.md
+```
+
+Do not treat this DOCX as a positive GeoFM-performance manuscript. It is the
+formal conclusion-type file for the current bounded negative/evidence-gated
+route.

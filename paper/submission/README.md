@@ -16,8 +16,10 @@ reviewer-code package and the manuscript is evidence-gated.
   manuscript draft that rejects the current positive Paper11 hypothesis under
   the tested protocol.
 - `04_formal_conclusion_manuscript.md`: current Phase 42-synchronized formal
-  conclusion manuscript file for a bounded negative/evidence-gated submission
-  route.
+  conclusion manuscript source file for a bounded negative/evidence-gated
+  submission route.
+- `final/`: generated delivery files, including the DOCX export of the formal
+  conclusion manuscript.
 
 ## Current Status
 
@@ -29,7 +31,9 @@ registry rows. Phase 41 reports `phase41_independent_label_inputs_missing`, and
 Phase 42 finds no local Phase 40-passing external suitability label.
 
 Do not submit a main research article claiming model superiority. The current
-formal manuscript file is `04_formal_conclusion_manuscript.md`, which frames
+formal manuscript source file is `04_formal_conclusion_manuscript.md`, and the
+current generated DOCX file is
+`final/Paper11_formal_conclusion_manuscript.docx`. The source file frames
 Paper11 as a bounded negative-results/evidence-gated paper with explicit
 representation-control, suitability-gate, prior-gate, and local label-source
 audit evidence. If the target is a positive IJAEOG-style research article, the

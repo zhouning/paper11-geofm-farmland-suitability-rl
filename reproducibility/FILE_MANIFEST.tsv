@@ -285,3 +285,5 @@ tests/test_phase41_geofm_suitability_prior.py	test	Tests for Phase 41 prior supp
 paper/phase28_results/15_phase41_geofm_suitability_prior.md	results	Reviewer-facing interpretation of the Phase 41 real no-registry prior gate result.
 paper/phase28_results/16_phase42_local_label_source_audit.md	results	Reviewer-facing local label-source audit showing no Phase 40-passing independent suitability label is available locally.
 paper/submission/04_formal_conclusion_manuscript.md	submission	Phase 42-synchronized formal conclusion manuscript for a bounded negative/evidence-gated submission route.
+paper/submission/final/README.md	submission	Index for generated Phase 44 formal DOCX submission files.
+paper/submission/final/Paper11_formal_conclusion_manuscript.docx	submission	Pandoc-generated DOCX export of the Phase 44 formal conclusion manuscript.

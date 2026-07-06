@@ -578,6 +578,7 @@ that can pass Phase 40.
 ## Key Entry Points
 
 - Formal conclusion manuscript: `paper/submission/04_formal_conclusion_manuscript.md`
+- Formal DOCX manuscript export: `paper/submission/final/Paper11_formal_conclusion_manuscript.docx`
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
 - System design: `paper/design/02_system_design.md`

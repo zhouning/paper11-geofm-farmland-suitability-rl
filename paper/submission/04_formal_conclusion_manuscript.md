@@ -247,6 +247,7 @@ can be registered only as diagnostic leakage-risk labels: Phase 40 reports
 `phase41_independent_label_inputs_missing` with the same diagnostic registry.
 No local external soil, irrigation, yield, productivity, high-standard-farmland,
 field-survey, or policy-outcome label was found that can pass Phase 40.
+
 ## 5. Discussion
 
 The current Paper11 evidence settles the tested scientific claim negatively.
