@@ -37,8 +37,9 @@ Current guarded version:
 - A main empirical analysis package reports that current B1 learned-policy results do not stably outperform B0 across held-out Bishan tiles and random seeds.
 - A stability diagnosis finds that budget increase alone does not resolve the current negative B1 evidence.
 - Claim-readiness artifacts separate pilot evidence from unsupported claims.
+- An independent-label gate now blocks suitability-reward experiments unless a non-leakage external label source is registered and passes readiness checks.
 
-Before submission, revise the last two bullets after ablation,
+Before submission, revise the last bullets after ablation,
 suitability-reward, and transfer evidence exists. Do not convert the current
 Phase 26/27 result into a positive performance claim.
 
@@ -83,9 +84,18 @@ positive B1-over-B0 learned-policy claim: the 1024-step mean delta is
 `0.3010310174`, but the positive tile-seed count falls by `1` and three
 tile-seed pairs flip from positive to non-positive.
 
-[Evidence needed: representation ablation results, suitability-reward
-validation, B2/B3 training and evaluation results, cross-region transfer
-results, and final spatial diagnostics.]
+Subsequent representation-control and suitability diagnostics keep the claim
+boundary negative. Phase 28 reports `compression_matches_raw`; Phase 33 reports
+`budget_not_explanatory`; Phase 36 reports `proxy_signal_not_supported`; Phase
+37 reports `decision_alignment_not_supported`; Phase 38 remains
+`proxy_rebuild_diagnostic_only`; and Phase 40 reports
+`independent_label_inputs_missing` in the current no-registry run. The
+suitability-reward route is not merely incomplete; it is conditionally stopped
+until Phase 40 passes with an independent label registry.
+
+[Evidence needed: an independent non-leakage label registry that passes Phase 40,
+a leakage-aware Phase 38 proxy-rebuild pass, B2/B3 training and evaluation
+results, cross-region transfer results, and final spatial diagnostics.]
 
 The final manuscript should conclude only from completed comparisons. Until
 those results exist, the contribution should be framed as a reproducible
@@ -223,3 +233,8 @@ Current blocked boundary:
 > budget transition and reports `budget_not_explanatory`, so the next step is
 > representation controls and stability checks rather than manuscript
 > performance claiming.
+> Phase 40 adds a harder boundary: the suitability-reward route is not merely
+> incomplete; it is conditionally stopped until a registered independent label
+> passes the gate. The current no-registry status is
+> `independent_label_inputs_missing`, so Phase 38 rerun, B2/B3 reward smoke,
+> and positive suitability-reward claims remain blocked.

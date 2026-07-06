@@ -58,7 +58,8 @@ latent proxies rather than direct soil, irrigation, or fertility measurements.
 | Main empirical analysis package | Ready as current negative evidence | Phase 26 ingests Phase 25 outputs and now includes macOS 1024-step and 4096-step result sets. The 4096-step learned-policy B1-B0 mean reward delta is `-0.1318712688`, with only `3 / 9` positive tile-seed pairs and claim status `not_supported`. |
 | B0/B1 stability diagnosis | Ready as current diagnostic evidence | Phase 27 compares the 1024-step and 4096-step Phase 26 result sets and reports `budget_not_explanatory`: mean delta improves by `0.3010310174`, but positive tile-seed count falls by `1`, with stability counts `1` stable-positive, `3` stable-negative, `2` flip-to-positive, and `3` flip-to-negative. |
 | Representation-control diagnosis | Ready as current negative diagnostic evidence | Phase 28 compares B1 against B0, D2 random controls, D3 shuffled controls, and D4 PCA-compressed controls at 1024 and 4096 steps. Both runs report `compression_matches_raw`; at 4096 steps B1-B0 is `-0.1318712688`, B1-D2 is `0.0744591656`, B1-D3 is `-0.1094750135`, B1-D4P8 is `-0.3768518347`, and B1-D4P16 is `-0.6411940236`. |
-| Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled because weak-label evidence is incomplete. |
+| Independent-label gate | Ready as current no-go evidence | Phase 40 reads the real Bishan Phase 2 table and requires a registered independent non-leakage label before any Phase 38 rerun or B2/B3 reward smoke. The current no-registry run reports `independent_label_inputs_missing` over `64,984` feature rows and `0` registry rows, so the suitability-reward route remains stopped. |
+| Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled, Phase 36 reports `proxy_signal_not_supported`, and Phase 40 keeps the route stopped until an external independent label registry passes the gate. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
 | Full manuscript claims | Not ready | No longer-budget/full B0/B1/B2/B3 policy-training comparison, ablation, transfer test, or final figures yet. |
 
@@ -87,10 +88,15 @@ Do not use these claims until the evidence exists:
 | Manuscript claim | Required evidence |
 |---|---|
 | GeoFM improves planning decisions | B1 outperforms B0 under the same reward and evaluation protocol. |
-| Suitability reward improves spatial realism | B2/B3 improve suitability-weighted metrics without unacceptable slope, contiguity, or validity loss. |
+| Suitability reward improves spatial realism | Phase 40 passes with an independent non-leakage label, Phase 38 proxy rebuild clears control gates, and B2/B3 improve suitability-weighted metrics without unacceptable slope, contiguity, or validity loss. |
 | GeoFM improves transfer | B1/B3 reduce held-out-region performance drop relative to B0. |
 | Full Paper11 model is best | B3 beats or matches B1/B2 across main and transfer metrics, with uncertainty or multi-seed support. |
-| Suitability proxy is meaningful | Weak-label validation, distributional diagnostics, and, if available, external proxy checks. |
+| Suitability proxy is meaningful | Independent label registry passes Phase 40, proxy rebuild passes leakage-aware validation, and distributional diagnostics show decision-relevant signal beyond DLTB/slope-derived labels. |
+
+Phase 40 now makes the suitability branch conditional: no Phase 38 rerun, B2/B3
+reward smoke, or positive suitability-reward claim should proceed until an
+external independent label registry passes the gate. The current no-registry
+run remains `independent_label_inputs_missing`.
 
 Safe current claim:
 

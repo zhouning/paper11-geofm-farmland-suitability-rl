@@ -12,6 +12,8 @@ and Phase 38 added a leakage-aware proxy-rebuild diagnostic over the real
 Phase 2, Phase 8, and Phase 30 feature tables. Phase 39 added an
 independent-label audit over the real Phase 2 feature table and found that
 independent label inputs are still missing.
+Phase 40 then added a hard independent-label go/no-go gate and confirmed
+that the current no-registry real run remains blocked.
 
 ## Phase 39 Final Merge / Window-Close Save
 
@@ -278,6 +280,33 @@ be rerun with a stronger non-leakage label and B2/B3 remains blocked.
 
 Next step: obtain or register defensible independent labels, then rerun the
 independent-label audit before any Phase 38 proxy-rebuild rerun.
+
+## Phase 40 Independent-Label Gate
+
+Phase 40 adds the hard go/no-go gate requested by the reviewer critique. It
+does not try to rescue B2/B3 by adding another ordinary diagnostic stage.
+Instead, it requires a registered independent, non-leakage label before any
+Phase 38 rerun or suitability-reward smoke.
+
+Current real no-registry status:
+
+```text
+independent_label_inputs_missing
+```
+
+Real run counts:
+
+- feature rows: `64,984`
+- registry rows: `0`
+- label gate rows: `0`
+
+Decision: B2/B3 remains blocked. The next scientifically valid action is to
+provide an external independent label registry and rerun Phase 40. Without
+that, Paper11 should be framed as a reproducible diagnostic platform with
+negative suitability-reward readiness evidence.
+
+Phase 40 does not run PPO, alter rewards, enable B2/B3, prove suitability, or
+support planning-performance claims.
 
 ## What Was Run This Window
 
@@ -632,6 +661,18 @@ reproducibility/FILE_MANIFEST.tsv
 docs/superpowers/phase33_current_progress_handoff.md
 ```
 
+Updated in the Phase 40 continuation:
+
+```text
+README.md
+paper/phase28_results/README.md
+paper/phase28_results/14_phase40_independent_label_gate.md
+paper/submission/01_ijaeog_submission_readiness.md
+paper/submission/02_draft_titles_highlights_declarations.md
+reproducibility/FILE_MANIFEST.tsv
+docs/superpowers/phase33_current_progress_handoff.md
+```
+
 Do not describe Phase 33 as generally `budget_closes_compressed_gap`. That is
 only true for the `tile_r002_c003` three-seed aggregate, not for the complete
 bounded aggregate.
@@ -648,6 +689,12 @@ Do not describe Phase 39 as supporting B2/B3, suitability reward, reward
 changes, policy training, agronomic validity, or final planning-performance
 claims. Its real status is `independent_label_inputs_missing`, and Phase 38
 cannot yet be rerun with a stronger non-leakage label.
+
+Do not describe Phase 40 as supporting B2/B3, suitability reward, reward
+changes, policy training, agronomic validity, or final planning-performance
+claims. Its real status is `independent_label_inputs_missing`, and it is a
+hard stop for the suitability-reward route until an external independent
+label registry passes the gate.
 
 ## Verification Run
 

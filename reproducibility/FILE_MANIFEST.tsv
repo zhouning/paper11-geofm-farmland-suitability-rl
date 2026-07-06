@@ -270,3 +270,9 @@ tests/test_phase36_suitability_proxy_validation.py	verification	Pytest checks fo
 tests/test_phase37_decision_alignment.py	verification	Pytest checks for Phase 37 decision-alignment joins, status rules, artifact writing, and CLI behavior.
 tests/test_phase38_proxy_rebuild.py	verification	Pytest checks for Phase 38 label boundaries, model evaluation, artifact writing, JSON previewing, and CLI behavior.
 tests/test_phase39_independent_label_audit.py	verification	Pytest checks for Phase 39 label inventory, readiness classification, registry template writing, artifacts, and CLI behavior.
+docs/superpowers/specs/2026-07-06-phase40-independent-label-gate-design.md	design	Phase 40 design for a hard independent-label go/no-go gate before Phase 38 or B2/B3.
+docs/superpowers/plans/2026-07-06-phase40-independent-label-gate.md	implementation_plan	Phase 40 implementation plan.
+src/paper11_geofm/phase40_independent_label_gate.py	source	Phase 40 independent-label gate module.
+experiments/phase40_independent_label_gate/run_phase40_independent_label_gate.py	experiment_runner	Phase 40 independent-label gate CLI runner.
+tests/test_phase40_independent_label_gate.py	test	Tests for Phase 40 registry parsing, gate status, artifact writing, and CLI behavior.
+paper/phase28_results/14_phase40_independent_label_gate.md	results	Reviewer-facing interpretation of the Phase 40 real no-registry gate result.
