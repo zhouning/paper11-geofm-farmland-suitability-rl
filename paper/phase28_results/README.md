@@ -48,6 +48,9 @@ base-reward protocol.
 - `14_phase40_independent_label_gate.md`: hard go/no-go independent-label gate
   that blocks Phase 38 rerun, B2/B3 reward integration, and positive
   suitability claims unless an external non-leakage label registry passes.
+- `15_phase41_geofm_suitability_prior.md`: independent-label-calibrated GeoFM
+  suitability-prior gate that blocks low-dimensional prior export unless GeoFM
+  clears baseline, control, fold-stability, and calibration checks.
 
 ## Reproduction Link
 
@@ -301,6 +304,26 @@ Expected local Phase 40 artifacts:
 The current Phase 40 status is `independent_label_inputs_missing`. This is a
 hard stop for suitability reward, Phase 38 rerun, and B2/B3 until an external
 independent label registry is supplied and passes the gate.
+
+The Phase 41 GeoFM suitability-prior gate tests the revised route in which
+GeoFM is used only as an independent-label-calibrated low-dimensional prior,
+not as raw 64-dimensional policy state. Run it from the repository root after
+the Phase 2 real feature table exists:
+
+```powershell
+python experiments\phase41_geofm_suitability_prior\run_phase41_geofm_suitability_prior.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --output-dir experiments\phase41_geofm_suitability_prior\outputs\real_bishan_no_registry
+```
+
+Expected local Phase 41 artifacts:
+
+- `phase41_geofm_prior_summary.csv`
+- `phase41_geofm_prior_metrics.csv`
+- `phase41_geofm_prior.json`
+- `phase41_geofm_prior.md`
+
+The current Phase 41 status is `phase41_independent_label_inputs_missing`.
+Phase 41 therefore does not produce a calibrated GeoFM suitability prior for
+the real Bishan run, and B2/B3 remains blocked.
 
 ## Claim Boundary
 
