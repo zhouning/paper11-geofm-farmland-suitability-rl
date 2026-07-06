@@ -1,0 +1,21 @@
+{
+  "bundle_entries": [
+    "Paper11_cover_letter_and_declarations.docx",
+    "Paper11_cover_letter_and_declarations.md",
+    "Paper11_formal_conclusion_manuscript.docx",
+    "Paper11_formal_conclusion_manuscript.md",
+    "Paper11_phase46_submission_contents_sha256.txt",
+    "README.md"
+  ],
+  "bundle_hash_ok": true,
+  "bundle_path": "paper/submission/final/Paper11_phase46_submission_bundle.zip",
+  "claim_boundary_ok": true,
+  "content_hashes_ok": true,
+  "docx_checks": {
+    "Paper11_cover_letter_and_declarations.docx": true,
+    "Paper11_formal_conclusion_manuscript.docx": true
+  },
+  "missing_files": [],
+  "ok": true,
+  "zip_entries_ok": true
+}

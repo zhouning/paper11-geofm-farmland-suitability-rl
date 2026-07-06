@@ -928,3 +928,31 @@ Before final journal upload, authors still need to supply author metadata,
 funding, CRediT roles, final reference formatting, final external-DLTB access
 wording, figure files if required, and a release tag, immutable commit hash, or
 archive DOI.
+## Phase 47 Submission Preflight
+
+Phase 47 adds an executable preflight checker for the formal submission bundle:
+
+```text
+scripts/paper11_submission_preflight.py
+paper/submission/final/Paper11_phase47_submission_preflight.json
+```
+
+The checker verifies required files, zip entries, content SHA256 checksums,
+bundle SHA256 checksum, DOCX internal text for both generated Word files, and
+the bounded negative/evidence-gated claim boundary. The first TDD red run failed
+because the script did not exist; after implementation, the focused preflight
+tests passed.
+
+Current preflight result:
+
+```text
+ok: true
+zip_entries_ok: true
+content_hashes_ok: true
+bundle_hash_ok: true
+claim_boundary_ok: true
+missing_files: []
+```
+
+The Phase 47 report remains outside the Phase 46 zip to avoid self-referential
+checksums.

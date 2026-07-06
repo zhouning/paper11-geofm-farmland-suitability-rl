@@ -293,3 +293,6 @@ paper/submission/final/Paper11_formal_conclusion_manuscript.md	submission	Editab
 paper/submission/final/Paper11_phase46_submission_contents_sha256.txt	submission	SHA256 checksum list for files included in the Phase 46 submission bundle.
 paper/submission/final/Paper11_phase46_submission_bundle.zip	submission	Phase 46 transfer archive containing formal manuscript, cover letter/declarations, editable sources, and content checksums.
 paper/submission/final/Paper11_phase46_submission_bundle_sha256.txt	submission	SHA256 checksum for the Phase 46 submission bundle zip.
+scripts/paper11_submission_preflight.py	script	Preflight checker for the Phase 46 formal submission bundle, checksums, DOCX contents, and claim boundary.
+tests/test_paper11_submission_preflight.py	test	Tests for the Paper11 submission preflight checker and CLI JSON output.
+paper/submission/final/Paper11_phase47_submission_preflight.json	submission	JSON preflight report confirming the Phase 46 submission bundle passes checksum, DOCX text, and claim-boundary checks.

@@ -580,6 +580,7 @@ that can pass Phase 40.
 - Formal conclusion manuscript: `paper/submission/04_formal_conclusion_manuscript.md`
 - Formal DOCX manuscript export: `paper/submission/final/Paper11_formal_conclusion_manuscript.docx`
 - Formal submission bundle: `paper/submission/final/Paper11_phase46_submission_bundle.zip`
+- Submission bundle preflight report: `paper/submission/final/Paper11_phase47_submission_preflight.json`
 
 - Design synthesis: `paper/design/01_design_synthesis.md`
 - System design: `paper/design/02_system_design.md`
