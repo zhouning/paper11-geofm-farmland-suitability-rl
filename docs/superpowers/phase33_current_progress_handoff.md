@@ -1243,3 +1243,26 @@ The final PDF has 12 pages.
 The final LaTeX log contains no Overfull/Underfull/Error/undefined/Rerun warnings.
 PDF text extraction found no literal Markdown heading markers and no empty pages.
 ```
+
+## Phase 56 Journal-Style Formal Manuscript Rewrite
+
+Phase 56 rewrites the formal LaTeX/PDF manuscript from a phase-record style into a journal-style research paper. The scientific conclusion is unchanged: compressed GeoFM state representations are supported under the Bishan base-reward held-out protocol, while raw B1 direct injection, B2/B3 suitability reward, transfer, and independent agronomic suitability remain unsupported.
+
+Updated formal files:
+
+```text
+paper/submission/final/Paper11_formal_conclusion_manuscript.md
+paper/submission/final/Paper11_formal_conclusion_manuscript.tex
+paper/submission/final/Paper11_formal_conclusion_manuscript.pdf
+```
+
+Rewrite and verification notes:
+
+```text
+The manuscript now uses a journal-style structure: Abstract, Introduction, Materials and Methods, Results, Discussion, Conclusion, Data Availability, and Code Availability.
+Phase-list narration and the claim-evidence map were removed from the main manuscript body.
+Pandoc regenerated the standalone LaTeX from the rewritten Markdown source.
+pdflatex exited 0 and generated an 8-page PDF.
+The final LaTeX log contains no Overfull/Underfull/Error/undefined/Rerun warnings.
+PDF text extraction found no literal Markdown heading markers, no empty pages, and zero occurrences of "Phase" in the rendered manuscript text.
+```

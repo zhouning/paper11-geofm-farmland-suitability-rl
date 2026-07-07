@@ -1,18 +1,18 @@
 # Paper11 Formal Submission Files
 
-This folder contains generated delivery files for the Phase 54 conclusion-type
-Paper11 submission package, plus the current LaTeX/PDF formal export.
+This folder contains the current conclusion-bounded Paper11 submission package
+and the current journal-style LaTeX/PDF formal export.
 
 ## Core Files
 
-- `Paper11_formal_conclusion_manuscript.docx`: word-processing manuscript file
-  generated from `paper/submission/04_formal_conclusion_manuscript.md` with
-  Pandoc.
-- `Paper11_formal_conclusion_manuscript.md`: editable copy of the formal
-  conclusion manuscript source included for transfer convenience.
+- `Paper11_formal_conclusion_manuscript.docx`: earlier word-processing
+  export retained for traceability; the current formal manuscript output is
+  the Markdown, LaTeX, and PDF set below.
+- `Paper11_formal_conclusion_manuscript.md`: editable journal-style
+  manuscript source for the current conclusion-bounded formal export.
 - `Paper11_formal_conclusion_manuscript.tex`: standalone LaTeX export of
-  the Phase 54 formal conclusion manuscript for journal upload.
-- `Paper11_formal_conclusion_manuscript.pdf`: 12-page PDF generated from
+  the current journal-style formal manuscript for journal upload.
+- `Paper11_formal_conclusion_manuscript.pdf`: 8-page PDF generated from
   the LaTeX file with `pdflatex`; this is the current formal PDF submission file.
 - `Paper11_cover_letter_and_declarations.docx`: word-processing cover-letter
   and declarations file generated with Pandoc.
