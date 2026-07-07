@@ -71,17 +71,17 @@ label-source audit.
 | GeoFM suitability-prior gate | Ready as current no-go evidence | Phase 41 implements the revised GeoFM route: an independent-label-calibrated low-dimensional prior instead of raw 64-dimensional state injection. The current real no-registry run reports `phase41_independent_label_inputs_missing`, so no calibrated prior exists and B2/B3 remains blocked. |
 | Suitability reward | Not ready | Phase 10/12 keep suitability reward disabled, Phase 36 reports `proxy_signal_not_supported`, and Phase 40 keeps the route stopped until an external independent label registry passes the gate. |
 | Planning-performance experiments | Not ready | Phase 18 still reports `performance_experiment_ready: false`. |
-| Conclusion manuscript route | Ready as formal text | Use `paper/submission/04_formal_conclusion_manuscript.md` for a bounded negative/evidence-gated manuscript. Positive performance, suitability-reward, B2/B3, and transfer claims remain blocked. |
+| Conclusion manuscript route | Ready as formal text | Use `paper/submission/04_formal_conclusion_manuscript.md` for a Phase 52-synchronized bounded positive compressed-GeoFM representation manuscript. Raw B1 superiority, suitability-reward, B2/B3, and transfer claims remain blocked. |
 
 ## Submission Material Checklist
 
 | Material | Current action |
 |---|---|
 | Title page | Use a guarded title from `02_draft_titles_highlights_declarations.md`; add author affiliations manually. |
-| Abstract | Ready for conclusion route | Use the Phase 42-synchronized abstract in `04_formal_conclusion_manuscript.md` or the scaffold in `02_draft_titles_highlights_declarations.md`; do not convert it into a positive performance abstract. |
-| Highlights | Ready for conclusion route | Use the Phase 42 guarded highlights in `02_draft_titles_highlights_declarations.md`; do not revise into positive performance wording. |
+| Abstract | Ready for conclusion route | Use the Phase 52-synchronized abstract in `04_formal_conclusion_manuscript.md`; do not convert it into raw-B1, suitability-reward, or transfer wording. |
+| Highlights | Ready for conclusion route | Use the Phase 52 highlights in `04_formal_conclusion_manuscript.md`; do not revise into raw-B1, suitability-reward, or transfer wording. |
 | Keywords | Use GeoFM, farmland spatial optimization, reinforcement learning, suitability proxy, AlphaEarth, tiled planning. |
-| Main manuscript | Ready only for conclusion route | `04_formal_conclusion_manuscript.md` is the current formal text. A positive IJAEOG-style performance manuscript remains blocked. |
+| Main manuscript | Ready for bounded compressed-representation route | `04_formal_conclusion_manuscript.md` is the current formal text. A broad positive IJAEOG-style performance, suitability-reward, or transfer manuscript remains blocked. |
 | Figures | Pending for final upload | The formal text is available, but final journal upload still needs figure decisions. For the conclusion route, prioritize workflow, evidence-gate, representation-control, and label-gate figures rather than positive transfer/performance figures. |
 | Data availability | Draft available; final version needs repository URL, large-data archive, and external DLTB access constraints. |
 | Code availability | Ready once GitHub URL and final release commit or tag are cited. Do not use an in-file self-reference as the final commit hash. |

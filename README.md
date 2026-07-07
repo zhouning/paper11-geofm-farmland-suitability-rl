@@ -19,7 +19,7 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `paper/phase26_results/`: interpretation of the current Phase 26 empirical package and the next diagnostic matrix.
 - `paper/phase27_results/`: interpretation of the Phase 27 B0/B1 budget and tile-seed stability diagnosis.
 - `paper/phase28_results/`: interpretation of the Phase 28 B0/B1/D2/D3/D4 representation-control diagnosis.
-- `paper/submission/`: IJAEOG submission-readiness audit, guarded submission text drafts, and the Phase 48 compressed-route formal manuscript package.
+- `paper/submission/`: IJAEOG submission-readiness audit, guarded submission text drafts, and the Phase 52-expanded compressed-route formal manuscript package.
 - `docs/source_notes/`: original design notes used to derive the Paper11 package.
 - `experiments/geofm_runtime/`: copied GeoFM and embedding-space experiment scripts from the source Paper58 workspace.
 - `experiments/phase1_bishan_baseline/`: executable Phase 1 Bishan GeoFM representation baseline.
@@ -426,6 +426,15 @@ alpha-0.05 significant. Phase 51 resolves the magnitude question with an exact
 signed-rank test over cluster means: positive rank sum `40 / 45`, p
 `0.01953125`, status `cluster_magnitude_support`.
 
+Phase 52 expands the same six-variant protocol to five held-out tiles and three
+seeds. Reusing the existing Phase 48-51 read-only analyzers over the expanded
+summary, the result remains `compressed_geofm_route_supported`: all eight
+compressed-versus-control mean deltas are positive, the pooled row-level delta
+is `0.2921767818` with `74 / 120` positive comparisons, row-level sign-test p
+is `0.0066881634`, bootstrap CI95 is `[0.1623326461, 0.4323997354]`, cluster
+sign-only support is directional (`10 / 15`, p `0.1508789062`), and cluster
+signed-rank support remains positive (p `0.0206298828`).
+
 Run the read-only Phase 29 representation-scale follow-up after the Phase 2
 B1 feature table, Phase 8 D4 feature tables, Phase 13 tile index, and optional
 Phase 28 summary CSV are available:
@@ -664,6 +673,7 @@ that can pass Phase 40.
 - Phase 49 compressed route robustness audit: `paper/phase28_results/18_phase49_compressed_route_robustness.md`
 - Phase 50 cluster-level robustness audit: `paper/phase28_results/19_phase50_cluster_level_robustness.md`
 - Phase 51 cluster magnitude support audit: `paper/phase28_results/20_phase51_cluster_magnitude_support.md`
+- Phase 52 expanded cluster replication: `paper/phase28_results/21_phase52_expanded_cluster_replication.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`

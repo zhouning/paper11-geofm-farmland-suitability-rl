@@ -58,6 +58,10 @@ base-reward protocol.
 - `18_phase49_compressed_route_robustness.md`: read-only robustness audit showing that the Phase 48 compressed route survives pooled sign-test, bootstrap, and leave-one sensitivity checks.
 - `19_phase50_cluster_level_robustness.md`: conservative tile-seed cluster-level audit showing directional support with `7 / 9` positive clusters and p `0.08984375`.
 - `20_phase51_cluster_magnitude_support.md`: exact signed-rank cluster magnitude audit showing positive rank sum `40 / 45` and p `0.01953125`.
+- `21_phase52_expanded_cluster_replication.md`: expanded five-tile, three-seed
+  replication showing that compressed GeoFM routes remain mean-positive against
+  B0, raw B1, random D2, and shuffled D3, with pooled row-level p
+  `0.0066881634` and cluster signed-rank p `0.0206298828`.
 
 ## Reproduction Link
 
@@ -368,6 +372,16 @@ current status is `cluster_directional_support`: mean cluster delta
 Phase 48/49. Phase 51 then tests cluster magnitude with an exact one-sided
 signed-rank test and reports `cluster_magnitude_support`, positive rank sum
 `40 / 45`, and p `0.01953125`.
+
+Phase 52 expands the same six-variant protocol to five held-out tiles and
+three seeds. Reusing the existing read-only Phase 48-51 analyzers, the expanded
+summary reports `compressed_geofm_route_supported`, pooled compressed-control
+delta `0.2921767818`, `74 / 120` positive row-level comparisons, one-sided
+row-level sign-test p `0.0066881634`, bootstrap CI95 `[0.1623326461,
+0.4323997354]`, `10 / 15` positive tile-seed clusters with sign-only p
+`0.1508789062`, and exact cluster signed-rank p `0.0206298828`. This
+strengthens the compressed-route evidence while preserving the cluster
+sign-only wording boundary.
 
 ## Claim Boundary
 

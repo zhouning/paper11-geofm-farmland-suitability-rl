@@ -1087,3 +1087,40 @@ Phase 51 supports the cluster-level compressed-route effect when magnitude is
 considered. Manuscript wording should state that the compressed GeoFM route is
 supported by mean reward, row-level robustness, and exact cluster signed-rank
 evidence; the sign-only cluster test remains directional with p=0.08984375.
+## Phase 52 Expanded Cluster Replication
+
+Phase 52 uses the completed expanded Phase 28-style six-variant run over five
+held-out Bishan tiles and three seeds. The full expanded output was verified as
+complete (`all_evaluations_completed: true`) and reanalyzed with the existing
+read-only Phase 48-51 analyzers.
+
+Expanded Phase 48-style status:
+
+```text
+compressed_geofm_route_supported
+```
+
+Core expanded evidence:
+
+```text
+mean rewards: B0 0.1793245179, B1 0.2639655302, D2 0.2183220949, D3 0.2716306377, D4P8 0.4690087215, D4P16 0.5819662325
+D4P8 - B0: 0.2896842037, 9 / 15 positive
+D4P8 - B1: 0.2050431914, 9 / 15 positive
+D4P8 - D2: 0.2506866266, 10 / 15 positive
+D4P8 - D3: 0.1973780839, 10 / 15 positive
+D4P16 - B0: 0.4026417146, 8 / 15 positive
+D4P16 - B1: 0.3180007023, 10 / 15 positive
+D4P16 - D2: 0.3636441375, 7 / 15 positive
+D4P16 - D3: 0.3103355948, 11 / 15 positive
+pooled compressed-control delta: 0.2921767818, 74 / 120 positive
+row-level sign-test p: 0.0066881634
+bootstrap CI95: [0.1623326461, 0.4323997354]
+cluster sign-only: 10 / 15 positive, p 0.1508789062
+cluster signed-rank: positive rank sum 96 / 120, p 0.0206298828
+```
+
+Conclusion update: Phase 52 materially strengthens the compressed GeoFM route
+because the same conclusion survives expanded held-out coverage. The cluster
+sign-only test remains directional, so manuscript wording must keep that
+boundary. Raw B1 direct injection, suitability reward, B2/B3, transfer, and
+independent agronomic suitability claims remain unsupported.

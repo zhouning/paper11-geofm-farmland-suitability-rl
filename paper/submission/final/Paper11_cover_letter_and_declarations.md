@@ -24,8 +24,11 @@ route is statistically robust in the current Bishan protocol, with pooled
 sign-test p `0.0031549137` and bootstrap CI95 `[0.2827829983, 0.6639974489]`.
 Phase 50 provides a conservative cluster-level boundary: `7 / 9` tile-seed
 clusters are positive, the cluster sign-test p is `0.08984375`, and Phase 51 exact signed-rank testing supports the cluster magnitude effect with p `0.01953125`.
-Suitability-reward and B2/B3 claims remain blocked by independent-label and
-calibrated-prior gates.
+Phase 52 expands the same six-variant protocol to five held-out tiles and three
+seeds, again supporting the compressed route with pooled delta `0.2921767818`,
+`74 / 120` positive row-level comparisons, row-level sign-test p
+`0.0066881634`, and cluster signed-rank p `0.0206298828`. Suitability-reward
+and B2/B3 claims remain blocked by independent-label and calibrated-prior gates.
 
 This manuscript should be relevant to readers of IJAEOG because it provides a
 reproducible test for using Earth-observation foundation-model embeddings in
@@ -111,8 +114,8 @@ superiority, B2/B3 readiness, suitability-reward improvement, cross-region
 transfer, or independently validated agronomic suitability. The current
 defensible conclusion is that compressed GeoFM state routes improve mean
 held-out base-reward policy reward under the Bishan protocol and remain
-positive under Phase 49 robustness checks, with Phase 50 cluster-level evidence
-remaining directional by sign test but supported by Phase 51 signed-rank magnitude testing, while raw GeoFM state
-injection and
-the current suitability-reward route remain unsupported under the completed
-Paper11 evidence gates.
+positive under Phase 49 robustness checks and Phase 52 expanded replication,
+with Phase 50 and Phase 52 cluster-level evidence remaining directional by sign
+test but supported by signed-rank magnitude testing, while raw GeoFM state
+injection and the current suitability-reward route remain unsupported under the
+completed Paper11 evidence gates.
