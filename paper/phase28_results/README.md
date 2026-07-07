@@ -62,6 +62,9 @@ base-reward protocol.
   replication showing that compressed GeoFM routes remain mean-positive against
   B0, raw B1, random D2, and shuffled D3, with pooled row-level p
   `0.0066881634` and cluster signed-rank p `0.0206298828`.
+- `22_phase53_cluster_mean_support.md`: exact sign-flip, bootstrap, and
+  leave-one influence audit showing `cluster_mean_support` for the expanded
+  Phase 52 cluster mean.
 
 ## Reproduction Link
 
@@ -382,6 +385,14 @@ row-level sign-test p `0.0066881634`, bootstrap CI95 `[0.1623326461,
 `0.1508789062`, and exact cluster signed-rank p `0.0206298828`. This
 strengthens the compressed-route evidence while preserving the cluster
 sign-only wording boundary.
+
+Phase 53 then audits the expanded Phase 52 cluster mean directly. The current
+status is `cluster_mean_support`: mean cluster delta `0.2921767818`, exact
+one-sided sign-flip mean p `0.0196838379`, bootstrap CI95 `[0.0570820445,
+0.5823557658]`, minimum leave-one-cluster mean `0.2060081575`, minimum
+leave-one-tile mean `0.0954244478`, and minimum leave-one-seed mean
+`0.2083797951`. This supports the conclusion that the expanded compressed-route
+cluster mean is not driven only by one favorable cluster, tile, or seed.
 
 ## Claim Boundary
 

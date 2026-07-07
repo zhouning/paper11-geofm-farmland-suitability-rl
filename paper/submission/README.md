@@ -14,7 +14,7 @@ reviewer-code package and the manuscript is evidence-gated.
   superseded by Phase 48 for the current formal package.
 - `03_conclusion_manuscript_draft.md`: earlier evidence-calibrated conclusion
   manuscript draft retained as provenance.
-- `04_formal_conclusion_manuscript.md`: current Phase 48-synchronized formal
+- `04_formal_conclusion_manuscript.md`: current Phase 53-synchronized formal
   manuscript source file for a bounded positive compressed-GeoFM representation
   route.
 - `final/`: generated delivery files, including DOCX exports, editable source
@@ -22,14 +22,16 @@ reviewer-code package and the manuscript is evidence-gated.
 ## Current Status
 
 As of 2026-07-07, the code/reproducibility repository and formal manuscript
-package are synchronized to Phase 52. Phase 48 reports
+package are synchronized to Phase 53. Phase 48 reports
 `compressed_geofm_route_supported`: D4P8 and D4P16 exceed B0, raw B1, random
 D2, and shuffled D3 on mean held-out base-reward policy reward. Phase 52
 expands the same six-variant protocol to five held-out tiles and three seeds,
 again supporting the compressed route with pooled delta `0.2921767818`,
 `74 / 120` positive row-level comparisons, row-level sign-test p
-`0.0066881634`, and cluster signed-rank p `0.0206298828`. The current formal
-manuscript therefore supports a bounded positive compressed-GeoFM
+`0.0066881634`, and cluster signed-rank p `0.0206298828`. Phase 53 reports
+`cluster_mean_support`, exact sign-flip p `0.0196838379`, bootstrap CI95
+`[0.0570820445, 0.5823557658]`, and positive leave-one cluster, tile, and seed
+means. The current formal manuscript therefore supports a bounded positive compressed-GeoFM
 representation conclusion.
 
 Do not submit a manuscript claiming raw GeoFM B1 superiority, B2/B3 readiness,

@@ -34,8 +34,15 @@ validated agronomic suitability.
 
 Current conclusion: raw GeoFM state injection remains unsupported, but Phase 48
 supports compressed GeoFM state routes (`D4P8` and `D4P16`) under the current
-Bishan base-reward held-out protocol, Phase 49 reports this compressed route as row-level statistically robust, and
-Phase 50 reports directional sign-only cluster support, and Phase 51 reports magnitude-sensitive cluster support (`cluster_magnitude_support`). Phase 52 expands the same six-variant protocol to five held-out tiles and three seeds, again supporting the compressed route with row-level sign-test p `0.0066881634` and cluster signed-rank p `0.0206298828`. The current suitability-reward route
+Bishan base-reward held-out protocol, Phase 49 reports this compressed route as
+row-level statistically robust, Phase 50 reports directional sign-only cluster
+support, and Phase 51 reports magnitude-sensitive cluster support
+(`cluster_magnitude_support`). Phase 52 expands the same six-variant protocol
+to five held-out tiles and three seeds, again supporting the compressed route
+with row-level sign-test p `0.0066881634` and cluster signed-rank p
+`0.0206298828`. Phase 53 reports `cluster_mean_support`, exact sign-flip p
+`0.0196838379`, bootstrap CI95 `[0.0570820445, 0.5823557658]`, and positive
+leave-one cluster, tile, and seed means. The current suitability-reward route
 remains blocked until an external independent-label registry passes Phase 40
 and a calibrated low-dimensional prior passes Phase 41.
 

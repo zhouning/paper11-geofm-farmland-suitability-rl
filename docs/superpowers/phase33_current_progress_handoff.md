@@ -1124,3 +1124,51 @@ because the same conclusion survives expanded held-out coverage. The cluster
 sign-only test remains directional, so manuscript wording must keep that
 boundary. Raw B1 direct injection, suitability reward, B2/B3, transfer, and
 independent agronomic suitability claims remain unsupported.
+## Phase 53 Cluster Mean Support Audit
+
+Phase 53 adds a read-only cluster-mean support audit over the expanded Phase 52
+Phase 50 cluster rows. It answers the reviewer risk that the positive expanded
+cluster-magnitude evidence might be driven only by one or two large favorable
+clusters.
+
+New implementation and evidence files:
+
+```text
+docs/superpowers/specs/2026-07-07-phase53-cluster-mean-support-design.md
+docs/superpowers/plans/2026-07-07-phase53-cluster-mean-support.md
+src/paper11_geofm/phase53_cluster_mean_support.py
+experiments/phase53_cluster_mean_support/run_phase53_cluster_mean_support.py
+tests/test_phase53_cluster_mean_support.py
+paper/phase28_results/22_phase53_cluster_mean_support.md
+```
+
+Real Phase 53 command:
+
+```powershell
+python experiments\phase53_cluster_mean_support\run_phase53_cluster_mean_support.py --phase50-cluster-csv experiments\phase52_expanded_cluster_replication\outputs\phase52_full5_seed3_phase50_cluster\phase50_cluster_delta_summary.csv --output-dir experiments\phase53_cluster_mean_support\outputs\phase52_full5_seed3 --bootstrap-iterations 20000 --random-seed 53
+```
+
+Real Phase 53 status:
+
+```text
+cluster_mean_support
+```
+
+Core expanded cluster-mean evidence:
+
+```text
+cluster count: 15
+mean cluster delta: 0.2921767818
+exact one-sided sign-flip mean p: 0.0196838379
+bootstrap CI95: [0.0570820445, 0.5823557658]
+minimum leave-one-cluster mean: 0.2060081575
+minimum leave-one-tile mean: 0.0954244478
+minimum leave-one-seed mean: 0.2083797951
+```
+
+Conclusion update: Phase 53 strengthens, rather than changes, the Phase 52
+compressed-route conclusion. The evidence supports compressed GeoFM state
+representations under the current Bishan base-reward held-out protocol, and the
+expanded cluster mean is not driven only by one favorable cluster, tile, or
+seed. Raw B1 direct injection, suitability reward, B2/B3, transfer, and
+independent agronomic suitability claims remain unsupported.
