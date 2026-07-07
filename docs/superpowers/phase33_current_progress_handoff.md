@@ -1371,3 +1371,49 @@ Remaining non-inferable submission items:
 ```text
 author list, affiliations, corresponding author, funding, author contributions, target journal, final data-access wording for external DLTB data, code release tag/DOI, and journal-specific reference formatting.
 ```
+
+## Window Close Save - 2026-07-07 19:23 +08:00
+
+Current repository state before closing the window:
+
+```text
+branch: main
+local/remote: main...origin/main synchronized before this save
+latest pushed commit before this save: 046457282fa3fde60bf93560f34d234f00d3a48b docs: polish formal submission package
+workspace before this save: clean
+```
+
+Current Paper11 conclusion:
+
+```text
+GeoFM is useful for Bishan farmland layout optimization under the base-reward held-out protocol when represented as controlled compressed state features. The supported route is D4P8/D4P16 compressed GeoFM state representation. Raw B1 direct injection, B2/B3 suitability reward, cross-region transfer, PCA optimality, and independently validated agronomic suitability remain unsupported.
+```
+
+Current formal submission files:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl\paper\submission\final\Paper11_formal_conclusion_manuscript.md
+D:\test\paper11-geofm-farmland-suitability-rl\paper\submission\final\Paper11_formal_conclusion_manuscript.tex
+D:\test\paper11-geofm-farmland-suitability-rl\paper\submission\final\Paper11_formal_conclusion_manuscript.pdf
+D:\test\paper11-geofm-farmland-suitability-rl\paper\submission\final\Paper11_submission_metadata_template.md
+```
+
+Most recent verification from Phase 58:
+
+```text
+Phase 57 pytest: 3 passed
+pdflatex: exited 0 twice
+PDF: 10 pages, no empty pages, no Markdown heading literals, all main sections present, both tables present, References present, zero rendered "Phase" occurrences
+```
+
+Next-window entry point:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl
+```
+
+Next required human-provided submission items:
+
+```text
+target journal, author list, affiliations, corresponding author, funding, author contributions, final external DLTB data access wording, code release tag/DOI, and journal-specific formatting requirements
+```
