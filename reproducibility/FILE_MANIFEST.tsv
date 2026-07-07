@@ -291,7 +291,7 @@ paper/submission/final/Paper11_cover_letter_and_declarations.md	submission	Edita
 paper/submission/final/Paper11_cover_letter_and_declarations.docx	submission	Pandoc-generated DOCX export of the Phase 45 cover letter and declarations file.
 paper/submission/final/Paper11_formal_conclusion_manuscript.md	submission	Editable journal-style formal manuscript source for the current conclusion-bounded Paper11 export.
 paper/submission/final/Paper11_formal_conclusion_manuscript.tex	submission	Standalone LaTeX export of the current journal-style formal manuscript for journal upload.
-paper/submission/final/Paper11_formal_conclusion_manuscript.pdf	submission	pdflatex-generated 8-page PDF of the current journal-style formal manuscript for journal upload.
+paper/submission/final/Paper11_formal_conclusion_manuscript.pdf	submission	pdflatex-generated 9-page PDF of the current journal-style formal manuscript for journal upload.
 paper/submission/final/Paper11_phase46_submission_contents_sha256.txt	submission	SHA256 checksum list for files included in the Phase 46 submission bundle.
 paper/submission/final/Paper11_phase46_submission_bundle.zip	submission	Phase 46 transfer archive containing formal manuscript, cover letter/declarations, editable sources, and content checksums.
 paper/submission/final/Paper11_phase46_submission_bundle_sha256.txt	submission	SHA256 checksum for the Phase 46 submission bundle zip.
@@ -337,3 +337,14 @@ src/paper11_geofm/phase54_artifact_lineage_consistency.py	source	Phase 54 read-o
 experiments/phase54_artifact_lineage_consistency/run_phase54_artifact_lineage_consistency.py	experiment_runner	Phase 54 artifact-lineage consistency analyze-only CLI runner.
 tests/test_phase54_artifact_lineage_consistency.py	test	Tests for Phase 54 artifact-lineage status rules, mismatch detection, artifacts, and CLI behavior.
 paper/phase28_results/23_phase54_artifact_lineage_consistency.md	results	Reviewer-facing interpretation of the Phase 54 artifact-lineage consistency audit.
+docs/superpowers/specs/2026-07-07-phase57-compressed-representation-mechanism-design.md	design	Phase 57 design for a read-only compressed-representation mechanism audit.
+docs/superpowers/plans/2026-07-07-phase57-compressed-representation-mechanism.md	implementation_plan	Phase 57 compressed representation mechanism implementation plan.
+src/paper11_geofm/phase57_compressed_representation_mechanism.py	source	Phase 57 read-only compressed representation mechanism audit module.
+experiments/phase57_compressed_representation_mechanism/run_phase57_compressed_representation_mechanism.py	experiment_runner	Phase 57 compressed representation mechanism analyze-only CLI runner.
+tests/test_phase57_compressed_representation_mechanism.py	test	Tests for Phase 57 representation geometry, status rules, artifacts, and CLI behavior.
+paper/phase28_results/24_phase57_compressed_representation_mechanism.md	results	Reviewer-facing interpretation of the Phase 57 compressed representation mechanism audit.
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_compressed_representation_mechanism.json	results	Phase 57 JSON comparison and mechanism status artifact.
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_representation_geometry.csv	results	Phase 57 raw and compressed GeoFM representation geometry table.
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_reward_gain_summary.csv	results	Phase 57 compressed-variant reward gain summary table.
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_tile_geometry_gain.csv	results	Phase 57 tile-level geometry and reward-gain diagnostic table.
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_compressed_representation_mechanism.md	results	Phase 57 Markdown mechanism audit summary.

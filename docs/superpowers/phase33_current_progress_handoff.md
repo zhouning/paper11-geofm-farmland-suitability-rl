@@ -1266,3 +1266,64 @@ pdflatex exited 0 and generated an 8-page PDF.
 The final LaTeX log contains no Overfull/Underfull/Error/undefined/Rerun warnings.
 PDF text extraction found no literal Markdown heading markers, no empty pages, and zero occurrences of "Phase" in the rendered manuscript text.
 ```
+
+## Phase 57 Compressed Representation Mechanism Audit
+
+Phase 57 adds a read-only mechanism audit for the current bounded positive Paper11 conclusion. It does not retrain RL policies and does not introduce a suitability reward. It explains why the supported route is compressed GeoFM state representation rather than raw 64-dimensional B1 injection.
+
+New implementation and evidence files:
+
+```text
+docs/superpowers/specs/2026-07-07-phase57-compressed-representation-mechanism-design.md
+docs/superpowers/plans/2026-07-07-phase57-compressed-representation-mechanism.md
+src/paper11_geofm/phase57_compressed_representation_mechanism.py
+experiments/phase57_compressed_representation_mechanism/run_phase57_compressed_representation_mechanism.py
+tests/test_phase57_compressed_representation_mechanism.py
+paper/phase28_results/24_phase57_compressed_representation_mechanism.md
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_compressed_representation_mechanism.json
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_representation_geometry.csv
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_reward_gain_summary.csv
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_tile_geometry_gain.csv
+experiments/phase57_compressed_representation_mechanism/outputs/phase52_full5_seed3/phase57_compressed_representation_mechanism.md
+```
+
+Real Phase 57 status:
+
+```text
+compressed_geometry_consistent
+```
+
+Core mechanism values:
+
+```text
+aligned blocks: 64,984
+B1: features 64, variance 0.0981484274, effective rank 9.4947211626, condition number 6658.9542931381
+D4P8: features 8, variance retention 85.87823898%, effective rank 5.1322783588, condition number 16.2704676982, mean reward gain 0.2356980264, 38 / 60 positive
+D4P16: features 16, variance retention 94.96006154%, effective rank 7.3009059917, condition number 53.6978527088, mean reward gain 0.3486555373, 36 / 60 positive
+Tile retention-gain correlations: D4P8 -0.0207226322, D4P16 -0.2059768413, pooled 0.0257762396
+```
+
+Formal manuscript update:
+
+```text
+paper/submission/final/Paper11_formal_conclusion_manuscript.md
+paper/submission/final/Paper11_formal_conclusion_manuscript.tex
+paper/submission/final/Paper11_formal_conclusion_manuscript.pdf
+```
+
+The manuscript now includes a representation-geometry audit in Methods, Results, Discussion, Abstract, and Conclusion. It remains a journal-style manuscript, not a phase-record document: rendered PDF text has zero occurrences of "Phase". The PDF regenerated to 9 pages.
+
+Verification completed:
+
+```text
+python -m pytest tests\test_phase57_compressed_representation_mechanism.py tests\test_phase48_compressed_geofm_rescue.py tests\test_phase53_cluster_mean_support.py tests\test_phase54_artifact_lineage_consistency.py -q -o cache_dir=.pytest_cache_phase57_verify --basetemp=.pytest_tmp_phase57_verify
+15 passed
+
+pdflatex -interaction=nonstopmode -halt-on-error Paper11_formal_conclusion_manuscript.tex
+pdflatex -interaction=nonstopmode -halt-on-error Paper11_formal_conclusion_manuscript.tex
+both exited 0; final PDF has 9 pages
+
+PDF text extraction: no empty pages, no Markdown heading literals, all main sections present, mechanism section and key geometry numbers present, zero rendered "Phase" occurrences.
+```
+
+Conclusion update: the positive Paper11 conclusion is now stronger. GeoFM is useful to a moderate, bounded degree under the Bishan base-reward held-out protocol when represented as compressed state features. The mechanism evidence supports the interpretation that compression preserves most raw GeoFM variance while lowering effective rank and improving conditioning. Raw B1 direct injection, PCA optimality, suitability reward, B2/B3 readiness, transfer, and independent agronomic suitability remain unsupported.

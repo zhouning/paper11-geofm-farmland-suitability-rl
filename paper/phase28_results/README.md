@@ -67,6 +67,10 @@ base-reward protocol.
   Phase 52 cluster mean.
 - `23_phase54_artifact_lineage_consistency.md`: read-only lineage audit showing
   `artifact_lineage_consistent` for the formal Phase 52/53 artifact chain.
+- `24_phase57_compressed_representation_mechanism.md`: read-only
+  representation-geometry audit showing that D4P8/D4P16 retain most raw GeoFM
+  variance while reducing effective rank and conditioning burden relative to
+  raw B1.
 
 ## Reproduction Link
 
@@ -402,6 +406,23 @@ means from the authoritative Phase 48 delta table, then recomputing Phase 51 and
 Phase 53 statistics from the authoritative cluster CSV, reproduces the formal
 values used in the manuscript. Historical `real_bishan_4096_5tiles*` generated
 outputs are therefore not used as the formal evidence source for this conclusion.
+
+Phase 57 audits the compressed-route mechanism without retraining policies. Run
+it from the repository root after the Phase 2/8 feature tables, Phase 13 tile
+index, and expanded Phase 52 delta table exist:
+
+```powershell
+python experiments\phase57_compressed_representation_mechanism\run_phase57_compressed_representation_mechanism.py --b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --delta-csv experiments\phase52_expanded_cluster_replication\outputs\phase52_full5_seed3_phase48_compressed_rescue\phase48_compressed_geofm_rescue_delta_table.csv --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --output-dir experiments\phase57_compressed_representation_mechanism\outputs\phase52_full5_seed3
+```
+
+The current Phase 57 status is `compressed_geometry_consistent`. All `64,984`
+blocks align across B1, D4P8, and D4P16 feature tables. D4P8 retains
+`85.87823898%` of raw GeoFM variance while reducing effective rank from
+`9.4947211626` to `5.1322783588` and condition number from `6658.9542931381`
+to `16.2704676982`. D4P16 retains `94.96006154%` of raw GeoFM variance while
+reducing effective rank to `7.3009059917` and condition number to
+`53.6978527088`. The expanded-replication reward gains remain positive for
+both compressed variants.
 
 ## Claim Boundary
 

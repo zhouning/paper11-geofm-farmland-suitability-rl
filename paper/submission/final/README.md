@@ -12,7 +12,7 @@ and the current journal-style LaTeX/PDF formal export.
   manuscript source for the current conclusion-bounded formal export.
 - `Paper11_formal_conclusion_manuscript.tex`: standalone LaTeX export of
   the current journal-style formal manuscript for journal upload.
-- `Paper11_formal_conclusion_manuscript.pdf`: 8-page PDF generated from
+- `Paper11_formal_conclusion_manuscript.pdf`: 9-page PDF generated from
   the LaTeX file with `pdflatex`; this is the current formal PDF submission file.
 - `Paper11_cover_letter_and_declarations.docx`: word-processing cover-letter
   and declarations file generated with Pandoc.
@@ -48,7 +48,10 @@ with row-level sign-test p `0.0066881634` and cluster signed-rank p
 `0.0196838379`, bootstrap CI95 `[0.0570820445, 0.5823557658]`, and positive
 leave-one cluster, tile, and seed means. Phase 54 reports
 `artifact_lineage_consistent`, verifying that the formal Phase 52/53 values are
-reproducible from one authoritative artifact chain. The current suitability-reward route
+reproducible from one authoritative artifact chain. Phase 57 reports
+`compressed_geometry_consistent`: D4P8/D4P16 retain `85.87823898%` and
+`94.96006154%` of raw GeoFM variance while reducing effective rank and
+condition number relative to raw B1. The current suitability-reward route
 remains blocked until an external independent-label registry passes Phase 40
 and a calibrated low-dimensional prior passes Phase 41.
 

@@ -137,15 +137,22 @@ remained positive; the pooled delta was \texttt{0.2921767818}, with
 p \texttt{0.0066881634}, 95\% bootstrap CI
 \texttt{{[}0.1623326461,\ 0.4323997354{]}}, cluster signed-rank p
 \texttt{0.0206298828}, and exact cluster-mean sign-flip p
-\texttt{0.0196838379}. Artifact-lineage checks reproduced the formal
-expanded-replication values from one authoritative
-delta-to-cluster-to-statistics chain. Suitability-reward claims remain
-unsupported because available weak labels are DLTB/slope-derived leakage
-risks and no independent Bishan suitability label passed the label gate.
-These results support a bounded conclusion: GeoFM information improved
-farmland layout optimization when represented as controlled compressed
-state features under the Bishan base-reward protocol, but raw injection,
-B2/B3 suitability reward, and transfer claims remain unproven.
+\texttt{0.0196838379}. A representation-geometry audit aligned all
+\texttt{64,984} blocks and showed that D4P8 and D4P16 retained
+\texttt{85.87823898\%} and \texttt{94.96006154\%} of raw GeoFM variance
+while reducing effective rank from \texttt{9.4947211626} to
+\texttt{5.1322783588} and \texttt{7.3009059917}, respectively, and
+reducing the covariance condition number from \texttt{6658.9542931381}
+to \texttt{16.2704676982} and \texttt{53.6978527088}. Artifact-lineage
+checks reproduced the formal expanded-replication values from one
+authoritative delta-to-cluster-to-statistics chain. Suitability-reward
+claims remain unsupported because available weak labels are
+DLTB/slope-derived leakage risks and no independent Bishan suitability
+label passed the label gate. These results support a bounded conclusion:
+GeoFM information improved farmland layout optimization when represented
+as controlled compressed state features under the Bishan base-reward
+protocol, but raw injection, B2/B3 suitability reward, and transfer
+claims remain unproven.
 
 \section{1. Introduction}\label{introduction}
 
@@ -242,7 +249,7 @@ compression.
 \subsection{2.3 Planning reward and policy
 interface}\label{planning-reward-and-policy-interface}
 
-All supported representation experiments used a deterministic the base
+All supported representation experiments used a deterministic base
 planning reward. This reward encoded explicit planning logic, including
 slope, contiguity, baimu-fang-style consolidation, action validity, and
 related spatial constraints. It deliberately excluded any suitability
@@ -280,6 +287,18 @@ sign-flip and bootstrap audit. A final artifact-lineage audit recomputed
 the formal cluster values from the authoritative delta and cluster CSV
 files to prevent mixed generated directories from supporting the
 manuscript claim.
+
+To test why the compressed route worked while raw B1 did not, a
+read-only representation-geometry audit aligned the B1, D4P8, and D4P16
+feature tables by \texttt{block\_id}. The audit computed total centered
+variance, covariance eigenvalues, effective rank, participation ratio,
+positive-eigenvalue condition number, and feature-standard-deviation
+spread for the raw and compressed GeoFM coordinates. It then linked
+these geometry summaries to the expanded compressed-minus-control reward
+deltas and to held-out tile memberships. This audit was diagnostic: it
+could support a plausible mechanism for the compressed representation
+result, but it did not add a new policy-training result or prove that
+PCA was the optimal compression method.
 
 Suitability-reward evidence was handled by a separate hard gate. Weak
 labels derived from DLTB, slope, or source metadata were treated as
@@ -394,7 +413,41 @@ respectively. These results supported a bounded positive
 compressed-GeoFM state claim after expanded replication and influence
 checking.
 
-\subsection{3.4 Normalization and bounded budget checks did not explain
+\subsection{3.4 Compressed routes retained signal while reducing
+representation rank and conditioning
+burden}\label{compressed-routes-retained-signal-while-reducing-representation-rank-and-conditioning-burden}
+
+The representation-geometry audit provided a mechanism-level explanation
+for why the compressed route was more effective than raw injection. The
+B1, D4P8, and D4P16 feature tables aligned exactly over \texttt{64,984}
+Bishan blocks. Raw B1 contained \texttt{64} GeoFM dimensions with total
+centered variance \texttt{0.0981484274}, effective rank
+\texttt{9.4947211626}, and positive-eigenvalue condition number
+\texttt{6658.9542931381}. D4P8 reduced the GeoFM coordinates to
+\texttt{8} components while retaining total centered variance
+\texttt{0.0842881410}, or \texttt{85.87823898\%} of raw GeoFM variance.
+Its effective rank was \texttt{5.1322783588}, and its condition number
+was \texttt{16.2704676982}. D4P16 retained total centered variance
+\texttt{0.0932018070}, or \texttt{94.96006154\%} of raw GeoFM variance,
+with effective rank \texttt{7.3009059917} and condition number
+\texttt{53.6978527088}.
+
+These geometry values supported the compressed-route interpretation. The
+compressed states preserved most of the raw GeoFM variance but presented
+it to the policy through lower-rank and substantially better-conditioned
+coordinates. The same audit linked these representations to the expanded
+replication deltas: D4P8 had mean compressed-minus-control reward gain
+\texttt{0.2356980264} with \texttt{38\ /\ 60} positive comparisons, and
+D4P16 had mean gain \texttt{0.3486555373} with \texttt{36\ /\ 60}
+positive comparisons. Tile-level retention-gain correlations were near
+zero or weakly negative (\texttt{-0.0207226322} for D4P8,
+\texttt{-0.2059768413} for D4P16, and \texttt{0.0257762396} pooled), so
+the result should not be interpreted as a simple monotonic per-tile
+variance-retention rule. The stronger conclusion is that compressed
+GeoFM states retained the useful shared signal while avoiding the
+high-dimensional and ill-conditioned raw representation presented by B1.
+
+\subsection{3.5 Normalization and bounded budget checks did not explain
 away the compressed
 route}\label{normalization-and-bounded-budget-checks-did-not-explain-away-the-compressed-route}
 
@@ -417,7 +470,7 @@ remained negative on mean, including
 \texttt{N1ZR\ -\ D4P8\ =\ -0.4015493440}. These diagnostics did not
 displace the compressed-route interpretation.
 
-\subsection{3.5 Suitability reward remained blocked by the
+\subsection{3.6 Suitability reward remained blocked by the
 independent-label
 gate}\label{suitability-reward-remained-blocked-by-the-independent-label-gate}
 
@@ -435,8 +488,8 @@ labels are encoded by explicit planning features rather than serving as
 independent suitability outcomes. GeoFM-only signals were weaker and not
 sufficient to justify a reward term. For example, raw GeoFM-only
 features reached ROC AUC \texttt{0.6490064144} for the
-low-slope-farmland label, while the scalar the scalar suitability proxy
-was near random for the same label with ROC AUC \texttt{0.4979564572}.
+low-slope-farmland label, while the scalar suitability proxy was near
+random for the same label with ROC AUC \texttt{0.4979564572}.
 
 The leakage-aware proxy rebuild remained diagnostic-only, and the
 independent-label gate found no registered non-leakage label for the
@@ -462,6 +515,18 @@ points to representation geometry as a practical bottleneck: the
 planning policy benefited when GeoFM information entered through compact
 PCA-compressed features, not when the raw embedding vector was appended
 directly to explicit planning attributes.
+
+The mechanism audit strengthens this interpretation. D4P8 and D4P16
+retained most of the raw GeoFM variance while sharply reducing effective
+rank and covariance conditioning burden. This is consistent with a
+policy-optimization explanation: the compressed features preserved
+shared land-surface signal but removed much of the redundant or
+ill-conditioned coordinate structure that made raw B1 a weak state
+augmentation. The weak tile-level retention-gain correlations also keep
+the interpretation bounded. Compression did not help because every tile
+with more retained variance gained more reward; rather, it changed the
+global state geometry in a way that was more usable under the current
+policy interface.
 
 The evidence is stronger than a single favorable comparison. The
 positive compressed-route result appeared in the original three-tile
@@ -511,14 +576,17 @@ evaluating GeoFM-enhanced farmland layout optimization on real Bishan
 planning units. The evidence rejects raw 64-dimensional GeoFM direct
 injection as a supported planning-state improvement, but supports
 PCA-compressed GeoFM routes D4P8 and D4P16 under the Bishan base-reward
-held-out protocol. The strongest current evidence comes from the
-expanded five-tile, three-seed replication: pooled compressed-control
-delta \texttt{0.2921767818}, \texttt{74\ /\ 120} positive row-level
-comparisons, row-level sign-test p \texttt{0.0066881634}, cluster
-signed-rank p \texttt{0.0206298828}, exact cluster-mean sign-flip p
-\texttt{0.0196838379}, and 95\% bootstrap CI
-\texttt{{[}0.0570820445,\ 0.5823557658{]}}. The appropriate conclusion
-is therefore bounded and positive: GeoFM improved the learned planning
+held-out protocol. The strongest current performance evidence comes from
+the expanded five-tile, three-seed replication: pooled
+compressed-control delta \texttt{0.2921767818}, \texttt{74\ /\ 120}
+positive row-level comparisons, row-level sign-test p
+\texttt{0.0066881634}, cluster signed-rank p \texttt{0.0206298828},
+exact cluster-mean sign-flip p \texttt{0.0196838379}, and 95\% bootstrap
+CI \texttt{{[}0.0570820445,\ 0.5823557658{]}}. The mechanism evidence
+shows that these compressed routes retained \texttt{85.87823898\%} and
+\texttt{94.96006154\%} of raw GeoFM variance while reducing effective
+rank and condition number relative to B1. The appropriate conclusion is
+therefore bounded and positive: GeoFM improved the learned planning
 policy when represented through controlled compressed state features.
 Raw B1 superiority, suitability reward, B2/B3 readiness, cross-region
 transfer, and independently validated agronomic suitability remain
