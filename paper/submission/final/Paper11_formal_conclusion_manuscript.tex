@@ -1,0 +1,825 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+\PassOptionsToPackage{dvipsnames,svgnames,x11names}{xcolor}
+\documentclass[
+  11pt,
+  a4paper,
+]{article}
+\usepackage{xcolor}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\usepackage{iftex}
+\ifPDFTeX
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math} % this also loads fontspec
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+\usepackage{lmodern}
+\ifPDFTeX\else
+  % xetex/luatex font selection
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\usepackage{setspace}
+\emergencystretch=3em
+\sloppy
+\newcommand{\codebreak}[1]{\begingroup\ttfamily\def\_{\textunderscore\allowbreak}#1\endgroup}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\newenvironment{Shaded}{}{}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.49,0.56,0.16}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\BuiltInTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{#1}}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.53,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.56,0.13,0.00}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.73,0.13,0.13}{\textit{#1}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{1.00,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.25,0.63,0.44}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.02,0.16,0.49}{#1}}
+\newcommand{\ImportTok}[1]{\textcolor[rgb]{0.00,0.50,0.00}{\textbf{#1}}}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.40,0.40,0.40}{#1}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.00,0.44,0.13}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.74,0.48,0.00}{#1}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.73,0.40,0.53}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\usepackage{bookmark}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\urlstyle{same}
+\hypersetup{
+  pdftitle={Compressed GeoFM representations improve held-out farmland layout optimization under evidence gates},
+  colorlinks=true,
+  linkcolor={Maroon},
+  filecolor={Maroon},
+  citecolor={Blue},
+  urlcolor={Blue},
+  pdfcreator={LaTeX via pandoc}}
+
+\title{Compressed GeoFM representations improve held-out farmland layout
+optimization under evidence gates}
+\author{}
+\date{}
+
+\begin{document}
+\maketitle
+
+\setstretch{1.15}
+\section{Evidence-Gated GeoFM Representation for Farmland Layout
+Optimization}\label{evidence-gated-geofm-representation-for-farmland-layout-optimization}
+
+\subsection{Title}\label{title}
+
+Compressed GeoFM representations improve held-out farmland layout
+optimization under evidence gates
+
+\subsection{Short Title}\label{short-title}
+
+Compressed GeoFM planning
+
+\subsection{Keywords}\label{keywords}
+
+Geospatial foundation model; AlphaEarth embeddings; farmland layout
+optimization; reinforcement learning; suitability proxy; representation
+control; evidence gate; land-use planning
+
+\subsection{Highlights}\label{highlights}
+
+\begin{itemize}
+\tightlist
+\item
+  A reproducible workflow links AlphaEarth embeddings to real Bishan
+  DLTB planning blocks.
+\item
+  Tiled and padded policy interfaces make large real planning instances
+  testable.
+\item
+  Multi-tile B0/B1 evidence rejects raw 64-dimensional GeoFM direct
+  injection.
+\item
+  Phase 48 shows that compressed GeoFM routes D4P8 and D4P16 outperform
+  B0, raw B1, random D2, and shuffled D3 on mean held-out reward.
+\item
+  Phase 52 expands this compressed-route evidence to five held-out tiles
+  and three seeds.
+\item
+  Phase 53 supports the expanded cluster mean with exact sign-flip,
+  bootstrap, and leave-one influence checks.
+\item
+  Phase 54 verifies that the formal Phase 52/53 values come from one
+  authoritative artifact chain.
+\item
+  Suitability-reward work remains blocked until an independent
+  non-leakage label gate passes.
+\item
+  A local Phase 42 label-source audit finds no usable external
+  suitability label for the real Bishan run.
+\item
+  The evidence supports a bounded positive compressed-representation
+  conclusion, not a raw-GeoFM or suitability-reward claim.
+\end{itemize}
+
+\subsection{Abstract}\label{abstract}
+
+Farmland spatial layout optimization requires decisions over many
+heterogeneous planning units, but direct variables for soil quality,
+irrigation, productivity, and long-term suitability are often
+unavailable at operational planning scale. Geospatial foundation-model
+(GeoFM) embeddings offer a possible source of latent land-surface
+information, but their usefulness for reinforcement-learning planning
+depends on representation design, reward validation, and leakage-aware
+labels. This study builds a reproducible evidence-gated workflow that
+aggregates AlphaEarth embeddings and explicit planning features to real
+Bishan DLTB land-use blocks, constructs tiled and padded planning
+interfaces, and evaluates GeoFM-enhanced representations under a
+deterministic base planning reward. Raw 64-dimensional GeoFM direct
+injection is not supported: at 4096 training steps, B1 has a
+learned-policy B1-B0 mean reward delta of \texttt{-0.1318712688}, with
+only \texttt{3\ /\ 9} held-out tile-seed pairs favoring B1. Phase 48
+changes the broader conclusion by re-evaluating the PCA-compressed GeoFM
+variants as candidate state routes. D4P8 and D4P16 exceed B0, raw B1,
+random D2, and shuffled D3 on mean learned-policy reward; the pooled
+compressed-control delta is \texttt{0.4673011499}, with
+\texttt{48\ /\ 72} positive comparisons. Phase 49 further reports
+\codebreak{compressed\_route\_statistically\_robust}, with one-sided
+sign-test p \texttt{0.0031549137} and bootstrap CI95
+\texttt{{[}0.2827829983,\ 0.6639974489{]}}. Phase 50 aggregates the same
+evidence to tile-seed clusters and reports directional support
+(\texttt{7\ /\ 9} positive clusters, p \texttt{0.08984375}), so the
+sign-only cluster test is underpowered. Phase 51 then uses an exact
+signed-rank test over the cluster mean deltas and supports the
+magnitude-sensitive cluster effect (positive rank sum
+\texttt{40\ /\ 45}, p \texttt{0.01953125}). Phase 52 expands the
+six-variant replication to five held-out tiles and three seeds; it again
+reports \codebreak{compressed\_geofm\_route\_supported}, all eight
+compressed-versus-control mean deltas positive, pooled delta
+\texttt{0.2921767818} with \texttt{74\ /\ 120} positive comparisons,
+row-level sign-test p \texttt{0.0066881634}, cluster sign-only p
+\texttt{0.1508789062}, and cluster signed-rank p \texttt{0.0206298828}.
+Phase 53 adds direct cluster-mean support: exact one-sided sign-flip
+mean p \texttt{0.0196838379}, bootstrap CI95
+\texttt{{[}0.0570820445,\ 0.5823557658{]}}, and positive leave-one
+cluster, tile, and seed means. Phase 54 reports
+\codebreak{artifact\_lineage\_consistent}, confirming that the formal Phase
+52/53 values are reproducible from one authoritative
+delta-to-cluster-to-statistics artifact chain. D4P16 reaches mean reward
+\texttt{0.9918299718} in the original three-tile Phase 48 audit and
+\texttt{0.5819662325} in the expanded Phase 52 audit. Normalized-B1 and
+budget checks do not displace the compressed route: Phase 30 improves
+raw B1 but remains below D4P8/D4P16, and Phase 33 reports
+\codebreak{budget\_not\_explanatory} for the normalized branch.
+Suitability-reward evidence remains blocked: weak labels are
+DLTB/slope-derived leakage risks, the scalar \texttt{suitability\_proxy}
+is not supported as a reward term, and Phase 40/41 report missing
+independent label inputs. These results support a bounded positive
+conclusion for compressed GeoFM state representations under the current
+Bishan base-reward held-out protocol, while raw direct injection, B2/B3
+suitability reward, and cross-region transfer claims remain unsupported.
+
+\subsection{1. Introduction}\label{introduction}
+
+Farmland layout optimization is not only a geometric consolidation
+problem. In practical land-use planning, decisions about whether to
+retain, exchange, or consolidate farmland depend on explicit spatial
+constraints as well as latent environmental conditions that are
+difficult to observe comprehensively at the planning-unit scale. Slope,
+contiguity, block area, adjacency, and fragmentation can often be
+derived from GIS data, but variables related to irrigation, soil
+quality, moisture, and productivity may be incomplete, unavailable, or
+restricted.
+
+Geospatial foundation-model embeddings provide a tempting route around
+this data gap. Multi-sensor satellite embedding products such as
+AlphaEarth can encode broad land-surface context in compact feature
+vectors, and such vectors may contain information relevant to farmland
+suitability. However, a remote- sensing embedding is not a direct
+measurement of agronomic suitability. If a planning model improves after
+adding GeoFM embeddings, the improvement may come from meaningful
+environmental signal, from representation scale, from redundant
+compression, from easier optimization geometry, or from leakage through
+labels or features.
+
+Paper11 was designed to test this distinction rather than assume it. The
+workflow links AlphaEarth embeddings to real Bishan DLTB land-use
+polygons, constructs explicit-only and GeoFM-enhanced planning
+representations, and evaluates learned policies under a deterministic
+base planning reward. It also implements random, shuffled, compressed,
+normalized, suitability-proxy, and independent-label gates so that each
+stronger manuscript claim must pass an explicit evidence threshold.
+
+The current evidence refines rather than rejects the original positive
+framing. Raw GeoFM direct injection is not a supported improvement, and
+suitability reward must not be used without independent labels. However,
+Phase 48 shows that compressed GeoFM state routes are supported under
+the current base-reward held-out protocol. This paper therefore frames
+Paper11 as a bounded positive compressed-representation result with
+explicit evidence gates around raw B1, suitability reward, and transfer
+claims.
+
+\subsection{2. Data and Planning Units}\label{data-and-planning-units}
+
+The workflow uses real Bishan DLTB land-use polygons as planning units.
+The Phase 11 adapter exports \texttt{64,984} DLTB polygons into Phase
+2-compatible block feature tables. The feature pipeline aggregates
+AlphaEarth annual embeddings to block-level representations and joins
+explicit planning attributes such as slope- and land-use-derived
+variables where available.
+
+The repository includes lightweight sample AlphaEarth arrays for smoke
+tests, while the full external Bishan DLTB-with-slope GeoPackage is
+documented as a local external input and is not redistributed in
+ordinary Git. Generated real outputs under
+\texttt{experiments/**/outputs/} are ignored artifacts. The repository
+therefore separates lightweight reviewer reproducibility from full local
+data reconstruction.
+
+\subsection{3. Method}\label{method}
+
+\subsubsection{3.1 Representation
+Families}\label{representation-families}
+
+The core representation families are:
+
+\begin{itemize}
+\tightlist
+\item
+  \texttt{B0}: explicit planning features with deterministic
+  \texttt{base\_planning\_reward};
+\item
+  \texttt{B1}: explicit planning features plus raw 64-dimensional
+  AlphaEarth or GeoFM embeddings;
+\item
+  \texttt{D2}: explicit planning features plus random 64-dimensional
+  controls;
+\item
+  \texttt{D3}: explicit planning features plus shuffled AlphaEarth
+  embeddings;
+\item
+  \texttt{D4P8} and \texttt{D4P16}: explicit planning features plus
+  PCA-compressed AlphaEarth embeddings;
+\item
+  \texttt{N1Z} and \texttt{N1ZR}: normalized B1 variants used to test
+  representation-scale effects;
+\item
+  \texttt{B2} and \texttt{B3}: suitability-reward variants reserved for
+  later use and not enabled in the current evidence.
+\end{itemize}
+
+This design separates three questions. First, can the planning
+environment and policy interface operate on real planning units? Second,
+does GeoFM information improve learned-policy decisions under the same
+deterministic base reward, and which state representation makes that
+information usable? Third, is there validated suitability evidence
+strong enough to justify adding a suitability reward? The current study
+answers the first question positively, the second positively only for
+compressed GeoFM state routes, and the third negatively under present
+inputs.
+
+\subsubsection{3.2 Planning Reward and Policy
+Interface}\label{planning-reward-and-policy-interface}
+
+The current learned-policy experiments use a deterministic
+\texttt{base\_planning\_reward}. This reward encodes explicit planning
+logic such as slope, contiguity, baimu-fang-style consolidation, action
+validity, and related planning constraints. It deliberately excludes
+suitability reward because the suitability proxy has not passed the
+evidence gates required for reward integration.
+
+Early flat observation/action interfaces were tile-size-specific and
+could not support learned-policy evaluation across variable-size
+held-out tiles. Later phases introduced tiled contracts and padded
+variable-size policy evaluation, allowing bounded same-reward
+comparisons across held-out Bishan tiles.
+
+\subsubsection{3.3 Evidence Gates}\label{evidence-gates}
+
+The evidence-gated design prevents unsupported claims from entering the
+manuscript. Phase 26 converts padded held-out policy outputs into
+manuscript-facing B0/B1 summaries. Phase 28 adds representation
+controls. Phase 33 tests whether a modestly higher budget rescues
+normalized-B1 behavior. Phase 48 re-evaluates D4P8 and D4P16 as
+compressed GeoFM candidate routes under the same held-out base-reward
+protocol. Phase 49-54 then test statistical robustness, tile-seed
+clustering, signed-rank cluster magnitude support, an expanded
+five-tile, three-seed replication, cluster-mean influence support, and
+artifact-lineage consistency for the same compressed route. Phase 36
+evaluates suitability-proxy signal against available weak labels. Phase
+38 rebuilds suitability proxies under leakage-aware controls. Phase 39
+audits available label-like columns. Phase 40 adds the hard
+independent-label go/no-go gate before any Phase 38 rerun or B2/B3
+reward smoke. Phase 41 tests a separate suitability-prior route in which
+GeoFM can enter reward design only after independent-label calibration.
+Phase 42 audits local candidate label sources to distinguish true
+external labels from diagnostic DLTB/slope weak labels and unrelated
+labels from other projects.
+
+\subsection{4. Experiments}\label{experiments}
+
+\subsubsection{4.1 Held-Out B0/B1 Learned-Policy
+Analysis}\label{held-out-b0b1-learned-policy-analysis}
+
+The main B0/B1 held-out analysis trains on \texttt{tile\_r003\_c003} and
+evaluates on held-out Bishan tiles \texttt{tile\_r002\_c003},
+\texttt{tile\_r005\_c004}, and \texttt{tile\_r005\_c003} across seeds
+\texttt{0}, \texttt{1}, and \texttt{2}. At 4096 training steps and
+evaluation horizon \texttt{8}, Phase 26 reports a learned-policy B1-B0
+mean reward delta of \texttt{-0.1318712688}. Only \texttt{3\ /\ 9}
+tile-seed pairs favor B1.
+
+This result does not support a stable claim that raw GeoFM-enhanced B1
+outperforms explicit-feature B0 under the deterministic base planning
+reward.
+
+\subsubsection{4.2 Raw and Compressed Representation-Control
+Results}\label{raw-and-compressed-representation-control-results}
+
+Phase 28 first compares B1 against B0, D2, D3, D4P8, and D4P16 under the
+same padded held-out protocol at 1024 and 4096 training steps. Both runs
+report \codebreak{compression\_matches\_raw} rather than
+\texttt{representation\_signal\_supported} for raw B1. At 4096 steps,
+the B1-comparator mean deltas are:
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2727}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3636}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3636}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Comparison
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+B1 minus comparator mean delta
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Positive tile-seed count
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+B1 - B0 & \texttt{-0.1318712688} & \texttt{3\ /\ 9} \\
+B1 - D2 & \texttt{0.0744591656} & \texttt{4\ /\ 9} \\
+B1 - D3 & \texttt{-0.1094750135} & \texttt{3\ /\ 9} \\
+B1 - D4P8 & \texttt{-0.3768518347} & \texttt{2\ /\ 9} \\
+B1 - D4P16 & \texttt{-0.6411940236} & \texttt{2\ /\ 9} \\
+\end{longtable}
+}
+
+This result rejects raw 64-dimensional GeoFM direct injection as the
+effective state route. It does not reject GeoFM information itself,
+because the compressed GeoFM variants were the strongest variants in the
+same held-out summary set.
+
+Phase 48 therefore re-evaluates D4P8 and D4P16 as compressed GeoFM
+candidate routes. The audit is read-only over the frozen 4096-step Phase
+28 summary CSV and compares each compressed candidate against B0, raw
+B1, random D2, and shuffled D3 on the same tile-seed pairs.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2727}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3636}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3636}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Comparison
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Compressed minus comparator mean delta
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Positive tile-seed count
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+D4P8 - B0 & \texttt{0.2449805659} & \texttt{4\ /\ 9} \\
+D4P8 - B1 & \texttt{0.3768518347} & \texttt{7\ /\ 9} \\
+D4P8 - D2 & \texttt{0.4513110003} & \texttt{7\ /\ 9} \\
+D4P8 - D3 & \texttt{0.2673768211} & \texttt{6\ /\ 9} \\
+D4P16 - B0 & \texttt{0.5093227548} & \texttt{5\ /\ 9} \\
+D4P16 - B1 & \texttt{0.6411940236} & \texttt{7\ /\ 9} \\
+D4P16 - D2 & \texttt{0.7156531892} & \texttt{5\ /\ 9} \\
+D4P16 - D3 & \texttt{0.5317190100} & \texttt{7\ /\ 9} \\
+\end{longtable}
+}
+
+Phase 48 reports \codebreak{compressed\_geofm\_route\_supported}. The
+pooled compressed-control delta is \texttt{0.4673011499}, with
+\texttt{48\ /\ 72} positive comparisons. The supported representation
+claim is therefore compressed and bounded: D4P8 and D4P16 improve mean
+learned-policy reward under the current Bishan base-reward held-out
+protocol, while raw B1 remains unsupported. Phase 49 strengthens this
+result with a pooled one-sided sign-test p of \texttt{0.0031549137},
+bootstrap CI95 \texttt{{[}0.2827829983,\ 0.6639974489{]}}, and positive
+leave-one-tile and leave-one-seed sensitivity checks. Phase 50 then
+aggregates to \texttt{9} tile-seed clusters and reports directional
+support (\texttt{7\ /\ 9} positive, p \texttt{0.08984375}), which
+narrows sign-test wording. Phase 51 uses exact signed-rank evidence over
+cluster magnitudes and supports the cluster-level effect with p
+\texttt{0.01953125}.
+
+Phase 52 expands this replication to five held-out tiles and three seeds
+while keeping the same six variants, \texttt{4096} training steps, and
+evaluation horizon \texttt{8}. The expanded run again reports
+\codebreak{compressed\_geofm\_route\_supported}: all eight
+compressed-versus-control mean deltas remain positive, and the pooled
+compressed-control delta is \texttt{0.2921767818} with
+\texttt{74\ /\ 120} positive row-level comparisons.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2727}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3636}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3636}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Expanded Phase 52 comparison
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Compressed minus comparator mean delta
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Positive tile-seed count
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+D4P8 - B0 & \texttt{0.2896842037} & \texttt{9\ /\ 15} \\
+D4P8 - B1 & \texttt{0.2050431914} & \texttt{9\ /\ 15} \\
+D4P8 - D2 & \texttt{0.2506866266} & \texttt{10\ /\ 15} \\
+D4P8 - D3 & \texttt{0.1973780839} & \texttt{10\ /\ 15} \\
+D4P16 - B0 & \texttt{0.4026417146} & \texttt{8\ /\ 15} \\
+D4P16 - B1 & \texttt{0.3180007023} & \texttt{10\ /\ 15} \\
+D4P16 - D2 & \texttt{0.3636441375} & \texttt{7\ /\ 15} \\
+D4P16 - D3 & \texttt{0.3103355948} & \texttt{11\ /\ 15} \\
+\end{longtable}
+}
+
+The expanded Phase 49-style robustness check remains
+\codebreak{compressed\_route\_statistically\_robust}, with pooled row-level
+sign-test p \texttt{0.0066881634}, bootstrap CI95
+\texttt{{[}0.1623326461,\ 0.4323997354{]}}, and positive leave-one-tile
+and leave-one-seed means. The expanded tile-seed sign-only test remains
+directional (\texttt{10\ /\ 15} positive clusters, p
+\texttt{0.1508789062}), but the exact signed-rank test over cluster
+magnitudes remains significant (positive rank sum \texttt{96\ /\ 120}, p
+\texttt{0.0206298828}).
+
+Phase 53 audits whether the expanded cluster mean is driven only by one
+or two large positive clusters. The status is
+\codebreak{cluster\_mean\_support}: the cluster mean delta remains
+\texttt{0.2921767818}, the exact one-sided sign-flip mean p is
+\texttt{0.0196838379}, the bootstrap CI95 is
+\texttt{{[}0.0570820445,\ 0.5823557658{]}}, and the minimum
+leave-one-cluster, leave-one-tile, and leave-one-seed means are
+\texttt{0.2060081575}, \texttt{0.0954244478}, and \texttt{0.2083797951},
+respectively.
+
+Phase 54 then verifies the artifact lineage for the formal Phase 52/53
+evidence chain. It reports \codebreak{artifact\_lineage\_consistent}:
+recomputing Phase 50 cluster means from the authoritative Phase 48 delta
+table and recomputing Phase 51 and Phase 53 statistics from the
+authoritative cluster CSV reproduces the values used in this manuscript.
+
+\subsubsection{4.3 Normalization and Budget
+Robustness}\label{normalization-and-budget-robustness}
+
+Phase 30 tests whether normalizing B1 embeddings repairs raw-B1
+underperformance. At 4096 steps, normalized variants improve raw B1 and
+recover the mean B0 gap: \texttt{N1Z} achieves mean learned-policy
+reward \texttt{0.6515323140}, compared with \texttt{0.4825072170} for B0
+and \texttt{0.3506359482} for raw B1. However, normalized variants do
+not consistently exceed compressed controls.
+
+Phase 33 extends this question with bounded 5120-step matched pilots
+across three held-out tiles and three seeds. The full aggregate reports
+\codebreak{budget\_not\_explanatory}. At 5120 steps, tracked focal gaps
+remain negative on mean, including
+\texttt{N1Z\ -\ D4P16\ =\ -0.7597285327},
+\texttt{N1Z\ -\ D4P8\ =\ -0.4953863438},
+\texttt{N1ZR\ -\ D4P16\ =\ -0.6658915329}, and
+\texttt{N1ZR\ -\ D4P8\ =\ -0.4015493440}.
+
+This result prevents the manuscript from claiming that a modestly higher
+training budget or simple normalization resolves the
+representation-control problem.
+
+\subsubsection{4.4 Suitability-Proxy, Prior, and Independent-Label
+Gates}\label{suitability-proxy-prior-and-independent-label-gates}
+
+Phase 36 evaluates whether GeoFM-derived feature families add weak-label
+suitability signal beyond explicit planning features. The available
+labels are \texttt{current\_farmland\_label},
+\texttt{farmland\_or\_orchard\_label}, and
+\texttt{low\_slope\_farmland\_label}, with \texttt{64,984} valid labels
+each. All three labels are DLTB/slope-derived and flagged as
+\texttt{explicit\_label\_leakage\_risk}.
+
+Because explicit planning features encode the weak-label logic,
+\texttt{explicit\_only} models reach ROC AUC, average precision, and
+balanced accuracy of \texttt{1.0} for all three labels. This perfect
+performance is a leakage warning, not suitability validation. GeoFM-only
+checks are weak: for example, raw GeoFM-only features reach ROC AUC
+\texttt{0.6490064144} for \texttt{low\_slope\_farmland\_label}, but the
+scalar \texttt{suitability\_proxy} is near random for that label with
+ROC AUC \texttt{0.4979564572}.
+
+Phase 38 rebuilds proxy classifiers but remains
+\codebreak{proxy\_rebuild\_diagnostic\_only} because evaluated labels are
+leakage risks or GeoFM-derived proxies do not clear control thresholds.
+Phase 39 reports \codebreak{independent\_label\_inputs\_missing} after
+auditing the real Phase 2 table. Phase 40 then formalizes the decision
+as a hard gate: without a registered independent non-leakage label,
+Phase 38 cannot be rerun as a stronger proxy validation, and B2/B3
+suitability-reward experiments should not proceed. The current Phase 40
+no-registry run reads \texttt{64,984} feature rows, \texttt{0} registry
+rows, and reports \codebreak{independent\_label\_inputs\_missing}.
+
+Phase 41 tests a separate suitability route for GeoFM: after the
+compressed state route has been evaluated under the base reward, any
+suitability-prior export still requires independent-label calibration
+and must pass explicit-baseline, shuffled-control, random-control,
+fold-stability, and calibration checks. The current real no-registry run
+reports \codebreak{phase41\_independent\_label\_inputs\_missing}, reads
+\texttt{64,984} feature rows, finds \texttt{0} Phase-40-passed labels,
+and produces no \codebreak{block\_geofm\_suitability\_prior.csv}.
+
+Phase 42 audits local candidate label sources after Phase 41. DLTB/slope
+labels can be registered only as diagnostic leakage-risk labels: Phase
+40 reports \codebreak{independent\_label\_gate\_diagnostic\_only}, and
+Phase 41 still reports
+\codebreak{phase41\_independent\_label\_inputs\_missing} with the same
+diagnostic registry. No local external soil, irrigation, yield,
+productivity, high-standard-farmland, field-survey, or policy-outcome
+label was found that can pass Phase 40.
+
+\subsection{5. Discussion}\label{discussion}
+
+The current Paper11 evidence supports a bounded positive representation
+claim. The project began with the question of whether GeoFM embeddings
+could improve farmland layout optimization by adding latent
+environmental context. The answer is conditional. Raw 64-dimensional B1
+direct injection does not stably outperform B0 across held-out Bishan
+tiles and seeds. However, Phase 48 shows that compressed GeoFM state
+routes D4P8 and D4P16 outperform B0, raw B1, random D2, and shuffled D3
+on mean learned-policy reward under the same base-reward held-out
+protocol. Phase 49 shows row-level statistical robustness within the
+current Bishan protocol, while Phase 50 shows directional support after
+conservative tile-seed cluster aggregation; Phase 51 adds exact
+signed-rank cluster magnitude support. Phase 52 then expands the same
+six-variant protocol to five held-out tiles and three seeds and
+preserves the same conclusion: all compressed-versus-control mean deltas
+remain positive, row-level evidence is statistically robust, and cluster
+magnitude remains significant even though cluster signs alone remain
+underpowered. Phase 53 adds that the expanded cluster mean itself is
+supported by exact sign-flip, bootstrap, and leave-one influence checks,
+so the positive compressed-route conclusion is not driven only by one
+favorable cluster, tile, or seed. Phase 54 verifies that these formal
+Phase 52/53 values are internally reproducible from one authoritative
+artifact chain, preventing mixed-output lineage from supporting the
+manuscript claim.
+
+This distinction matters scientifically. A negative raw-B1 result could
+have been misread as evidence that GeoFM information is irrelevant to
+farmland layout optimization. The compressed-route result instead points
+to representation geometry as the limiting factor. In the current
+planning environment, GeoFM information appears useful when it enters
+the policy state through compact PCA-compressed inputs, but not when raw
+low-variance embedding dimensions are appended directly to explicit
+planning features.
+
+The result remains bounded. The Phase 48 audit is read-only over the
+existing 4096-step Bishan held-out summary rows, and Phase 52 expands
+the same protocol within Bishan rather than testing a new region. These
+analyses do not prove that PCA is intrinsically optimal, that the effect
+transfers across regions, or that the policy has learned agronomic
+suitability semantics. The positive claim is about state representation
+under a deterministic base planning reward, not about a validated
+suitability reward.
+
+The suitability branch is still more constrained than a simple missing
+experiment. The current weak labels are derived from DLTB, slope, or
+source metadata, so they cannot validate an independent suitability
+reward. Phase 40 prevents the workflow from converting weak,
+leakage-prone labels into B2/B3 reward claims. Phase 41 defines a
+stricter future route in which GeoFM must be converted into a calibrated
+low-dimensional prior before it can influence suitability reward. Phase
+42 then tests whether the required labels are already available locally
+and concludes that they are not: DLTB/slope labels remain
+diagnostic-only, and candidate labels from Paper10 and Paper58 are not
+Paper11 Bishan suitability labels.
+
+The practical implication is that Paper11 should proceed with two
+separate claim levels. The base-reward representation claim is now
+supported for compressed GeoFM state routes in Bishan. The
+suitability-reward claim remains blocked until external non-leakage
+labels pass the independent-label gate and a leakage-aware GeoFM prior
+clears control and calibration checks.
+
+\subsection{6. Conclusion}\label{conclusion}
+
+The current Paper11 repository establishes a reproducible workflow for
+testing GeoFM-enhanced farmland layout optimization on real planning
+units. The completed evidence supports a compressed GeoFM representation
+route under the Bishan base-reward held-out protocol. Raw B1 direct
+injection remains unsupported, but D4P8 and D4P16 improve over B0, raw
+B1, random D2, and shuffled D3 on mean learned-policy reward, Phase 49
+robustness checks keep the pooled effect positive, and Phase 50 keeps
+the cluster-level direction positive with sign-only p
+\texttt{0.08984375}; Phase 51 supports the cluster magnitude effect with
+signed-rank p \texttt{0.01953125}. Phase 52 expands the same six-variant
+test to five held-out tiles and three seeds, again supporting the
+compressed route with pooled delta \texttt{0.2921767818},
+\texttt{74\ /\ 120} positive row-level comparisons, row-level sign-test
+p \texttt{0.0066881634}, and cluster signed-rank p
+\texttt{0.0206298828}. Phase 53 further supports the expanded cluster
+mean with exact sign-flip p \texttt{0.0196838379}, bootstrap CI95
+\texttt{{[}0.0570820445,\ 0.5823557658{]}}, and positive leave-one
+cluster, tile, and seed means. Phase 54 verifies the formal artifact
+lineage as \codebreak{artifact\_lineage\_consistent}. The appropriate
+current conclusion is therefore not that GeoFM fails, but that GeoFM
+must be represented through a controlled compressed state route before
+it improves the learned planning policy in this setting.
+Suitability-reward work remains blocked until an independent non-leakage
+label registry passes Phase 40 and a leakage-aware GeoFM prior passes
+Phase 41.
+
+\subsection{Claim-Evidence Map}\label{claim-evidence-map}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Claim
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Evidence
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Status
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+The repository implements a reproducible GeoFM-enhanced farmland
+planning workflow. & Phase 1-25 pipeline, real Bishan DLTB adapter,
+tiled contracts, padded held-out policy runner, smoke tests. &
+Supported \\
+Raw GeoFM B1 improves learned-policy planning decisions. & Phase 26
+B1-B0 mean delta \texttt{-0.1318712688}, \texttt{3\ /\ 9} positive
+tile-seed pairs. & Not supported \\
+Raw B1 carries a stable representation advantage over controls. & Phase
+28 reports \codebreak{compression\_matches\_raw}; D4P8 and D4P16 exceed B1
+at 4096 steps. & Not supported \\
+Compressed GeoFM state routes improve learned-policy planning decisions
+under the base reward. & Phase 48 reports
+\codebreak{compressed\_geofm\_route\_supported}; pooled compressed-control
+delta \texttt{0.4673011499}, \texttt{48\ /\ 72} positive comparisons.
+Phase 52 expands the six-variant run to five held-out tiles and three
+seeds with pooled delta \texttt{0.2921767818} and \texttt{74\ /\ 120}
+positive comparisons. & Supported \\
+The compressed GeoFM state-route effect is row-level statistically
+robust within the current Bishan protocol. & Phase 49 reports
+\codebreak{compressed\_route\_statistically\_robust}; sign-test p
+\texttt{0.0031549137}; bootstrap CI95
+\texttt{{[}0.2827829983,\ 0.6639974489{]}}; leave-one tile/seed means
+remain positive. Phase 52 repeats row-level robustness with sign-test p
+\texttt{0.0066881634} and bootstrap CI95
+\texttt{{[}0.1623326461,\ 0.4323997354{]}}. & Supported \\
+The compressed GeoFM route is supported after tile-seed cluster
+aggregation when magnitude and mean support are considered. & Phase 50
+reports sign-only \codebreak{cluster\_directional\_support}; Phase 51
+reports \codebreak{cluster\_magnitude\_support}, positive rank sum
+\texttt{40\ /\ 45}, signed-rank p \texttt{0.01953125}. Phase 52 keeps
+sign-only cluster support directional (\texttt{10\ /\ 15}, p
+\texttt{0.1508789062}) but supports cluster magnitude with positive rank
+sum \texttt{96\ /\ 120}, signed-rank p \texttt{0.0206298828}. Phase 53
+reports \codebreak{cluster\_mean\_support}, exact sign-flip p
+\texttt{0.0196838379}, bootstrap CI95
+\texttt{{[}0.0570820445,\ 0.5823557658{]}}, and positive leave-one
+cluster/tile/seed means. & Supported with magnitude-sensitive and
+cluster-mean checks \\
+The formal Phase 52/53 artifact chain is internally reproducible. &
+Phase 54 reports \codebreak{artifact\_lineage\_consistent}: Phase 50
+cluster means recomputed from the authoritative Phase 48 delta table,
+and Phase 51/53 statistics recomputed from the authoritative cluster
+CSV, match the formal manuscript values. & Supported \\
+Normalization or more budget resolves the raw-B1 representation problem.
+& Phase 30 partially improves B1; Phase 33 full bounded aggregate
+reports \codebreak{budget\_not\_explanatory}. & Not supported \\
+Suitability reward is ready for B2/B3. & Phase 36
+\codebreak{proxy\_signal\_not\_supported}; Phase 38
+\codebreak{proxy\_rebuild\_diagnostic\_only}; Phase 40
+\codebreak{independent\_label\_inputs\_missing}; Phase 41
+\codebreak{phase41\_independent\_label\_inputs\_missing}. & Not
+supported \\
+Local files already contain a usable independent Paper11 suitability
+label. & Phase 42 finds only diagnostic DLTB/slope weak labels and
+unrelated Paper10/Paper58 labels. & Not supported \\
+The evidence supports a broad GeoFM-performance or transfer conclusion.
+& Suitability, B2/B3, and transfer claims remain unsupported. & Not
+supported \\
+The evidence supports a bounded positive compressed-GeoFM representation
+conclusion. & D4P8/D4P16 exceed B0, raw B1, D2, and D3 on mean held-out
+base-reward policy reward; Phase 53 supports the expanded cluster mean
+and influence checks. & Supported \\
+\end{longtable}
+}
+
+\subsection{Data Availability}\label{data-availability}
+
+The repository includes lightweight Bishan AlphaEarth sample arrays,
+code, tests, reproduction guides, and file manifests for reviewer smoke
+checks. Full real Bishan DLTB-with-slope inputs are external local data
+and are not redistributed in ordinary Git. Large derived arrays, full
+generated outputs, and trained artifacts should be deposited in an
+external archive before any submission that relies on them.
+
+\subsection{Code Availability}\label{code-availability}
+
+All code for the reviewer-facing workflow is maintained in the Paper11
+repository:
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{https://github.com/zhouning/paper11{-}geofm{-}farmland{-}suitability{-}rl}
+\end{Highlighting}
+\end{Shaded}
+
+The final submitted version should cite a release tag or immutable
+commit hash.
+
+\subsection{Submission Metadata Still
+Required}\label{submission-metadata-still-required}
+
+\begin{itemize}
+\tightlist
+\item
+  Final author list, affiliations, and corresponding-author details.
+\item
+  Funding statement.
+\item
+  Author contributions.
+\item
+  Final data access statement for the external DLTB-with-slope
+  GeoPackage.
+\item
+  Reference list and citation formatting for the selected journal.
+\item
+  Final decision on target journal format for a bounded compressed-GeoFM
+  representation article.
+\end{itemize}
+
+\end{document}

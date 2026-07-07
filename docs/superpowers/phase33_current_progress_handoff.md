@@ -1222,3 +1222,24 @@ signed-rank testing and Phase 53 cluster-mean support. Historical
 evidence sources for the Phase 52/53 conclusion. Raw B1 direct injection,
 suitability reward, B2/B3, transfer, and independent agronomic suitability
 claims remain unsupported.
+
+## Phase 55 Formal LaTeX/PDF Export
+
+Phase 55 exports the Phase 54 formal conclusion manuscript as LaTeX and PDF for journal submission. The source manuscript remains conclusion-bounded: GeoFM is supported through compressed state representations under the Bishan base-reward held-out protocol, while raw B1 direct injection, B2/B3 suitability reward, transfer, and independent agronomic suitability remain unsupported.
+
+Generated formal files:
+
+```text
+paper/submission/final/Paper11_formal_conclusion_manuscript.tex
+paper/submission/final/Paper11_formal_conclusion_manuscript.pdf
+```
+
+Export and verification notes:
+
+```text
+Pandoc generated the standalone LaTeX from paper/submission/final/Paper11_formal_conclusion_manuscript.md.
+pdflatex was run twice and exited 0 both times.
+The final PDF has 12 pages.
+The final LaTeX log contains no Overfull/Underfull/Error/undefined/Rerun warnings.
+PDF text extraction found no literal Markdown heading markers and no empty pages.
+```

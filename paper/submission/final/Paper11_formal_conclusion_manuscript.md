@@ -26,6 +26,7 @@ control; evidence gate; land-use planning
 - Suitability-reward work remains blocked until an independent non-leakage label gate passes.
 - A local Phase 42 label-source audit finds no usable external suitability label for the real Bishan run.
 - The evidence supports a bounded positive compressed-representation conclusion, not a raw-GeoFM or suitability-reward claim.
+
 ## Abstract
 
 Farmland spatial layout optimization requires decisions over many heterogeneous
@@ -74,6 +75,7 @@ inputs. These results support a bounded positive conclusion for compressed
 GeoFM state representations under the current Bishan base-reward held-out
 protocol, while raw direct injection, B2/B3 suitability reward, and
 cross-region transfer claims remain unsupported.
+
 ## 1. Introduction
 
 Farmland layout optimization is not only a geometric consolidation problem. In
@@ -142,6 +144,7 @@ validated suitability evidence strong enough to justify adding a suitability
 reward? The current study answers the first question positively, the second
 positively only for compressed GeoFM state routes, and the third negatively
 under present inputs.
+
 ### 3.2 Planning Reward and Policy Interface
 
 The current learned-policy experiments use a deterministic `base_planning_reward`.
@@ -174,6 +177,7 @@ in which GeoFM can enter reward design only after independent-label calibration.
 Phase 42 audits local candidate label sources to distinguish true external
 labels from diagnostic DLTB/slope weak labels and unrelated labels from other
 projects.
+
 ## 4. Experiments
 
 ### 4.1 Held-Out B0/B1 Learned-Policy Analysis
@@ -388,6 +392,7 @@ claim levels. The base-reward representation claim is now supported for
 compressed GeoFM state routes in Bishan. The suitability-reward claim remains
 blocked until external non-leakage labels pass the independent-label gate and a
 leakage-aware GeoFM prior clears control and calibration checks.
+
 ## 6. Conclusion
 
 The current Paper11 repository establishes a reproducible workflow for testing
@@ -411,6 +416,7 @@ route before it improves the learned planning policy in this setting.
 Suitability-reward work remains blocked until an
 independent non-leakage label registry passes Phase 40 and a leakage-aware
 GeoFM prior passes Phase 41.
+
 ## Claim-Evidence Map
 
 | Claim | Evidence | Status |
@@ -427,6 +433,7 @@ GeoFM prior passes Phase 41.
 | Local files already contain a usable independent Paper11 suitability label. | Phase 42 finds only diagnostic DLTB/slope weak labels and unrelated Paper10/Paper58 labels. | Not supported |
 | The evidence supports a broad GeoFM-performance or transfer conclusion. | Suitability, B2/B3, and transfer claims remain unsupported. | Not supported |
 | The evidence supports a bounded positive compressed-GeoFM representation conclusion. | D4P8/D4P16 exceed B0, raw B1, D2, and D3 on mean held-out base-reward policy reward; Phase 53 supports the expanded cluster mean and influence checks. | Supported |
+
 ## Data Availability
 
 The repository includes lightweight Bishan AlphaEarth sample arrays, code,
