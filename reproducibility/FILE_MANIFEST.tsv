@@ -296,3 +296,9 @@ paper/submission/final/Paper11_phase46_submission_bundle_sha256.txt	submission	S
 scripts/paper11_submission_preflight.py	script	Preflight checker for the Phase 46 formal submission bundle, checksums, DOCX contents, and claim boundary.
 tests/test_paper11_submission_preflight.py	test	Tests for the Paper11 submission preflight checker and CLI JSON output.
 paper/submission/final/Paper11_phase47_submission_preflight.json	submission	JSON preflight report confirming the Phase 46 submission bundle passes checksum, DOCX text, and claim-boundary checks.
+docs/superpowers/specs/2026-07-07-phase48-compressed-geofm-rescue-design.md	design	Phase 48 design for re-evaluating D4P8/D4P16 as compressed GeoFM candidate routes under the existing base-reward held-out protocol.
+docs/superpowers/plans/2026-07-07-phase48-compressed-geofm-rescue.md	implementation_plan	Phase 48 compressed GeoFM rescue implementation plan.
+src/paper11_geofm/phase48_compressed_geofm_rescue.py	source	Phase 48 read-only compressed GeoFM rescue audit module.
+experiments/phase48_compressed_geofm_rescue/run_phase48_compressed_geofm_rescue.py	experiment_runner	Phase 48 compressed GeoFM rescue analyze-only CLI runner.
+tests/test_phase48_compressed_geofm_rescue.py	test	Tests for Phase 48 compressed route status rules, artifacts, and CLI behavior.
+paper/phase28_results/17_phase48_compressed_geofm_rescue.md	results	Reviewer-facing interpretation of the Phase 48 real compressed GeoFM rescue audit.

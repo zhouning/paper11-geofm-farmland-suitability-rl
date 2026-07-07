@@ -1,5 +1,7 @@
 # IJAEOG Submission Readiness Audit
 
+> Phase 48 supersession note: the previous bounded-negative conclusion route has been superseded by `compressed_geofm_route_supported`. The current formal manuscript supports a bounded positive compressed-GeoFM representation route while raw B1, suitability reward, B2/B3, and transfer claims remain unsupported.
+
 Checked on 2026-06-19 and updated on 2026-07-06 after Phase 42. Target journal source:
 
 - International Journal of Applied Earth Observation and Geoinformation,

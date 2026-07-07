@@ -956,3 +956,47 @@ missing_files: []
 
 The Phase 47 report remains outside the Phase 46 zip to avoid self-referential
 checksums.
+
+## Phase 48 Compressed GeoFM Rescue Audit
+
+Phase 48 re-evaluates `D4P8` and `D4P16` as compressed GeoFM candidate routes
+instead of treating them only as representation controls.
+
+New implementation and evidence files:
+
+```text
+src/paper11_geofm/phase48_compressed_geofm_rescue.py
+experiments/phase48_compressed_geofm_rescue/run_phase48_compressed_geofm_rescue.py
+tests/test_phase48_compressed_geofm_rescue.py
+paper/phase28_results/17_phase48_compressed_geofm_rescue.md
+experiments/phase48_compressed_geofm_rescue/outputs/real_bishan_4096/phase48_compressed_geofm_rescue_comparison.json
+```
+
+Real Phase 48 status:
+
+```text
+compressed_geofm_route_supported
+```
+
+Core real Bishan 4096-step deltas:
+
+```text
+D4P8 - B0: 0.2449805659, 4 / 9 positive
+D4P8 - B1: 0.3768518347, 7 / 9 positive
+D4P8 - D2: 0.4513110003, 7 / 9 positive
+D4P8 - D3: 0.2673768211, 6 / 9 positive
+D4P16 - B0: 0.5093227548, 5 / 9 positive
+D4P16 - B1: 0.6411940236, 7 / 9 positive
+D4P16 - D2: 0.7156531892, 5 / 9 positive
+D4P16 - D3: 0.5317190100, 7 / 9 positive
+pooled compressed-control delta: 0.4673011499, 48 / 72 positive
+```
+
+Conclusion update: Phase 48 supersedes the broad bounded-negative Phase 43-47
+representation wording. Raw 64-dimensional B1 direct injection remains
+unsupported, but compressed GeoFM state routes are now supported as candidate
+base-reward representations under the current held-out Bishan protocol.
+Suitability reward, B2/B3, and independent-label-calibrated suitability priors
+remain blocked by Phase 40/41 because independent labels are still missing.
+
+Formal manuscript update completed: `paper/submission/04_formal_conclusion_manuscript.md`, the final editable manuscript copy, DOCX export, cover letter/declarations, final README, bundle checksums, and Phase 47 preflight report now use the Phase 48 bounded positive compressed-GeoFM representation route. Raw B1 and suitability reward remain unsupported.

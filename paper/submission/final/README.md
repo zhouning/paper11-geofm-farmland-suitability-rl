@@ -27,14 +27,16 @@ Paper11 submission package.
 
 ## Claim Boundary
 
-This is a bounded negative/evidence-gated manuscript package. It does not claim
-GeoFM superiority, B2/B3 readiness, suitability-reward improvement, cross-region
-transfer, or independently validated agronomic suitability.
+This is a bounded positive compressed-GeoFM representation manuscript package.
+It does not claim raw GeoFM B1 superiority, B2/B3 readiness,
+suitability-reward improvement, cross-region transfer, or independently
+validated agronomic suitability.
 
-Current conclusion: raw GeoFM state injection and the current suitability-reward
-route are unsupported under the completed Paper11 evidence gates. GeoFM remains
-admissible only through a future external independent-label registry that passes
-Phase 40 and a calibrated low-dimensional prior that passes Phase 41.
+Current conclusion: raw GeoFM state injection remains unsupported, but Phase 48
+supports compressed GeoFM state routes (`D4P8` and `D4P16`) under the current
+Bishan base-reward held-out protocol. The current suitability-reward route
+remains blocked until an external independent-label registry passes Phase 40
+and a calibrated low-dimensional prior passes Phase 41.
 
 ## Before Journal Upload
 

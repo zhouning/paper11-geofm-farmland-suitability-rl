@@ -4,29 +4,31 @@
 
 Dear Editor,
 
-We submit the manuscript entitled "Evidence-gated rejection of unsupported GeoFM
-superiority in reinforcement-learning farmland layout optimization" for
-consideration in International Journal of Applied Earth Observation and
-Geoinformation. The manuscript examines whether geospatial foundation-model
-(GeoFM) embeddings can be treated as decision-ready representations for
-reinforcement-learning farmland layout optimization.
+We submit the manuscript entitled "Compressed GeoFM representations improve
+held-out farmland layout optimization under evidence gates" for consideration
+in International Journal of Applied Earth Observation and Geoinformation. The
+manuscript examines whether geospatial foundation-model (GeoFM) embeddings can
+serve as controlled state representations for reinforcement-learning farmland
+layout optimization.
 
 The study reports a reproducible Bishan case-study workflow that links
 AlphaEarth embeddings to real DLTB planning blocks and evaluates GeoFM-enhanced
 representations under held-out reinforcement-learning planning protocols,
 representation controls, suitability-proxy diagnostics, independent-label gates,
-and a calibrated-prior gate. The central finding is negative and evidence
-bounded. Raw GeoFM B1 does not stably outperform explicit-feature B0, compressed
-representation controls exceed raw B1, normalized-B1 and budget checks do not
-rescue the claim, and the suitability-reward route is stopped by independent
-label and calibrated-prior gates.
+and a calibrated-prior gate. The central finding is positive but bounded. Raw
+64-dimensional GeoFM direct injection does not stably outperform
+explicit-feature B0, but Phase 48 shows that compressed GeoFM state routes
+D4P8 and D4P16 outperform B0, raw B1, random D2, and shuffled D3 on mean
+held-out base-reward policy reward. Suitability-reward and B2/B3 claims remain
+blocked by independent-label and calibrated-prior gates.
 
 This manuscript should be relevant to readers of IJAEOG because it provides a
-reproducible cautionary test for using Earth-observation foundation-model
-embeddings in operational land-use optimization. Rather than assuming that a
-semantically rich remote-sensing embedding is a validated suitability variable,
-the study shows how representation controls and independent-label gates can
-prevent unsupported planning claims.
+reproducible test for using Earth-observation foundation-model embeddings in
+operational land-use optimization. Rather than assuming that a semantically
+rich remote-sensing embedding is automatically a validated suitability variable,
+the study shows that representation design is decisive: compressed GeoFM state
+inputs support the base-reward planning policy, while raw injection and
+suitability-reward routes require stricter evidence.
 
 The manuscript is original and is not under consideration elsewhere. All authors
 must confirm authorship, approval of the final manuscript, funding statements,
@@ -36,7 +38,6 @@ requirements before upload.
 Sincerely,
 
 [corresponding author name and contact information required]
-
 ## Declaration of Competing Interest
 
 The authors declare that they have no known competing financial interests or
@@ -99,9 +100,11 @@ to match the selected journal policy and the authors' actual use.
 
 ## Claim Boundary for Upload
 
-This submission package supports only a bounded negative/evidence-gated
-manuscript. It does not support claims of GeoFM superiority, B2/B3 readiness,
-suitability-reward improvement, cross-region transfer, or independently
-validated agronomic suitability. The current defensible conclusion is that raw
-GeoFM state injection and the current suitability-reward route are unsupported
+This submission package supports a bounded positive compressed-GeoFM
+representation manuscript. It does not support claims of raw GeoFM B1
+superiority, B2/B3 readiness, suitability-reward improvement, cross-region
+transfer, or independently validated agronomic suitability. The current
+defensible conclusion is that compressed GeoFM state routes improve mean
+held-out base-reward policy reward under the Bishan protocol, while raw GeoFM
+state injection and the current suitability-reward route remain unsupported
 under the completed Paper11 evidence gates.

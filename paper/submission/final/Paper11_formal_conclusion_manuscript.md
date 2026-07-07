@@ -2,11 +2,11 @@
 
 ## Title
 
-Evidence-gated rejection of unsupported GeoFM superiority in reinforcement-learning farmland layout optimization
+Compressed GeoFM representations improve held-out farmland layout optimization under evidence gates
 
 ## Short Title
 
-Evidence-gated GeoFM planning
+Compressed GeoFM planning
 
 ## Keywords
 
@@ -18,48 +18,41 @@ control; evidence gate; land-use planning
 
 - A reproducible workflow links AlphaEarth embeddings to real Bishan DLTB planning blocks.
 - Tiled and padded policy interfaces make large real planning instances testable.
-- Multi-tile B0/B1 learned-policy evidence does not support raw GeoFM superiority.
-- Representation controls show that compressed GeoFM controls can exceed raw B1.
-- Suitability-reward work is blocked until an independent non-leakage label gate passes.
+- Multi-tile B0/B1 evidence rejects raw 64-dimensional GeoFM direct injection.
+- Phase 48 shows that compressed GeoFM routes D4P8 and D4P16 outperform B0, raw B1, random D2, and shuffled D3 on mean held-out reward.
+- Suitability-reward work remains blocked until an independent non-leakage label gate passes.
 - A local Phase 42 label-source audit finds no usable external suitability label for the real Bishan run.
-- The evidence supports a bounded negative conclusion rather than a positive GeoFM-superiority claim.
-
+- The evidence supports a bounded positive compressed-representation conclusion, not a raw-GeoFM or suitability-reward claim.
 ## Abstract
 
 Farmland spatial layout optimization requires decisions over many heterogeneous
-planning units, but direct variables for soil quality, irrigation, productivity,
-and long-term suitability are often unavailable at operational planning scale.
-Geospatial foundation-model (GeoFM) embeddings offer a possible source of
-latent land-surface information, but their usefulness for reinforcement-learning
-planning should not be assumed without representation controls, reward
-validation, and leakage-aware suitability labels. This study builds a
-reproducible evidence-gated workflow that aggregates AlphaEarth embeddings and
-explicit planning features to real Bishan DLTB land-use blocks, constructs
-tiled and padded planning interfaces, and evaluates whether GeoFM-enhanced
-representations support learned farmland layout decisions under a deterministic
-base planning reward. The current multi-tile, multi-seed held-out evidence does
-not support a positive raw-GeoFM claim: at 4096 training steps, the learned
-B1-B0 mean reward delta is `-0.1318712688`, with only `3 / 9` held-out
-tile-seed pairs favoring B1. Representation-control experiments also report
-`compression_matches_raw`, with PCA-compressed controls exceeding raw B1 in the
-4096-step run. A normalized-B1 branch partially improves raw B1 at 4096 steps,
-but a broader 5120-step matched robustness check reports
-`budget_not_explanatory`. Suitability-proxy validation remains more restrictive:
-available weak labels are DLTB/slope-derived leakage risks, the scalar
-`suitability_proxy` is not supported as a reward term, and the Phase 40
-independent-label gate reports `independent_label_inputs_missing` with
-`64,984` feature rows and `0` registry rows. Phase 41 implements the revised
-GeoFM route as an independent-label-calibrated low-dimensional suitability
-prior, but the real no-registry run still reports
-`phase41_independent_label_inputs_missing`. Phase 42 audits local candidate
-label sources and finds that available DLTB/slope labels remain diagnostic-only
-leakage-risk labels, while Paper10 and Paper58 labels are not Paper11 Bishan
-suitability labels. These results reject the current positive Paper11
-hypothesis under the tested protocol. The defensible conclusion is negative and
-decision-level: B2/B3 suitability-reward experiments should not proceed until
-an independent non-leakage label registry passes the gate and a leakage-aware
-proxy rebuild clears control checks.
-
+planning units, but direct variables for soil quality, irrigation,
+productivity, and long-term suitability are often unavailable at operational
+planning scale. Geospatial foundation-model (GeoFM) embeddings offer a possible
+source of latent land-surface information, but their usefulness for
+reinforcement-learning planning depends on representation design, reward
+validation, and leakage-aware labels. This study builds a reproducible
+evidence-gated workflow that aggregates AlphaEarth embeddings and explicit
+planning features to real Bishan DLTB land-use blocks, constructs tiled and
+padded planning interfaces, and evaluates GeoFM-enhanced representations under
+a deterministic base planning reward. Raw 64-dimensional GeoFM direct injection
+is not supported: at 4096 training steps, B1 has a learned-policy B1-B0 mean
+reward delta of `-0.1318712688`, with only `3 / 9` held-out tile-seed pairs
+favoring B1. Phase 48 changes the broader conclusion by re-evaluating the
+PCA-compressed GeoFM variants as candidate state routes. D4P8 and D4P16 exceed
+B0, raw B1, random D2, and shuffled D3 on mean learned-policy reward; the
+pooled compressed-control delta is `0.4673011499`, with `48 / 72` positive
+comparisons. D4P16 reaches mean reward `0.9918299718`, compared with
+`0.4825072170` for B0 and `0.3506359482` for raw B1. Normalized-B1 and budget
+checks do not displace the compressed route: Phase 30 improves raw B1 but
+remains below D4P8/D4P16, and Phase 33 reports `budget_not_explanatory` for the
+normalized branch. Suitability-reward evidence remains blocked: weak labels are
+DLTB/slope-derived leakage risks, the scalar `suitability_proxy` is not
+supported as a reward term, and Phase 40/41 report missing independent label
+inputs. These results support a bounded positive conclusion for compressed
+GeoFM state representations under the current Bishan base-reward held-out
+protocol, while raw direct injection, B2/B3 suitability reward, and
+cross-region transfer claims remain unsupported.
 ## 1. Introduction
 
 Farmland layout optimization is not only a geometric consolidation problem. In
@@ -89,7 +82,7 @@ implements random, shuffled, compressed, normalized, suitability-proxy, and
 independent-label gates so that each stronger manuscript claim must pass an
 explicit evidence threshold.
 
-The current evidence rejects the original positive framing that GeoFM features improve farmland layout optimization in the tested Paper11 design. The strongest current contribution is a conclusion rather than a promise: under the completed evidence gates, the raw GeoFM representation is not a supported improvement, and suitability reward must not be used. This paper therefore frames the current Paper11 result as an evidence-gated negative finding.
+The current evidence refines rather than rejects the original positive framing. Raw GeoFM direct injection is not a supported improvement, and suitability reward must not be used without independent labels. However, Phase 48 shows that compressed GeoFM state routes are supported under the current base-reward held-out protocol. This paper therefore frames Paper11 as a bounded positive compressed-representation result with explicit evidence gates around raw B1, suitability reward, and transfer claims.
 
 ## 2. Data and Planning Units
 
@@ -121,12 +114,13 @@ The core representation families are:
 - `B2` and `B3`: suitability-reward variants reserved for later use and not enabled in the current evidence.
 
 This design separates three questions. First, can the planning environment and
-policy interface operate on real planning units? Second, does adding raw GeoFM
-information improve learned-policy decisions under the same deterministic base
-reward? Third, is there validated suitability evidence strong enough to justify
-adding a suitability reward? The current study answers the first question
-positively and the second and third questions negatively under present inputs.
-
+policy interface operate on real planning units? Second, does GeoFM information
+improve learned-policy decisions under the same deterministic base reward, and
+which state representation makes that information usable? Third, is there
+validated suitability evidence strong enough to justify adding a suitability
+reward? The current study answers the first question positively, the second
+positively only for compressed GeoFM state routes, and the third negatively
+under present inputs.
 ### 3.2 Planning Reward and Policy Interface
 
 The current learned-policy experiments use a deterministic `base_planning_reward`.
@@ -146,15 +140,16 @@ The evidence-gated design prevents unsupported claims from entering the
 manuscript. Phase 26 converts padded held-out policy outputs into
 manuscript-facing B0/B1 summaries. Phase 28 adds representation controls.
 Phase 33 tests whether a modestly higher budget rescues normalized-B1 behavior.
-Phase 36 evaluates suitability-proxy signal against available weak labels.
-Phase 38 rebuilds suitability proxies under leakage-aware controls. Phase 39
-audits available label-like columns. Phase 40 adds the hard independent-label
-go/no-go gate before any Phase 38 rerun or B2/B3 reward smoke. Phase 41 tests
-the revised route in which GeoFM can enter the workflow only as an
-independent-label-calibrated low-dimensional suitability prior. Phase 42 audits
-local candidate label sources to distinguish true external labels from
-diagnostic DLTB/slope weak labels and unrelated labels from other projects.
-
+Phase 48 re-evaluates D4P8 and D4P16 as compressed GeoFM candidate routes under
+the same held-out base-reward protocol. Phase 36 evaluates suitability-proxy
+signal against available weak labels. Phase 38 rebuilds suitability proxies
+under leakage-aware controls. Phase 39 audits available label-like columns.
+Phase 40 adds the hard independent-label go/no-go gate before any Phase 38
+rerun or B2/B3 reward smoke. Phase 41 tests a separate suitability-prior route
+in which GeoFM can enter reward design only after independent-label calibration.
+Phase 42 audits local candidate label sources to distinguish true external
+labels from diagnostic DLTB/slope weak labels and unrelated labels from other
+projects.
 ## 4. Experiments
 
 ### 4.1 Held-Out B0/B1 Learned-Policy Analysis
@@ -168,13 +163,12 @@ delta of `-0.1318712688`. Only `3 / 9` tile-seed pairs favor B1.
 This result does not support a stable claim that raw GeoFM-enhanced B1
 outperforms explicit-feature B0 under the deterministic base planning reward.
 
-### 4.2 Representation-Control Results
+### 4.2 Raw and Compressed Representation-Control Results
 
-Phase 28 compares B1 against B0, D2, D3, D4P8, and D4P16 under the same padded
-held-out protocol at 1024 and 4096 training steps. Both runs report
-`compression_matches_raw` rather than `representation_signal_supported`.
-
-At 4096 steps, the B1-comparator mean deltas are:
+Phase 28 first compares B1 against B0, D2, D3, D4P8, and D4P16 under the same
+padded held-out protocol at 1024 and 4096 training steps. Both runs report
+`compression_matches_raw` rather than `representation_signal_supported` for raw
+B1. At 4096 steps, the B1-comparator mean deltas are:
 
 | Comparison | B1 minus comparator mean delta | Positive tile-seed count |
 |---|---:|---:|
@@ -184,11 +178,31 @@ At 4096 steps, the B1-comparator mean deltas are:
 | B1 - D4P8 | `-0.3768518347` | `2 / 9` |
 | B1 - D4P16 | `-0.6411940236` | `2 / 9` |
 
-The compressed controls are central to the interpretation. D4P8 and D4P16
-exceed raw B1 at 4096 steps, so the current evidence is more consistent with
-representation compression or optimization effects than with a robust semantic
-advantage of raw 64-dimensional GeoFM embeddings.
+This result rejects raw 64-dimensional GeoFM direct injection as the effective
+state route. It does not reject GeoFM information itself, because the compressed
+GeoFM variants were the strongest variants in the same held-out summary set.
 
+Phase 48 therefore re-evaluates D4P8 and D4P16 as compressed GeoFM candidate
+routes. The audit is read-only over the frozen 4096-step Phase 28 summary CSV
+and compares each compressed candidate against B0, raw B1, random D2, and
+shuffled D3 on the same tile-seed pairs.
+
+| Comparison | Compressed minus comparator mean delta | Positive tile-seed count |
+|---|---:|---:|
+| D4P8 - B0 | `0.2449805659` | `4 / 9` |
+| D4P8 - B1 | `0.3768518347` | `7 / 9` |
+| D4P8 - D2 | `0.4513110003` | `7 / 9` |
+| D4P8 - D3 | `0.2673768211` | `6 / 9` |
+| D4P16 - B0 | `0.5093227548` | `5 / 9` |
+| D4P16 - B1 | `0.6411940236` | `7 / 9` |
+| D4P16 - D2 | `0.7156531892` | `5 / 9` |
+| D4P16 - D3 | `0.5317190100` | `7 / 9` |
+
+Phase 48 reports `compressed_geofm_route_supported`. The pooled
+compressed-control delta is `0.4673011499`, with `48 / 72` positive
+comparisons. The supported representation claim is therefore compressed and
+bounded: D4P8 and D4P16 improve mean learned-policy reward under the current
+Bishan base-reward held-out protocol, while raw B1 remains unsupported.
 ### 4.3 Normalization and Budget Robustness
 
 Phase 30 tests whether normalizing B1 embeddings repairs raw-B1 underperformance.
@@ -232,13 +246,13 @@ validation, and B2/B3 suitability-reward experiments should not proceed. The
 current Phase 40 no-registry run reads `64,984` feature rows, `0` registry
 rows, and reports `independent_label_inputs_missing`.
 
-Phase 41 tests the revised route for making GeoFM useful: instead of injecting
-raw 64-dimensional embeddings directly into the policy state, GeoFM can be
-exported only as an independent-label-calibrated low-dimensional suitability
-prior after passing explicit-baseline, shuffled-control, random-control,
-fold-stability, and calibration checks. The current real no-registry run
-reports `phase41_independent_label_inputs_missing`, reads `64,984` feature
-rows, finds `0` Phase-40-passed labels, and produces no
+Phase 41 tests a separate suitability route for GeoFM: after the compressed
+state route has been evaluated under the base reward, any suitability-prior
+export still requires independent-label calibration and must pass
+explicit-baseline, shuffled-control, random-control, fold-stability, and
+calibration checks. The current real no-registry run reports
+`phase41_independent_label_inputs_missing`, reads `64,984` feature rows, finds
+`0` Phase-40-passed labels, and produces no
 `block_geofm_suitability_prior.csv`.
 
 Phase 42 audits local candidate label sources after Phase 41. DLTB/slope labels
@@ -250,55 +264,59 @@ field-survey, or policy-outcome label was found that can pass Phase 40.
 
 ## 5. Discussion
 
-The current Paper11 evidence settles the tested scientific claim negatively.
+The current Paper11 evidence supports a bounded positive representation claim.
 The project began with the question of whether GeoFM embeddings could improve
-farmland layout optimization by adding latent environmental context. The
-current bounded evidence does not support that positive claim. Raw B1 does not
-stably outperform B0 across held-out Bishan tiles and seeds, compressed
-controls can exceed raw B1, and normalized B1 does not survive broader
-robustness checks as a general rescue.
+farmland layout optimization by adding latent environmental context. The answer
+is conditional. Raw 64-dimensional B1 direct injection does not stably
+outperform B0 across held-out Bishan tiles and seeds. However, Phase 48 shows
+that compressed GeoFM state routes D4P8 and D4P16 outperform B0, raw B1,
+random D2, and shuffled D3 on mean learned-policy reward under the same
+base-reward held-out protocol.
 
-This negative result is informative rather than incidental. It shows that
-remote-sensing foundation-model embeddings cannot be treated as decision-ready
-suitability variables merely because they are semantically rich. In the current
-planning environment, representation scale, compression, spatial alignment, and
-reward definition all shape learned-policy behavior. Without controls, a
-positive result could be misattributed to GeoFM semantics.
+This distinction matters scientifically. A negative raw-B1 result could have
+been misread as evidence that GeoFM information is irrelevant to farmland
+layout optimization. The compressed-route result instead points to
+representation geometry as the limiting factor. In the current planning
+environment, GeoFM information appears useful when it enters the policy state
+through compact PCA-compressed inputs, but not when raw low-variance embedding
+dimensions are appended directly to explicit planning features.
 
-The suitability branch is more constrained than a simple missing-experiment
-case. The current weak labels are derived from DLTB, slope, or source metadata,
-so they cannot validate an independent suitability reward. Phase 40 prevents
-the workflow from converting weak, leakage-prone labels into B2/B3 reward
-claims. Phase 41 defines a stricter future route in which GeoFM must be
+The result remains bounded. The Phase 48 audit is read-only over the existing
+4096-step Bishan held-out summary rows, and it does not prove that PCA is
+intrinsically optimal, that the effect transfers across regions, or that the
+policy has learned agronomic suitability semantics. The positive claim is about
+state representation under a deterministic base planning reward, not about a
+validated suitability reward.
+
+The suitability branch is still more constrained than a simple missing
+experiment. The current weak labels are derived from DLTB, slope, or source
+metadata, so they cannot validate an independent suitability reward. Phase 40
+prevents the workflow from converting weak, leakage-prone labels into B2/B3
+reward claims. Phase 41 defines a stricter future route in which GeoFM must be
 converted into a calibrated low-dimensional prior before it can influence
 suitability reward. Phase 42 then tests whether the required labels are already
 available locally and concludes that they are not: DLTB/slope labels remain
 diagnostic-only, and candidate labels from Paper10 and Paper58 are not Paper11
 Bishan suitability labels.
 
-The negative conclusion remains bounded. It is Bishan-only, uses bounded
-training budgets, does not provide cross-region transfer evidence, does not
-enable B2/B3, and does not validate agronomic suitability with independent
-field, soil, irrigation, yield, or high-standard-farmland labels. These
-limitations are not minor additions to a positive story. They define the
-boundary of the current paper and the conditions under which GeoFM can be
-retested.
-
+The practical implication is that Paper11 should proceed with two separate
+claim levels. The base-reward representation claim is now supported for
+compressed GeoFM state routes in Bishan. The suitability-reward claim remains
+blocked until external non-leakage labels pass the independent-label gate and a
+leakage-aware GeoFM prior clears control and calibration checks.
 ## 6. Conclusion
 
 The current Paper11 repository establishes a reproducible workflow for testing
-GeoFM-enhanced farmland layout optimization on real planning units, and the
-completed evidence rejects the current positive Paper11 hypothesis under the
-tested Bishan protocol. Raw GeoFM B1 is not a stable positive learned-policy
-signal; compressed and normalized controls reveal unresolved representation
-effects; local DLTB/slope labels are diagnostic rather than independent
-suitability evidence; and suitability-reward work must remain blocked until an
+GeoFM-enhanced farmland layout optimization on real planning units. The
+completed evidence supports a compressed GeoFM representation route under the
+Bishan base-reward held-out protocol. Raw B1 direct injection remains
+unsupported, but D4P8 and D4P16 improve over B0, raw B1, random D2, and
+shuffled D3 on mean learned-policy reward. The appropriate current conclusion
+is therefore not that GeoFM fails, but that GeoFM must be represented through a
+controlled compressed state route before it improves the learned planning
+policy in this setting. Suitability-reward work remains blocked until an
 independent non-leakage label registry passes Phase 40 and a leakage-aware
-GeoFM prior passes Phase 41. The appropriate current conclusion is therefore
-not that GeoFM fails universally, but that raw GeoFM state injection and the
-current suitability-reward route are unsupported under the completed Paper11
-evidence gates.
-
+GeoFM prior passes Phase 41.
 ## Claim-Evidence Map
 
 | Claim | Evidence | Status |
@@ -306,12 +324,12 @@ evidence gates.
 | The repository implements a reproducible GeoFM-enhanced farmland planning workflow. | Phase 1-25 pipeline, real Bishan DLTB adapter, tiled contracts, padded held-out policy runner, smoke tests. | Supported |
 | Raw GeoFM B1 improves learned-policy planning decisions. | Phase 26 B1-B0 mean delta `-0.1318712688`, `3 / 9` positive tile-seed pairs. | Not supported |
 | Raw B1 carries a stable representation advantage over controls. | Phase 28 reports `compression_matches_raw`; D4P8 and D4P16 exceed B1 at 4096 steps. | Not supported |
-| Normalization or more budget resolves the representation problem. | Phase 30 partially improves B1; Phase 33 full bounded aggregate reports `budget_not_explanatory`. | Not supported |
+| Compressed GeoFM state routes improve learned-policy planning decisions under the base reward. | Phase 48 reports `compressed_geofm_route_supported`; pooled compressed-control delta `0.4673011499`, `48 / 72` positive comparisons. | Supported |
+| Normalization or more budget resolves the raw-B1 representation problem. | Phase 30 partially improves B1; Phase 33 full bounded aggregate reports `budget_not_explanatory`. | Not supported |
 | Suitability reward is ready for B2/B3. | Phase 36 `proxy_signal_not_supported`; Phase 38 `proxy_rebuild_diagnostic_only`; Phase 40 `independent_label_inputs_missing`; Phase 41 `phase41_independent_label_inputs_missing`. | Not supported |
 | Local files already contain a usable independent Paper11 suitability label. | Phase 42 finds only diagnostic DLTB/slope weak labels and unrelated Paper10/Paper58 labels. | Not supported |
-| The evidence supports a positive GeoFM-performance conclusion. | Performance, suitability, B2/B3, and transfer claims remain unsupported. | Not supported |
-| The evidence supports a bounded negative conclusion. | B1 underperforms or fails controls, normalized/budget checks do not rescue the claim, local label audit fails, and suitability reward is blocked by Phase 40/41. | Supported |
-
+| The evidence supports a broad GeoFM-performance or transfer conclusion. | Suitability, B2/B3, and transfer claims remain unsupported. | Not supported |
+| The evidence supports a bounded positive compressed-GeoFM representation conclusion. | D4P8/D4P16 exceed B0, raw B1, D2, and D3 on mean held-out base-reward policy reward. | Supported |
 ## Data Availability
 
 The repository includes lightweight Bishan AlphaEarth sample arrays, code,
@@ -339,4 +357,4 @@ The final submitted version should cite a release tag or immutable commit hash.
 - Author contributions.
 - Final data access statement for the external DLTB-with-slope GeoPackage.
 - Reference list and citation formatting for the selected journal.
-- Final decision on target journal format for a bounded negative-results or evidence-gated methods article.
+- Final decision on target journal format for a bounded compressed-GeoFM representation article.

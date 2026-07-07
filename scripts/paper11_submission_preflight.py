@@ -37,27 +37,27 @@ REQUIRED_FILES = [
 
 DOCX_REQUIRED_TEXT = {
     "Paper11_formal_conclusion_manuscript.docx": [
-        "Evidence-gated rejection of unsupported GeoFM superiority",
-        "Phase 42 audits local candidate label sources",
+        "Compressed GeoFM representations improve held-out farmland layout optimization",
+        "Phase 48 reports",
+        "compressed_geofm_route_supported",
         "phase41_independent_label_inputs_missing",
-        "independent_label_inputs_missing",
-        "not that GeoFM fails universally",
+        "bounded positive compressed-GeoFM representation conclusion",
     ],
     "Paper11_cover_letter_and_declarations.docx": [
         "Paper11 Cover Letter and Declarations",
+        "Compressed GeoFM representations improve",
         "Declaration of Competing Interest",
-        "Data Availability",
         "Claim Boundary for Upload",
-        "bounded negative/evidence-gated manuscript",
+        "bounded positive compressed-GeoFM",
     ],
 }
 
 CLAIM_BOUNDARY_TEXT = [
-    "bounded negative/evidence-gated manuscript package",
-    "It does not claim\nGeoFM superiority",
-    "raw GeoFM state injection and the current suitability-reward\nroute are unsupported",
+    "bounded positive compressed-GeoFM representation manuscript package",
+    "It does not claim raw GeoFM B1 superiority",
+    "Current conclusion: raw GeoFM state injection remains unsupported",
+    "supports compressed GeoFM state routes",
 ]
-
 
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest().upper()

@@ -54,6 +54,7 @@ base-reward protocol.
 - `16_phase42_local_label_source_audit.md`: local candidate-label source
   audit showing that available DLTB/slope weak labels remain diagnostic-only
   and that no Phase 40-passing independent label is present locally.
+- `17_phase48_compressed_geofm_rescue.md`: read-only rescue audit showing that D4P8/D4P16 are supported compressed GeoFM candidate routes under the existing base-reward held-out protocol.
 
 ## Reproduction Link
 
@@ -334,6 +335,21 @@ Paper10/Paper58 labels cannot be registered as Paper11 Bishan suitability
 labels. A diagnostic registry check returns Phase 40
 `independent_label_gate_diagnostic_only` and Phase 41
 `phase41_independent_label_inputs_missing`.
+
+Phase 48 reinterprets the compressed D4 controls as candidate GeoFM routes. It
+runs read-only over the frozen Phase 28 `4096`-step summary CSV:
+
+```powershell
+python experiments\phase48_compressed_geofm_rescue\run_phase48_compressed_geofm_rescue.py --existing-summary-csv experiments\phase28_representation_controls\outputs\real_bishan_4096\phase28_representation_control_summary.csv --output-dir experiments\phase48_compressed_geofm_rescue\outputs\real_bishan_4096
+```
+
+The current Phase 48 status is `compressed_geofm_route_supported`. D4P8 and
+D4P16 exceed B0, raw B1, random D2, and shuffled D3 on mean learned-policy
+reward. The pooled compressed-control delta is `0.4673011499` with `48 / 72`
+positive comparisons. This changes the representation conclusion: raw B1 direct
+injection remains unsupported, but compressed GeoFM state routes are supported
+under the current base-reward held-out Bishan protocol. Suitability reward and
+B2/B3 remain blocked by the Phase 40/41 independent-label gates.
 
 ## Claim Boundary
 

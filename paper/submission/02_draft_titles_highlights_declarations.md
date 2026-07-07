@@ -1,5 +1,7 @@
 # Draft Submission Text
 
+> Phase 48 supersession note: this Phase 42 scaffold is retained as provenance only. Use `04_formal_conclusion_manuscript.md` and `final/Paper11_cover_letter_and_declarations.md` for the current bounded positive compressed-GeoFM representation package.
+
 Use this file as guarded starting text for the Phase 42-synchronized conclusion
 submission route. It supports a bounded negative/evidence-gated manuscript, not
 a positive GeoFM-superiority, B2/B3, suitability-reward, or transfer claim.
