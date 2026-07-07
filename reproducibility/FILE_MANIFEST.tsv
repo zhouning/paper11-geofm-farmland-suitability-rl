@@ -288,10 +288,11 @@ paper/submission/04_formal_conclusion_manuscript.md	submission	Phase 54-synchron
 paper/submission/final/README.md	submission	Index for generated Phase 44 formal DOCX submission files.
 paper/submission/final/Paper11_formal_conclusion_manuscript.docx	submission	Earlier DOCX export retained for traceability; current formal output is the Markdown/LaTeX/PDF set.
 paper/submission/final/Paper11_cover_letter_and_declarations.md	submission	Editable Phase 45 cover letter, declarations, data/code availability, AI-assisted tools, and claim-boundary text.
+paper/submission/final/Paper11_submission_metadata_template.md	submission	Template for author, affiliation, funding, data access, code release, and target-journal metadata required before journal upload.
 paper/submission/final/Paper11_cover_letter_and_declarations.docx	submission	Pandoc-generated DOCX export of the Phase 45 cover letter and declarations file.
 paper/submission/final/Paper11_formal_conclusion_manuscript.md	submission	Editable journal-style formal manuscript source for the current conclusion-bounded Paper11 export.
 paper/submission/final/Paper11_formal_conclusion_manuscript.tex	submission	Standalone LaTeX export of the current journal-style formal manuscript for journal upload.
-paper/submission/final/Paper11_formal_conclusion_manuscript.pdf	submission	pdflatex-generated 9-page PDF of the current journal-style formal manuscript for journal upload.
+paper/submission/final/Paper11_formal_conclusion_manuscript.pdf	submission	pdflatex-generated 10-page PDF of the current journal-style formal manuscript for journal upload.
 paper/submission/final/Paper11_phase46_submission_contents_sha256.txt	submission	SHA256 checksum list for files included in the Phase 46 submission bundle.
 paper/submission/final/Paper11_phase46_submission_bundle.zip	submission	Phase 46 transfer archive containing formal manuscript, cover letter/declarations, editable sources, and content checksums.
 paper/submission/final/Paper11_phase46_submission_bundle_sha256.txt	submission	SHA256 checksum for the Phase 46 submission bundle zip.

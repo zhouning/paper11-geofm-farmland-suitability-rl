@@ -12,9 +12,9 @@ Farmland layout optimization increasingly depends on spatial decisions for many 
 
 # 1. Introduction
 
-Farmland layout optimization is a spatial decision problem with direct consequences for land consolidation, fragmentation control, and agricultural protection. Planning units differ in area, slope, land-use class, adjacency, and geometric context, but they may also differ in latent environmental properties that are not fully recorded in operational planning data. This creates a recurring modelling gap: explicit GIS-derived attributes can define a feasible planning task, yet they may not capture all surface conditions relevant to the quality of a layout decision.
+Farmland layout optimization is a spatial decision problem with direct consequences for land consolidation, fragmentation control, and agricultural protection [6]. Planning units differ in area, slope, land-use class, adjacency, and geometric context, but they may also differ in latent environmental properties that are not fully recorded in operational planning data. This creates a recurring modelling gap: explicit GIS-derived attributes can define a feasible planning task, yet they may not capture all surface conditions relevant to the quality of a layout decision.
 
-Geospatial foundation models offer a plausible route for filling part of this gap. Products such as AlphaEarth embeddings summarize multi-sensor land-surface information in dense feature vectors and can be joined to planning units after spatial aggregation. However, adding such embeddings to a planning policy is not automatically beneficial. Dense remote-sensing embeddings may be redundant with explicit variables, poorly scaled for policy optimization, vulnerable to shuffled or random controls, or incorrectly interpreted as agronomic suitability when no independent suitability label is available.
+Geospatial foundation models offer a plausible route for filling part of this gap. Products such as AlphaEarth embeddings summarize multi-sensor land-surface information in dense feature vectors and can be joined to planning units after spatial aggregation [1,2]. However, adding such embeddings to a planning policy is not automatically beneficial. Dense remote-sensing embeddings may be redundant with explicit variables, poorly scaled for policy optimization, vulnerable to shuffled or random controls, or incorrectly interpreted as agronomic suitability when no independent suitability label is available.
 
 This distinction is central to the present study. We do not ask only whether GeoFM features can be appended to a reinforcement-learning planning state. We ask which representation route is supported by held-out policy reward, which controls rule out simpler explanations, and where the evidence must stop. The design therefore separates three claim levels: first, whether a reproducible Bishan planning workflow can operate on real planning units; second, whether GeoFM state information improves learned-policy reward under the same deterministic base reward; and third, whether the evidence is strong enough to introduce a suitability reward.
 
@@ -24,21 +24,34 @@ We show that the answer is conditional rather than uniformly positive or negativ
 
 ## 2.1 Study units and feature sources
 
-The workflow used real Bishan DLTB land-use polygons as planning units. The real-data adapter exported `64,984` DLTB polygons into analysis-ready block feature tables. Explicit planning attributes included available slope- and land-use-derived variables, while GeoFM features were obtained by aggregating AlphaEarth annual embeddings to block-level representations.
+The workflow used real Bishan DLTB land-use polygons as planning units. The real-data adapter exported `64,984` DLTB polygons into analysis-ready block feature tables. Explicit planning attributes included available slope- and land-use-derived variables, while GeoFM features were obtained by aggregating AlphaEarth annual embeddings to block-level representations [1].
 
 The repository separates lightweight reproducibility from full local reconstruction. Lightweight sample AlphaEarth arrays, tests, file manifests, and manuscript-facing summaries are included for reviewer smoke checks. The full Bishan DLTB-with-slope GeoPackage is treated as an external local input and is not redistributed through ordinary Git. Large derived arrays, full generated experiment outputs, and trained artifacts are excluded from Git and should be archived externally for submission-grade data release.
 
 ## 2.2 State representations
 
-We evaluated explicit-only, raw GeoFM, control, compressed, and diagnostic state variants under the same planning interface. `B0` used explicit planning features with the deterministic base planning reward. `B1` appended the raw 64-dimensional AlphaEarth/GeoFM embedding to the explicit features. `D2` appended random 64-dimensional controls, and `D3` appended shuffled AlphaEarth embeddings. `D4P8` and `D4P16` appended PCA-compressed AlphaEarth embeddings with 8 and 16 components, respectively. `N1Z` and `N1ZR` were normalized-B1 diagnostic variants used to test whether raw-B1 behavior was explained by feature scale. `B2` and `B3` were reserved for suitability-reward experiments and were not enabled because the suitability evidence gates did not pass.
+We evaluated explicit-only, raw GeoFM, control, compressed, and diagnostic state variants under the same planning interface. `B0` used explicit planning features with the deterministic base planning reward. `B1` appended the raw 64-dimensional AlphaEarth/GeoFM embedding to the explicit features. `D2` appended random 64-dimensional controls, and `D3` appended shuffled AlphaEarth embeddings. `D4P8` and `D4P16` appended PCA-compressed AlphaEarth embeddings with 8 and 16 components, respectively [3]. `N1Z` and `N1ZR` were normalized-B1 diagnostic variants used to test whether raw-B1 behavior was explained by feature scale. `B2` and `B3` were reserved for suitability-reward experiments and were not enabled because the suitability evidence gates did not pass.
 
 This representation ladder was designed to distinguish information content from representation form. If raw B1 failed while random and shuffled controls performed similarly, there would be no supported GeoFM state claim. If compressed GeoFM variants exceeded B0, B1, D2, and D3 under the same reward and evaluation protocol, the supported claim would be narrower: GeoFM information is useful only after controlled compression.
+
+Table 1. State-representation ladder used to isolate information content from representation form.
+
+| Variant | Role in evidence ladder | GeoFM-related state input |
+|---|---|---|
+| B0 | Explicit-only planning baseline | None |
+| B1 | Raw GeoFM test | Raw 64-dimensional AlphaEarth/GeoFM embedding |
+| D2 | Random representation control | Random 64-dimensional control features |
+| D3 | Shuffled representation control | Block-shuffled AlphaEarth/GeoFM embedding |
+| D4P8 | Compressed GeoFM route | 8 PCA components from AlphaEarth/GeoFM embeddings |
+| D4P16 | Compressed GeoFM route | 16 PCA components from AlphaEarth/GeoFM embeddings |
+| N1Z/N1ZR | Raw-B1 scale diagnostics | Normalized raw GeoFM variants |
+| B2/B3 | Suitability-reward candidates | Not enabled; independent-label gate failed |
 
 ## 2.3 Planning reward and policy interface
 
 All supported representation experiments used a deterministic base planning reward. This reward encoded explicit planning logic, including slope, contiguity, baimu-fang-style consolidation, action validity, and related spatial constraints. It deliberately excluded any suitability reward term because the available suitability proxies had not passed independent-label validation.
 
-The learned-policy interface used tiled planning contracts and padded variable-size observations/actions so that policies could be evaluated across held-out Bishan tiles with different numbers of planning units. The original B0/B1 and representation-control experiments used three held-out tiles and seeds `0`, `1`, and `2`; the expanded replication used five held-out tiles and the same three seeds. Reported learned-policy comparisons used `4096` training steps and evaluation horizon `8` unless otherwise stated.
+The learned-policy interface used a masked PPO-style training route with tiled planning contracts and padded variable-size observations/actions so that policies could be evaluated across held-out Bishan tiles with different numbers of planning units [4]. The original B0/B1 and representation-control experiments used three held-out tiles and seeds `0`, `1`, and `2`; the expanded replication used five held-out tiles and the same three seeds. Reported learned-policy comparisons used `4096` training steps and evaluation horizon `8` unless otherwise stated.
 
 ## 2.4 Evidence gates and statistical checks
 
@@ -48,7 +61,7 @@ For the compressed route, row-level support was assessed through compressed-minu
 
 To test why the compressed route worked while raw B1 did not, a read-only representation-geometry audit aligned the B1, D4P8, and D4P16 feature tables by `block_id`. The audit computed total centered variance, covariance eigenvalues, effective rank, participation ratio, positive-eigenvalue condition number, and feature-standard-deviation spread for the raw and compressed GeoFM coordinates. It then linked these geometry summaries to the expanded compressed-minus-control reward deltas and to held-out tile memberships. This audit was diagnostic: it could support a plausible mechanism for the compressed representation result, but it did not add a new policy-training result or prove that PCA was the optimal compression method.
 
-Suitability-reward evidence was handled by a separate hard gate. Weak labels derived from DLTB, slope, or source metadata were treated as diagnostic leakage-risk labels rather than independent agronomic suitability labels. A B2/B3 suitability reward could proceed only after a registered independent non-leakage label passed the label gate and a leakage-aware GeoFM prior passed explicit-baseline, shuffled-control, random-control, fold-stability, and calibration checks.
+Suitability-reward evidence was handled by a separate hard gate. Weak labels derived from DLTB, slope, or source metadata were treated as diagnostic leakage-risk labels rather than independent agronomic suitability labels [5]. A B2/B3 suitability reward could proceed only after a registered independent non-leakage label passed the label gate and a leakage-aware GeoFM prior passed explicit-baseline, shuffled-control, random-control, fold-stability, and calibration checks.
 
 # 3. Results
 
@@ -84,6 +97,14 @@ The representation-geometry audit provided a mechanism-level explanation for why
 
 These geometry values supported the compressed-route interpretation. The compressed states preserved most of the raw GeoFM variance but presented it to the policy through lower-rank and substantially better-conditioned coordinates. The same audit linked these representations to the expanded replication deltas: D4P8 had mean compressed-minus-control reward gain `0.2356980264` with `38 / 60` positive comparisons, and D4P16 had mean gain `0.3486555373` with `36 / 60` positive comparisons. Tile-level retention-gain correlations were near zero or weakly negative (`-0.0207226322` for D4P8, `-0.2059768413` for D4P16, and `0.0257762396` pooled), so the result should not be interpreted as a simple monotonic per-tile variance-retention rule. The stronger conclusion is that compressed GeoFM states retained the useful shared signal while avoiding the high-dimensional and ill-conditioned raw representation presented by B1.
 
+Table 2. Representation geometry and expanded-replication reward support.
+
+| Variant | GeoFM dimensions | Raw-variance retention | Effective rank | Condition number | Mean reward gain |
+|---|---:|---:|---:|---:|---:|
+| B1 | 64 | 100.00% | 9.495 | 6658.95 | Not applicable |
+| D4P8 | 8 | 85.88% | 5.132 | 16.27 | 0.2357 |
+| D4P16 | 16 | 94.96% | 7.301 | 53.70 | 0.3487 |
+
 ## 3.5 Normalization and bounded budget checks did not explain away the compressed route
 
 The normalized-B1 branch tested whether raw-B1 underperformance was primarily a scaling artifact. At `4096` steps, normalized variants improved raw B1 and recovered the B0 mean gap: N1Z reached mean learned-policy reward `0.6515323140`, compared with `0.4825072170` for B0 and `0.3506359482` for raw B1. However, the normalized variants did not consistently exceed the compressed controls.
@@ -115,6 +136,15 @@ The practical path forward is therefore specific. The current manuscript can sup
 # 5. Conclusion
 
 This study establishes a reproducible evidence-gated workflow for evaluating GeoFM-enhanced farmland layout optimization on real Bishan planning units. The evidence rejects raw 64-dimensional GeoFM direct injection as a supported planning-state improvement, but supports PCA-compressed GeoFM routes D4P8 and D4P16 under the Bishan base-reward held-out protocol. The strongest current performance evidence comes from the expanded five-tile, three-seed replication: pooled compressed-control delta `0.2921767818`, `74 / 120` positive row-level comparisons, row-level sign-test p `0.0066881634`, cluster signed-rank p `0.0206298828`, exact cluster-mean sign-flip p `0.0196838379`, and 95% bootstrap CI `[0.0570820445, 0.5823557658]`. The mechanism evidence shows that these compressed routes retained `85.87823898%` and `94.96006154%` of raw GeoFM variance while reducing effective rank and condition number relative to B1. The appropriate conclusion is therefore bounded and positive: GeoFM improved the learned planning policy when represented through controlled compressed state features. Raw B1 superiority, suitability reward, B2/B3 readiness, cross-region transfer, and independently validated agronomic suitability remain unsupported.
+
+# References
+
+1. Brown, C. F. et al. AlphaEarth Foundations: An embedding field model for accurate and efficient global mapping from sparse label data. arXiv:2507.22291 (2025).
+2. Gorelick, N. et al. Google Earth Engine: Planetary-scale geospatial analysis for everyone. Remote Sensing of Environment 202, 18-27 (2017). doi:10.1016/j.rse.2017.06.031.
+3. Jolliffe, I. T. & Cadima, J. Principal component analysis: a review and recent developments. Philosophical Transactions of the Royal Society A 374, 20150202 (2016). doi:10.1098/rsta.2015.0202.
+4. Schulman, J., Wolski, F., Dhariwal, P., Radford, A. & Klimov, O. Proximal Policy Optimization Algorithms. arXiv:1707.06347 (2017).
+5. Kapoor, S. & Narayanan, A. Leakage and the reproducibility crisis in machine-learning-based science. Patterns 4, 100804 (2023). doi:10.1016/j.patter.2023.100804.
+6. Food and Agriculture Organization of the United Nations. The design of land consolidation pilot projects in Central and Eastern Europe. FAO Land Tenure Studies 6 (FAO, Rome, 2003).
 
 # Data Availability
 

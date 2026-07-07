@@ -12,13 +12,16 @@ and the current journal-style LaTeX/PDF formal export.
   manuscript source for the current conclusion-bounded formal export.
 - `Paper11_formal_conclusion_manuscript.tex`: standalone LaTeX export of
   the current journal-style formal manuscript for journal upload.
-- `Paper11_formal_conclusion_manuscript.pdf`: 9-page PDF generated from
+- `Paper11_formal_conclusion_manuscript.pdf`: 10-page PDF generated from
   the LaTeX file with `pdflatex`; this is the current formal PDF submission file.
 - `Paper11_cover_letter_and_declarations.docx`: word-processing cover-letter
   and declarations file generated with Pandoc.
 - `Paper11_cover_letter_and_declarations.md`: editable cover-letter,
   declaration, data availability, code availability, AI-assisted tools, and
   claim-boundary text.
+- `Paper11_submission_metadata_template.md`: author-facing template for target
+  journal, authorship, affiliations, funding, data access, code release, and
+  submission-system metadata that cannot be inferred from the repository.
 
 ## Bundle Files
 
@@ -58,6 +61,6 @@ and a calibrated low-dimensional prior passes Phase 41.
 ## Before Journal Upload
 
 The authors still need to supply final author metadata, funding, CRediT roles,
-reference formatting, final data-access wording for the external DLTB input,
+final target-journal reference formatting, final data-access wording for the external DLTB input,
 any required journal figure files, and a release tag, immutable commit hash, or
-archive DOI.
+archive DOI. Use `Paper11_submission_metadata_template.md` as the fill-in checklist.

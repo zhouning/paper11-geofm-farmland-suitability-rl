@@ -1327,3 +1327,47 @@ PDF text extraction: no empty pages, no Markdown heading literals, all main sect
 ```
 
 Conclusion update: the positive Paper11 conclusion is now stronger. GeoFM is useful to a moderate, bounded degree under the Bishan base-reward held-out protocol when represented as compressed state features. The mechanism evidence supports the interpretation that compression preserves most raw GeoFM variance while lowering effective rank and improving conditioning. Raw B1 direct injection, PCA optimality, suitability reward, B2/B3 readiness, transfer, and independent agronomic suitability remain unsupported.
+
+## Phase 58 Submission-Readiness Package Polish
+
+Phase 58 continues from the Phase 57 formal manuscript by adding submission-grade supporting structure rather than new experiments. The scientific conclusion remains unchanged: GeoFM is useful under the Bishan base-reward held-out protocol through controlled compressed state representations; raw B1, suitability reward, B2/B3 readiness, transfer, and independent agronomic suitability remain unsupported.
+
+Manuscript/package updates:
+
+```text
+paper/submission/final/Paper11_formal_conclusion_manuscript.md
+paper/submission/final/Paper11_formal_conclusion_manuscript.tex
+paper/submission/final/Paper11_formal_conclusion_manuscript.pdf
+paper/submission/final/Paper11_submission_metadata_template.md
+paper/submission/final/README.md
+```
+
+Added to the formal manuscript:
+
+```text
+Table 1: state-representation ladder for B0/B1/D2/D3/D4P8/D4P16/N1Z/N1ZR/B2/B3.
+Table 2: representation geometry and expanded-replication reward support.
+References: AlphaEarth Foundations, Google Earth Engine, PCA, PPO, ML leakage, and FAO land-consolidation background.
+```
+
+Regenerated formal files:
+
+```text
+paper/submission/final/Paper11_formal_conclusion_manuscript.tex
+paper/submission/final/Paper11_formal_conclusion_manuscript.pdf
+```
+
+Verification notes:
+
+```text
+pdflatex exited 0 twice after the table/reference update.
+Final PDF has 10 pages.
+LaTeX log has no LaTeX Warning, Overfull, Underfull, undefined references, rerun, emergency stop, fatal error, or ! matches.
+PDF text extraction found no empty pages, no Markdown heading literals, all main sections present, both tables present, References present, and zero rendered "Phase" occurrences.
+```
+
+Remaining non-inferable submission items:
+
+```text
+author list, affiliations, corresponding author, funding, author contributions, target journal, final data-access wording for external DLTB data, code release tag/DOI, and journal-specific reference formatting.
+```

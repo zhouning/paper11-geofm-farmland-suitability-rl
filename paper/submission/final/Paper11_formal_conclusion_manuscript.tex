@@ -79,6 +79,17 @@
 \newcommand{\VariableTok}[1]{\textcolor[rgb]{0.10,0.09,0.49}{#1}}
 \newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.25,0.44,0.63}{#1}}
 \newcommand{\WarningTok}[1]{\textcolor[rgb]{0.38,0.63,0.69}{\textbf{\textit{#1}}}}
+\usepackage{longtable,booktabs,array}
+\newcounter{none} % for unnumbered tables
+\usepackage{calc} % for calculating minipage widths
+% Correct order of tables after \paragraph or \subparagraph
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd\longtable{\par}{\if@noskipsec\mbox{}\fi\par}{}{}
+\makeatother
+% Allow footnotes in longtable head/foot
+\IfFileExists{footnotehyper.sty}{\usepackage{footnotehyper}}{\usepackage{footnote}}
+\makesavenoteenv{longtable}
 \setlength{\emergencystretch}{3em} % prevent overfull lines
 \providecommand{\tightlist}{%
   \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
@@ -158,9 +169,9 @@ claims remain unproven.
 
 Farmland layout optimization is a spatial decision problem with direct
 consequences for land consolidation, fragmentation control, and
-agricultural protection. Planning units differ in area, slope, land-use
-class, adjacency, and geometric context, but they may also differ in
-latent environmental properties that are not fully recorded in
+agricultural protection {[}6{]}. Planning units differ in area, slope,
+land-use class, adjacency, and geometric context, but they may also
+differ in latent environmental properties that are not fully recorded in
 operational planning data. This creates a recurring modelling gap:
 explicit GIS-derived attributes can define a feasible planning task, yet
 they may not capture all surface conditions relevant to the quality of a
@@ -169,7 +180,7 @@ layout decision.
 Geospatial foundation models offer a plausible route for filling part of
 this gap. Products such as AlphaEarth embeddings summarize multi-sensor
 land-surface information in dense feature vectors and can be joined to
-planning units after spatial aggregation. However, adding such
+planning units after spatial aggregation {[}1,2{]}. However, adding such
 embeddings to a planning policy is not automatically beneficial. Dense
 remote-sensing embeddings may be redundant with explicit variables,
 poorly scaled for policy optimization, vulnerable to shuffled or random
@@ -211,7 +222,7 @@ The real-data adapter exported \texttt{64,984} DLTB polygons into
 analysis-ready block feature tables. Explicit planning attributes
 included available slope- and land-use-derived variables, while GeoFM
 features were obtained by aggregating AlphaEarth annual embeddings to
-block-level representations.
+block-level representations {[}1{]}.
 
 The repository separates lightweight reproducibility from full local
 reconstruction. Lightweight sample AlphaEarth arrays, tests, file
@@ -231,7 +242,7 @@ reward. \texttt{B1} appended the raw 64-dimensional AlphaEarth/GeoFM
 embedding to the explicit features. \texttt{D2} appended random
 64-dimensional controls, and \texttt{D3} appended shuffled AlphaEarth
 embeddings. \texttt{D4P8} and \texttt{D4P16} appended PCA-compressed
-AlphaEarth embeddings with 8 and 16 components, respectively.
+AlphaEarth embeddings with 8 and 16 components, respectively {[}3{]}.
 \texttt{N1Z} and \texttt{N1ZR} were normalized-B1 diagnostic variants
 used to test whether raw-B1 behavior was explained by feature scale.
 \texttt{B2} and \texttt{B3} were reserved for suitability-reward
@@ -246,6 +257,42 @@ under the same reward and evaluation protocol, the supported claim would
 be narrower: GeoFM information is useful only after controlled
 compression.
 
+Table 1. State-representation ladder used to isolate information content
+from representation form.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3333}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Variant
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Role in evidence ladder
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+GeoFM-related state input
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+B0 & Explicit-only planning baseline & None \\
+B1 & Raw GeoFM test & Raw 64-dimensional AlphaEarth/GeoFM embedding \\
+D2 & Random representation control & Random 64-dimensional control
+features \\
+D3 & Shuffled representation control & Block-shuffled AlphaEarth/GeoFM
+embedding \\
+D4P8 & Compressed GeoFM route & 8 PCA components from AlphaEarth/GeoFM
+embeddings \\
+D4P16 & Compressed GeoFM route & 16 PCA components from AlphaEarth/GeoFM
+embeddings \\
+N1Z/N1ZR & Raw-B1 scale diagnostics & Normalized raw GeoFM variants \\
+B2/B3 & Suitability-reward candidates & Not enabled; independent-label
+gate failed \\
+\end{longtable}
+}
+
 \subsection{2.3 Planning reward and policy
 interface}\label{planning-reward-and-policy-interface}
 
@@ -256,14 +303,15 @@ related spatial constraints. It deliberately excluded any suitability
 reward term because the available suitability proxies had not passed
 independent-label validation.
 
-The learned-policy interface used tiled planning contracts and padded
-variable-size observations/actions so that policies could be evaluated
-across held-out Bishan tiles with different numbers of planning units.
-The original B0/B1 and representation-control experiments used three
-held-out tiles and seeds \texttt{0}, \texttt{1}, and \texttt{2}; the
-expanded replication used five held-out tiles and the same three seeds.
-Reported learned-policy comparisons used \texttt{4096} training steps
-and evaluation horizon \texttt{8} unless otherwise stated.
+The learned-policy interface used a masked PPO-style training route with
+tiled planning contracts and padded variable-size observations/actions
+so that policies could be evaluated across held-out Bishan tiles with
+different numbers of planning units {[}4{]}. The original B0/B1 and
+representation-control experiments used three held-out tiles and seeds
+\texttt{0}, \texttt{1}, and \texttt{2}; the expanded replication used
+five held-out tiles and the same three seeds. Reported learned-policy
+comparisons used \texttt{4096} training steps and evaluation horizon
+\texttt{8} unless otherwise stated.
 
 \subsection{2.4 Evidence gates and statistical
 checks}\label{evidence-gates-and-statistical-checks}
@@ -303,10 +351,11 @@ PCA was the optimal compression method.
 Suitability-reward evidence was handled by a separate hard gate. Weak
 labels derived from DLTB, slope, or source metadata were treated as
 diagnostic leakage-risk labels rather than independent agronomic
-suitability labels. A B2/B3 suitability reward could proceed only after
-a registered independent non-leakage label passed the label gate and a
-leakage-aware GeoFM prior passed explicit-baseline, shuffled-control,
-random-control, fold-stability, and calibration checks.
+suitability labels {[}5{]}. A B2/B3 suitability reward could proceed
+only after a registered independent non-leakage label passed the label
+gate and a leakage-aware GeoFM prior passed explicit-baseline,
+shuffled-control, random-control, fold-stability, and calibration
+checks.
 
 \section{3. Results}\label{results}
 
@@ -446,6 +495,41 @@ the result should not be interpreted as a simple monotonic per-tile
 variance-retention rule. The stronger conclusion is that compressed
 GeoFM states retained the useful shared signal while avoiding the
 high-dimensional and ill-conditioned raw representation presented by B1.
+
+Table 2. Representation geometry and expanded-replication reward
+support.
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1304}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1739}}
+  >{\raggedleft\arraybackslash}p{(\linewidth - 10\tabcolsep) * \real{0.1739}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+Variant
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+GeoFM dimensions
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Raw-variance retention
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Effective rank
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Condition number
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedleft
+Mean reward gain
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+B1 & 64 & 100.00\% & 9.495 & 6658.95 & Not applicable \\
+D4P8 & 8 & 85.88\% & 5.132 & 16.27 & 0.2357 \\
+D4P16 & 16 & 94.96\% & 7.301 & 53.70 & 0.3487 \\
+\end{longtable}
+}
 
 \subsection{3.5 Normalization and bounded budget checks did not explain
 away the compressed
@@ -591,6 +675,36 @@ policy when represented through controlled compressed state features.
 Raw B1 superiority, suitability reward, B2/B3 readiness, cross-region
 transfer, and independently validated agronomic suitability remain
 unsupported.
+
+\section{References}\label{references}
+
+\begin{enumerate}
+\def\labelenumi{\arabic{enumi}.}
+\tightlist
+\item
+  Brown, C. F. et al.~AlphaEarth Foundations: An embedding field model
+  for accurate and efficient global mapping from sparse label data.
+  arXiv:2507.22291 (2025).
+\item
+  Gorelick, N. et al.~Google Earth Engine: Planetary-scale geospatial
+  analysis for everyone. Remote Sensing of Environment 202, 18-27
+  (2017). doi:10.1016/j.rse.2017.06.031.
+\item
+  Jolliffe, I. T. \& Cadima, J. Principal component analysis: a review
+  and recent developments. Philosophical Transactions of the Royal
+  Society A 374, 20150202 (2016). doi:10.1098/rsta.2015.0202.
+\item
+  Schulman, J., Wolski, F., Dhariwal, P., Radford, A. \& Klimov, O.
+  Proximal Policy Optimization Algorithms. arXiv:1707.06347 (2017).
+\item
+  Kapoor, S. \& Narayanan, A. Leakage and the reproducibility crisis in
+  machine-learning-based science. Patterns 4, 100804 (2023).
+  doi:10.1016/j.patter.2023.100804.
+\item
+  Food and Agriculture Organization of the United Nations. The design of
+  land consolidation pilot projects in Central and Eastern Europe. FAO
+  Land Tenure Studies 6 (FAO, Rome, 2003).
+\end{enumerate}
 
 \section{Data Availability}\label{data-availability}
 
