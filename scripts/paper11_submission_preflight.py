@@ -44,6 +44,8 @@ DOCX_REQUIRED_TEXT = {
         "cluster_magnitude_support",
         "cluster_mean_support",
         "Phase 53",
+        "Phase 54",
+        "artifact_lineage_consistent",
         "phase41_independent_label_inputs_missing",
         "bounded positive compressed-GeoFM representation conclusion",
     ],
@@ -53,7 +55,7 @@ DOCX_REQUIRED_TEXT = {
         "Declaration of Competing Interest",
         "Claim Boundary for Upload",
         "bounded positive compressed-GeoFM",
-        "Phase 53",
+        "Phase 54",
     ],
 }
 
@@ -64,6 +66,7 @@ CLAIM_BOUNDARY_TEXT = [
     "supports compressed GeoFM state routes",
     "cluster_magnitude_support",
     "cluster_mean_support",
+    "artifact_lineage_consistent",
 ]
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest().upper()

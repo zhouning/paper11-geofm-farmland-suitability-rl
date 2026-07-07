@@ -1172,3 +1172,53 @@ representations under the current Bishan base-reward held-out protocol, and the
 expanded cluster mean is not driven only by one favorable cluster, tile, or
 seed. Raw B1 direct injection, suitability reward, B2/B3, transfer, and
 independent agronomic suitability claims remain unsupported.
+## Phase 54 Artifact Lineage Consistency Audit
+
+Phase 54 adds a read-only artifact-lineage audit over the formal Phase 52/53
+compressed GeoFM evidence chain. It was added because multiple generated Phase
+52 output directories exist locally; the formal manuscript must identify and
+verify the authoritative chain used for claims.
+
+New implementation and evidence files:
+
+```text
+docs/superpowers/specs/2026-07-07-phase54-artifact-lineage-consistency-design.md
+docs/superpowers/plans/2026-07-07-phase54-artifact-lineage-consistency.md
+src/paper11_geofm/phase54_artifact_lineage_consistency.py
+experiments/phase54_artifact_lineage_consistency/run_phase54_artifact_lineage_consistency.py
+tests/test_phase54_artifact_lineage_consistency.py
+paper/phase28_results/23_phase54_artifact_lineage_consistency.md
+```
+
+Authoritative formal-evidence chain:
+
+```text
+experiments/phase52_expanded_cluster_replication/outputs/phase52_full5_seed3_phase48_compressed_rescue/phase48_compressed_geofm_rescue_delta_table.csv
+experiments/phase52_expanded_cluster_replication/outputs/phase52_full5_seed3_phase50_cluster/phase50_cluster_delta_summary.csv
+experiments/phase52_expanded_cluster_replication/outputs/phase52_full5_seed3_phase51_magnitude/phase51_cluster_magnitude_support.json
+experiments/phase53_cluster_mean_support/outputs/phase52_full5_seed3/phase53_cluster_mean_support.json
+```
+
+Real Phase 54 status:
+
+```text
+artifact_lineage_consistent
+```
+
+Core recomputed values:
+
+```text
+cluster count: 15
+mean cluster delta: 0.2921767818
+Phase 51 signed-rank p: 0.0206298828
+Phase 53 sign-flip mean p: 0.0196838379
+```
+
+Conclusion update: Phase 54 does not add a new performance claim. It verifies
+that the formal Phase 52/53 values are reproducible from one authoritative
+artifact chain: Phase 48 delta rows to Phase 50 cluster means to Phase 51
+signed-rank testing and Phase 53 cluster-mean support. Historical
+`real_bishan_4096_5tiles*` generated directories are not formal manuscript
+evidence sources for the Phase 52/53 conclusion. Raw B1 direct injection,
+suitability reward, B2/B3, transfer, and independent agronomic suitability
+claims remain unsupported.

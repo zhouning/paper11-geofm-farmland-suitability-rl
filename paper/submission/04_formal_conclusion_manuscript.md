@@ -22,6 +22,7 @@ control; evidence gate; land-use planning
 - Phase 48 shows that compressed GeoFM routes D4P8 and D4P16 outperform B0, raw B1, random D2, and shuffled D3 on mean held-out reward.
 - Phase 52 expands this compressed-route evidence to five held-out tiles and three seeds.
 - Phase 53 supports the expanded cluster mean with exact sign-flip, bootstrap, and leave-one influence checks.
+- Phase 54 verifies that the formal Phase 52/53 values come from one authoritative artifact chain.
 - Suitability-reward work remains blocked until an independent non-leakage label gate passes.
 - A local Phase 42 label-source audit finds no usable external suitability label for the real Bishan run.
 - The evidence supports a bounded positive compressed-representation conclusion, not a raw-GeoFM or suitability-reward claim.
@@ -58,9 +59,11 @@ eight compressed-versus-control mean deltas positive, pooled delta
 `0.0066881634`, cluster sign-only p `0.1508789062`, and cluster signed-rank p
 `0.0206298828`. Phase 53 adds direct cluster-mean support: exact one-sided
 sign-flip mean p `0.0196838379`, bootstrap CI95 `[0.0570820445, 0.5823557658]`,
-and positive leave-one cluster, tile, and seed means. D4P16 reaches mean reward
-`0.9918299718` in the original three-tile Phase 48 audit and `0.5819662325` in
-the expanded Phase 52 audit.
+and positive leave-one cluster, tile, and seed means. Phase 54 reports
+`artifact_lineage_consistent`, confirming that the formal Phase 52/53 values
+are reproducible from one authoritative delta-to-cluster-to-statistics artifact
+chain. D4P16 reaches mean reward `0.9918299718` in the original three-tile Phase
+48 audit and `0.5819662325` in the expanded Phase 52 audit.
 Normalized-B1 and budget
 checks do not displace the compressed route: Phase 30 improves raw B1 but
 remains below D4P8/D4P16, and Phase 33 reports `budget_not_explanatory` for the
@@ -159,10 +162,10 @@ manuscript. Phase 26 converts padded held-out policy outputs into
 manuscript-facing B0/B1 summaries. Phase 28 adds representation controls.
 Phase 33 tests whether a modestly higher budget rescues normalized-B1 behavior.
 Phase 48 re-evaluates D4P8 and D4P16 as compressed GeoFM candidate routes under
-the same held-out base-reward protocol. Phase 49-53 then test statistical
+the same held-out base-reward protocol. Phase 49-54 then test statistical
 robustness, tile-seed clustering, signed-rank cluster magnitude support, an
-expanded five-tile, three-seed replication, and cluster-mean influence support
-for the same compressed route. Phase 36 evaluates suitability-proxy
+expanded five-tile, three-seed replication, cluster-mean influence support, and
+artifact-lineage consistency for the same compressed route. Phase 36 evaluates suitability-proxy
 signal against available weak labels. Phase 38 rebuilds suitability proxies
 under leakage-aware controls. Phase 39 audits available label-like columns.
 Phase 40 adds the hard independent-label go/no-go gate before any Phase 38
@@ -265,6 +268,12 @@ delta remains `0.2921767818`, the exact one-sided sign-flip mean p is
 minimum leave-one-cluster, leave-one-tile, and leave-one-seed means are
 `0.2060081575`, `0.0954244478`, and `0.2083797951`, respectively.
 
+Phase 54 then verifies the artifact lineage for the formal Phase 52/53 evidence
+chain. It reports `artifact_lineage_consistent`: recomputing Phase 50 cluster
+means from the authoritative Phase 48 delta table and recomputing Phase 51 and
+Phase 53 statistics from the authoritative cluster CSV reproduces the values
+used in this manuscript.
+
 ### 4.3 Normalization and Budget Robustness
 
 Phase 30 tests whether normalizing B1 embeddings repairs raw-B1 underperformance.
@@ -343,7 +352,9 @@ cluster magnitude remains significant even though cluster signs alone remain
 underpowered. Phase 53 adds that the expanded cluster mean itself is supported
 by exact sign-flip, bootstrap, and leave-one influence checks, so the positive
 compressed-route conclusion is not driven only by one favorable cluster, tile,
-or seed.
+or seed. Phase 54 verifies that these formal Phase 52/53 values are internally
+reproducible from one authoritative artifact chain, preventing mixed-output
+lineage from supporting the manuscript claim.
 
 This distinction matters scientifically. A negative raw-B1 result could have
 been misread as evidence that GeoFM information is irrelevant to farmland
@@ -393,7 +404,8 @@ route with pooled delta `0.2921767818`, `74 / 120` positive row-level
 comparisons, row-level sign-test p `0.0066881634`, and cluster signed-rank p
 `0.0206298828`. Phase 53 further supports the expanded cluster mean with exact
 sign-flip p `0.0196838379`, bootstrap CI95 `[0.0570820445, 0.5823557658]`, and
-positive leave-one cluster, tile, and seed means. The appropriate current
+positive leave-one cluster, tile, and seed means. Phase 54 verifies the formal
+artifact lineage as `artifact_lineage_consistent`. The appropriate current
 conclusion is therefore not that GeoFM fails, but that GeoFM must be represented through a controlled compressed state
 route before it improves the learned planning policy in this setting.
 Suitability-reward work remains blocked until an
@@ -409,6 +421,7 @@ GeoFM prior passes Phase 41.
 | Compressed GeoFM state routes improve learned-policy planning decisions under the base reward. | Phase 48 reports `compressed_geofm_route_supported`; pooled compressed-control delta `0.4673011499`, `48 / 72` positive comparisons. Phase 52 expands the six-variant run to five held-out tiles and three seeds with pooled delta `0.2921767818` and `74 / 120` positive comparisons. | Supported |
 | The compressed GeoFM state-route effect is row-level statistically robust within the current Bishan protocol. | Phase 49 reports `compressed_route_statistically_robust`; sign-test p `0.0031549137`; bootstrap CI95 `[0.2827829983, 0.6639974489]`; leave-one tile/seed means remain positive. Phase 52 repeats row-level robustness with sign-test p `0.0066881634` and bootstrap CI95 `[0.1623326461, 0.4323997354]`. | Supported |
 | The compressed GeoFM route is supported after tile-seed cluster aggregation when magnitude and mean support are considered. | Phase 50 reports sign-only `cluster_directional_support`; Phase 51 reports `cluster_magnitude_support`, positive rank sum `40 / 45`, signed-rank p `0.01953125`. Phase 52 keeps sign-only cluster support directional (`10 / 15`, p `0.1508789062`) but supports cluster magnitude with positive rank sum `96 / 120`, signed-rank p `0.0206298828`. Phase 53 reports `cluster_mean_support`, exact sign-flip p `0.0196838379`, bootstrap CI95 `[0.0570820445, 0.5823557658]`, and positive leave-one cluster/tile/seed means. | Supported with magnitude-sensitive and cluster-mean checks |
+| The formal Phase 52/53 artifact chain is internally reproducible. | Phase 54 reports `artifact_lineage_consistent`: Phase 50 cluster means recomputed from the authoritative Phase 48 delta table, and Phase 51/53 statistics recomputed from the authoritative cluster CSV, match the formal manuscript values. | Supported |
 | Normalization or more budget resolves the raw-B1 representation problem. | Phase 30 partially improves B1; Phase 33 full bounded aggregate reports `budget_not_explanatory`. | Not supported |
 | Suitability reward is ready for B2/B3. | Phase 36 `proxy_signal_not_supported`; Phase 38 `proxy_rebuild_diagnostic_only`; Phase 40 `independent_label_inputs_missing`; Phase 41 `phase41_independent_label_inputs_missing`. | Not supported |
 | Local files already contain a usable independent Paper11 suitability label. | Phase 42 finds only diagnostic DLTB/slope weak labels and unrelated Paper10/Paper58 labels. | Not supported |

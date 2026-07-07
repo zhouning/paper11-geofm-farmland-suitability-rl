@@ -65,6 +65,8 @@ base-reward protocol.
 - `22_phase53_cluster_mean_support.md`: exact sign-flip, bootstrap, and
   leave-one influence audit showing `cluster_mean_support` for the expanded
   Phase 52 cluster mean.
+- `23_phase54_artifact_lineage_consistency.md`: read-only lineage audit showing
+  `artifact_lineage_consistent` for the formal Phase 52/53 artifact chain.
 
 ## Reproduction Link
 
@@ -393,6 +395,13 @@ one-sided sign-flip mean p `0.0196838379`, bootstrap CI95 `[0.0570820445,
 leave-one-tile mean `0.0954244478`, and minimum leave-one-seed mean
 `0.2083797951`. This supports the conclusion that the expanded compressed-route
 cluster mean is not driven only by one favorable cluster, tile, or seed.
+
+Phase 54 audits artifact lineage for the formal Phase 52/53 evidence chain. The
+current status is `artifact_lineage_consistent`: recomputing Phase 50 cluster
+means from the authoritative Phase 48 delta table, then recomputing Phase 51 and
+Phase 53 statistics from the authoritative cluster CSV, reproduces the formal
+values used in the manuscript. Historical `real_bishan_4096_5tiles*` generated
+outputs are therefore not used as the formal evidence source for this conclusion.
 
 ## Claim Boundary
 

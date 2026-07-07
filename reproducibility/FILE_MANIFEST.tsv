@@ -284,12 +284,12 @@ experiments/phase41_geofm_suitability_prior/run_phase41_geofm_suitability_prior.
 tests/test_phase41_geofm_suitability_prior.py	test	Tests for Phase 41 prior support, control failure, artifacts, and CLI behavior.
 paper/phase28_results/15_phase41_geofm_suitability_prior.md	results	Reviewer-facing interpretation of the Phase 41 real no-registry prior gate result.
 paper/phase28_results/16_phase42_local_label_source_audit.md	results	Reviewer-facing local label-source audit showing no Phase 40-passing independent suitability label is available locally.
-paper/submission/04_formal_conclusion_manuscript.md	submission	Phase 53-synchronized formal conclusion manuscript for a bounded positive compressed-GeoFM representation route.
+paper/submission/04_formal_conclusion_manuscript.md	submission	Phase 54-synchronized formal conclusion manuscript for a bounded positive compressed-GeoFM representation route.
 paper/submission/final/README.md	submission	Index for generated Phase 44 formal DOCX submission files.
-paper/submission/final/Paper11_formal_conclusion_manuscript.docx	submission	Pandoc-generated DOCX export of the Phase 53 formal conclusion manuscript.
+paper/submission/final/Paper11_formal_conclusion_manuscript.docx	submission	Pandoc-generated DOCX export of the Phase 54 formal conclusion manuscript.
 paper/submission/final/Paper11_cover_letter_and_declarations.md	submission	Editable Phase 45 cover letter, declarations, data/code availability, AI-assisted tools, and claim-boundary text.
 paper/submission/final/Paper11_cover_letter_and_declarations.docx	submission	Pandoc-generated DOCX export of the Phase 45 cover letter and declarations file.
-paper/submission/final/Paper11_formal_conclusion_manuscript.md	submission	Editable copy of the Phase 53 formal conclusion manuscript source included in the Phase 46 bundle.
+paper/submission/final/Paper11_formal_conclusion_manuscript.md	submission	Editable copy of the Phase 54 formal conclusion manuscript source included in the Phase 46 bundle.
 paper/submission/final/Paper11_phase46_submission_contents_sha256.txt	submission	SHA256 checksum list for files included in the Phase 46 submission bundle.
 paper/submission/final/Paper11_phase46_submission_bundle.zip	submission	Phase 46 transfer archive containing formal manuscript, cover letter/declarations, editable sources, and content checksums.
 paper/submission/final/Paper11_phase46_submission_bundle_sha256.txt	submission	SHA256 checksum for the Phase 46 submission bundle zip.
@@ -329,3 +329,9 @@ src/paper11_geofm/phase53_cluster_mean_support.py	source	Phase 53 read-only clus
 experiments/phase53_cluster_mean_support/run_phase53_cluster_mean_support.py	experiment_runner	Phase 53 cluster mean support analyze-only CLI runner.
 tests/test_phase53_cluster_mean_support.py	test	Tests for Phase 53 cluster mean support status rules, artifacts, and CLI behavior.
 paper/phase28_results/22_phase53_cluster_mean_support.md	results	Reviewer-facing interpretation of the Phase 53 cluster mean support audit.
+docs/superpowers/specs/2026-07-07-phase54-artifact-lineage-consistency-design.md	design	Phase 54 design for artifact-lineage consistency over the formal Phase 52/53 evidence chain.
+docs/superpowers/plans/2026-07-07-phase54-artifact-lineage-consistency.md	implementation_plan	Phase 54 artifact-lineage consistency implementation plan.
+src/paper11_geofm/phase54_artifact_lineage_consistency.py	source	Phase 54 read-only artifact-lineage consistency audit module.
+experiments/phase54_artifact_lineage_consistency/run_phase54_artifact_lineage_consistency.py	experiment_runner	Phase 54 artifact-lineage consistency analyze-only CLI runner.
+tests/test_phase54_artifact_lineage_consistency.py	test	Tests for Phase 54 artifact-lineage status rules, mismatch detection, artifacts, and CLI behavior.
+paper/phase28_results/23_phase54_artifact_lineage_consistency.md	results	Reviewer-facing interpretation of the Phase 54 artifact-lineage consistency audit.

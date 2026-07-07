@@ -42,7 +42,9 @@ to five held-out tiles and three seeds, again supporting the compressed route
 with row-level sign-test p `0.0066881634` and cluster signed-rank p
 `0.0206298828`. Phase 53 reports `cluster_mean_support`, exact sign-flip p
 `0.0196838379`, bootstrap CI95 `[0.0570820445, 0.5823557658]`, and positive
-leave-one cluster, tile, and seed means. The current suitability-reward route
+leave-one cluster, tile, and seed means. Phase 54 reports
+`artifact_lineage_consistent`, verifying that the formal Phase 52/53 values are
+reproducible from one authoritative artifact chain. The current suitability-reward route
 remains blocked until an external independent-label registry passes Phase 40
 and a calibrated low-dimensional prior passes Phase 41.
 

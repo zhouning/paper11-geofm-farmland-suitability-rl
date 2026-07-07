@@ -30,7 +30,8 @@ seeds, again supporting the compressed route with pooled delta `0.2921767818`,
 `0.0066881634`, and cluster signed-rank p `0.0206298828`. Phase 53 supports the
 expanded cluster mean with exact sign-flip p `0.0196838379`, bootstrap CI95
 `[0.0570820445, 0.5823557658]`, and positive leave-one cluster, tile, and seed
-means. Suitability-reward
+means. Phase 54 reports `artifact_lineage_consistent`, verifying that the formal
+Phase 52/53 values come from one authoritative artifact chain. Suitability-reward
 and B2/B3 claims remain blocked by independent-label and calibrated-prior gates.
 
 This manuscript should be relevant to readers of IJAEOG because it provides a
@@ -120,6 +121,6 @@ held-out base-reward policy reward under the Bishan protocol and remain
 positive under Phase 49 robustness checks and Phase 52 expanded replication,
 with Phase 50 and Phase 52 cluster-level evidence remaining directional by sign
 test but supported by signed-rank magnitude testing and Phase 53 cluster-mean
-influence checks, while raw GeoFM state injection and the current
-suitability-reward route remain unsupported under the completed Paper11
-evidence gates.
+influence checks. Phase 54 verifies the formal artifact lineage. Raw GeoFM state
+injection and the current suitability-reward route remain unsupported under the
+completed Paper11 evidence gates.
