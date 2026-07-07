@@ -308,3 +308,9 @@ src/paper11_geofm/phase49_compressed_route_robustness.py	source	Phase 49 read-on
 experiments/phase49_compressed_route_robustness/run_phase49_compressed_route_robustness.py	experiment_runner	Phase 49 compressed route robustness analyze-only CLI runner.
 tests/test_phase49_compressed_route_robustness.py	test	Tests for Phase 49 robustness status rules, artifacts, and CLI behavior.
 paper/phase28_results/18_phase49_compressed_route_robustness.md	results	Reviewer-facing interpretation of the Phase 49 real compressed route robustness audit.
+docs/superpowers/specs/2026-07-07-phase50-cluster-level-robustness-design.md	design	Phase 50 design for conservative tile-seed cluster-level robustness checks.
+docs/superpowers/plans/2026-07-07-phase50-cluster-level-robustness.md	implementation_plan	Phase 50 cluster-level robustness implementation plan.
+src/paper11_geofm/phase50_cluster_level_robustness.py	source	Phase 50 read-only tile-seed cluster-level robustness audit module.
+experiments/phase50_cluster_level_robustness/run_phase50_cluster_level_robustness.py	experiment_runner	Phase 50 cluster-level robustness analyze-only CLI runner.
+tests/test_phase50_cluster_level_robustness.py	test	Tests for Phase 50 cluster status rules, artifacts, and CLI behavior.
+paper/phase28_results/19_phase50_cluster_level_robustness.md	results	Reviewer-facing interpretation of the Phase 50 real cluster-level robustness audit.

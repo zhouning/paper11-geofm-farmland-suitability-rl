@@ -54,7 +54,9 @@ base-reward protocol.
 - `16_phase42_local_label_source_audit.md`: local candidate-label source
   audit showing that available DLTB/slope weak labels remain diagnostic-only
   and that no Phase 40-passing independent label is present locally.
-- `17_phase48_compressed_geofm_rescue.md`: read-only rescue audit showing that D4P8/D4P16 are supported compressed GeoFM candidate routes under the existing base-reward held-out protocol.`r`n- `18_phase49_compressed_route_robustness.md`: read-only robustness audit showing that the Phase 48 compressed route survives pooled sign-test, bootstrap, and leave-one sensitivity checks.
+- `17_phase48_compressed_geofm_rescue.md`: read-only rescue audit showing that D4P8/D4P16 are supported compressed GeoFM candidate routes under the existing base-reward held-out protocol.
+- `18_phase49_compressed_route_robustness.md`: read-only robustness audit showing that the Phase 48 compressed route survives pooled sign-test, bootstrap, and leave-one sensitivity checks.
+- `19_phase50_cluster_level_robustness.md`: conservative tile-seed cluster-level audit showing directional support with `7 / 9` positive clusters and p `0.08984375`.
 
 ## Reproduction Link
 
@@ -357,6 +359,12 @@ leave-one sensitivity checks. The current status is
 `48 / 72` positive comparisons, one-sided sign-test p `0.0031549137`, bootstrap
 CI95 `[0.2827829983, 0.6639974489]`, minimum leave-one-tile mean
 `0.1613586660`, and minimum leave-one-seed mean `0.3644002401`.
+
+Phase 50 then aggregates the same Phase 48 deltas to tile-seed clusters. The
+current status is `cluster_directional_support`: mean cluster delta
+`0.4673011499`, `7 / 9` positive clusters, and one-sided cluster sign-test p
+`0.08984375`. This is a conservative wording boundary rather than a reversal of
+Phase 48/49.
 
 ## Claim Boundary
 

@@ -34,8 +34,8 @@ validated agronomic suitability.
 
 Current conclusion: raw GeoFM state injection remains unsupported, but Phase 48
 supports compressed GeoFM state routes (`D4P8` and `D4P16`) under the current
-Bishan base-reward held-out protocol, and Phase 49 reports this compressed
-route as statistically robust. The current suitability-reward route
+Bishan base-reward held-out protocol, Phase 49 reports this compressed route as row-level statistically robust, and
+Phase 50 reports directional cluster-level support. The current suitability-reward route
 remains blocked until an external independent-label registry passes Phase 40
 and a calibrated low-dimensional prior passes Phase 41.
 

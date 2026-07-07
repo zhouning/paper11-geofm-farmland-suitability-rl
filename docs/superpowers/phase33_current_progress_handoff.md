@@ -1034,3 +1034,37 @@ statistically robust within the current Bishan base-reward held-out protocol.
 The boundary remains unchanged: raw B1 direct injection is unsupported, and
 suitability reward, B2/B3, transfer, and independent agronomic suitability
 claims remain blocked.
+## Phase 50 Cluster-Level Robustness Audit
+
+Phase 50 adds conservative tile-seed cluster aggregation over the Phase 48 delta
+table to address non-independence among the 72 row-level comparisons.
+
+New files:
+
+```text
+src/paper11_geofm/phase50_cluster_level_robustness.py
+experiments/phase50_cluster_level_robustness/run_phase50_cluster_level_robustness.py
+tests/test_phase50_cluster_level_robustness.py
+paper/phase28_results/19_phase50_cluster_level_robustness.md
+```
+
+Real Phase 50 status:
+
+```text
+cluster_directional_support
+```
+
+Core real Bishan cluster evidence:
+
+```text
+tile-seed clusters: 9
+mean cluster delta: 0.4673011499
+positive clusters: 7 / 9
+one-sided cluster sign-test p: 0.08984375
+```
+
+Conclusion update: Phase 50 does not overturn Phase 48/49. It narrows wording:
+the compressed GeoFM route is supported on mean and row-level robustness checks,
+while tile-seed cluster-level evidence is directionally positive but does not
+clear alpha 0.05 with n=9 clusters. Do not write that the cluster-level sign
+test is significant.
