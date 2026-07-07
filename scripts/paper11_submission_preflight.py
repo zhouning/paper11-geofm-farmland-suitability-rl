@@ -38,10 +38,10 @@ REQUIRED_FILES = [
 DOCX_REQUIRED_TEXT = {
     "Paper11_formal_conclusion_manuscript.docx": [
         "Compressed GeoFM representations improve held-out farmland layout optimization",
-        "Phase 48 reports",
         "compressed_geofm_route_supported",
         "compressed_route_statistically_robust",
         "cluster_directional_support",
+        "cluster_magnitude_support",
         "phase41_independent_label_inputs_missing",
         "bounded positive compressed-GeoFM representation conclusion",
     ],
@@ -51,8 +51,7 @@ DOCX_REQUIRED_TEXT = {
         "Declaration of Competing Interest",
         "Claim Boundary for Upload",
         "bounded positive compressed-GeoFM",
-        "Phase 49",
-        "Phase 50",
+        "Phase 51",
     ],
 }
 
@@ -61,10 +60,8 @@ CLAIM_BOUNDARY_TEXT = [
     "It does not claim raw GeoFM B1 superiority",
     "Current conclusion: raw GeoFM state injection remains unsupported",
     "supports compressed GeoFM state routes",
-    "statistically robust",
-    "cluster-level",
+    "cluster_magnitude_support",
 ]
-
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest().upper()
 

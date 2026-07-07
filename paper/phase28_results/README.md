@@ -57,6 +57,7 @@ base-reward protocol.
 - `17_phase48_compressed_geofm_rescue.md`: read-only rescue audit showing that D4P8/D4P16 are supported compressed GeoFM candidate routes under the existing base-reward held-out protocol.
 - `18_phase49_compressed_route_robustness.md`: read-only robustness audit showing that the Phase 48 compressed route survives pooled sign-test, bootstrap, and leave-one sensitivity checks.
 - `19_phase50_cluster_level_robustness.md`: conservative tile-seed cluster-level audit showing directional support with `7 / 9` positive clusters and p `0.08984375`.
+- `20_phase51_cluster_magnitude_support.md`: exact signed-rank cluster magnitude audit showing positive rank sum `40 / 45` and p `0.01953125`.
 
 ## Reproduction Link
 
@@ -364,7 +365,9 @@ Phase 50 then aggregates the same Phase 48 deltas to tile-seed clusters. The
 current status is `cluster_directional_support`: mean cluster delta
 `0.4673011499`, `7 / 9` positive clusters, and one-sided cluster sign-test p
 `0.08984375`. This is a conservative wording boundary rather than a reversal of
-Phase 48/49.
+Phase 48/49. Phase 51 then tests cluster magnitude with an exact one-sided
+signed-rank test and reports `cluster_magnitude_support`, positive rank sum
+`40 / 45`, and p `0.01953125`.
 
 ## Claim Boundary
 

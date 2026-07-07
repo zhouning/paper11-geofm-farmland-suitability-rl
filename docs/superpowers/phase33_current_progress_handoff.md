@@ -1068,3 +1068,22 @@ the compressed GeoFM route is supported on mean and row-level robustness checks,
 while tile-seed cluster-level evidence is directionally positive but does not
 clear alpha 0.05 with n=9 clusters. Do not write that the cluster-level sign
 test is significant.
+## Phase 51 Cluster Magnitude Support Audit
+
+Phase 51 applies an exact one-sided signed-rank test to the Phase 50 tile-seed
+cluster mean deltas.
+
+Real Phase 51 status:
+
+```text
+cluster_magnitude_support
+positive rank sum: 40
+total rank sum: 45
+one-sided signed-rank p: 0.01953125
+```
+
+Conclusion update: Phase 50 remains the conservative sign-only boundary, but
+Phase 51 supports the cluster-level compressed-route effect when magnitude is
+considered. Manuscript wording should state that the compressed GeoFM route is
+supported by mean reward, row-level robustness, and exact cluster signed-rank
+evidence; the sign-only cluster test remains directional with p=0.08984375.

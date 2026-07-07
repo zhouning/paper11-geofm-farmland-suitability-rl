@@ -63,8 +63,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase39_independent_label_audit/`: executable read-only Phase 39 independent-label audit runner over existing Phase 2 real feature tables before any Phase 38 rerun with non-leakage labels.
 - `experiments/phase40_independent_label_gate/`: executable Phase 40 hard independent-label go/no-go gate before any Phase 38 rerun or B2/B3 reward integration.
 - `experiments/phase41_geofm_suitability_prior/`: executable Phase 41 independent-label-calibrated GeoFM suitability-prior gate before any low-dimensional prior export or B2/B3 reward experiment.
-- `experiments/phase48_compressed_geofm_rescue/`: executable read-only Phase 48 compressed GeoFM route audit over existing Phase 28 held-out summary rows.`r`n- `experiments/phase49_compressed_route_robustness/`: executable read-only Phase 49 statistical robustness audit over Phase 48 compressed-route deltas.`r`n- `experiments/phase50_cluster_level_robustness/`: executable read-only Phase 50 tile-seed cluster-level robustness audit over Phase 48 compressed-route deltas.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 31 case diagnostics, Phase 32 action-order diagnostics, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, Phase 39 independent-label audits, Phase 40 independent-label gates, Phase 41 GeoFM suitability-prior gates, Phase 48 compressed GeoFM rescue audits, Phase 49 compressed-route robustness audits, and Phase 50 cluster-level robustness audits.
+- `experiments/phase48_compressed_geofm_rescue/`: executable read-only Phase 48 compressed GeoFM route audit over existing Phase 28 held-out summary rows.`r`n- `experiments/phase49_compressed_route_robustness/`: executable read-only Phase 49 statistical robustness audit over Phase 48 compressed-route deltas.`r`n- `experiments/phase50_cluster_level_robustness/`: executable read-only Phase 50 tile-seed cluster-level robustness audit over Phase 48 compressed-route deltas.`r`n- `experiments/phase51_cluster_magnitude_support/`: executable read-only Phase 51 exact signed-rank audit over Phase 50 cluster deltas.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 31 case diagnostics, Phase 32 action-order diagnostics, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, Phase 39 independent-label audits, Phase 40 independent-label gates, Phase 41 GeoFM suitability-prior gates, Phase 48 compressed GeoFM rescue audits, Phase 49 compressed-route robustness audits, Phase 50 cluster-level robustness audits, and Phase 51 cluster magnitude-support audits.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -421,8 +421,10 @@ to the conservative tile-seed unit, the mean cluster delta remains
 `0.4673011499` and `7 / 9` clusters are positive, but the one-sided cluster
 sign-test p is `0.08984375`. This does not overturn Phase 48/49, but it narrows
 wording: the compressed GeoFM route is supported on mean and row-level
-robustness checks, while cluster-level evidence is directional rather than
-alpha-0.05 significant.
+robustness checks, while the sign-only cluster test is directional rather than
+alpha-0.05 significant. Phase 51 resolves the magnitude question with an exact
+signed-rank test over cluster means: positive rank sum `40 / 45`, p
+`0.01953125`, status `cluster_magnitude_support`.
 
 Run the read-only Phase 29 representation-scale follow-up after the Phase 2
 B1 feature table, Phase 8 D4 feature tables, Phase 13 tile index, and optional
@@ -661,6 +663,7 @@ that can pass Phase 40.
 - Phase 48 compressed GeoFM rescue audit: `paper/phase28_results/17_phase48_compressed_geofm_rescue.md`
 - Phase 49 compressed route robustness audit: `paper/phase28_results/18_phase49_compressed_route_robustness.md`
 - Phase 50 cluster-level robustness audit: `paper/phase28_results/19_phase50_cluster_level_robustness.md`
+- Phase 51 cluster magnitude support audit: `paper/phase28_results/20_phase51_cluster_magnitude_support.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -727,12 +730,14 @@ that can pass Phase 40.
 - Phase 48 compressed GeoFM rescue runner: `experiments/phase48_compressed_geofm_rescue/run_phase48_compressed_geofm_rescue.py`
 - Phase 49 compressed route robustness runner: `experiments/phase49_compressed_route_robustness/run_phase49_compressed_route_robustness.py`
 - Phase 50 cluster-level robustness runner: `experiments/phase50_cluster_level_robustness/run_phase50_cluster_level_robustness.py`
+- Phase 51 cluster magnitude support runner: `experiments/phase51_cluster_magnitude_support/run_phase51_cluster_magnitude_support.py`
 - Phase 39 independent-label audit module: `src/paper11_geofm/phase39_independent_label_audit.py`
 - Phase 40 independent-label gate module: `src/paper11_geofm/phase40_independent_label_gate.py`
 - Phase 41 GeoFM suitability-prior gate module: `src/paper11_geofm/phase41_geofm_suitability_prior.py`
 - Phase 48 compressed GeoFM rescue module: `src/paper11_geofm/phase48_compressed_geofm_rescue.py`
 - Phase 49 compressed route robustness module: `src/paper11_geofm/phase49_compressed_route_robustness.py`
 - Phase 50 cluster-level robustness module: `src/paper11_geofm/phase50_cluster_level_robustness.py`
+- Phase 51 cluster magnitude support module: `src/paper11_geofm/phase51_cluster_magnitude_support.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

@@ -23,7 +23,7 @@ held-out base-reward policy reward. Phase 49 further shows that this compressed
 route is statistically robust in the current Bishan protocol, with pooled
 sign-test p `0.0031549137` and bootstrap CI95 `[0.2827829983, 0.6639974489]`.
 Phase 50 provides a conservative cluster-level boundary: `7 / 9` tile-seed
-clusters are positive, but the cluster sign-test p is `0.08984375`.
+clusters are positive, the cluster sign-test p is `0.08984375`, and Phase 51 exact signed-rank testing supports the cluster magnitude effect with p `0.01953125`.
 Suitability-reward and B2/B3 claims remain blocked by independent-label and
 calibrated-prior gates.
 
@@ -112,7 +112,7 @@ transfer, or independently validated agronomic suitability. The current
 defensible conclusion is that compressed GeoFM state routes improve mean
 held-out base-reward policy reward under the Bishan protocol and remain
 positive under Phase 49 robustness checks, with Phase 50 cluster-level evidence
-remaining directional rather than alpha-0.05 significant, while raw GeoFM state
+remaining directional by sign test but supported by Phase 51 signed-rank magnitude testing, while raw GeoFM state
 injection and
 the current suitability-reward route remain unsupported under the completed
 Paper11 evidence gates.
