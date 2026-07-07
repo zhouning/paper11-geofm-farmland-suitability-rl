@@ -302,3 +302,9 @@ src/paper11_geofm/phase48_compressed_geofm_rescue.py	source	Phase 48 read-only c
 experiments/phase48_compressed_geofm_rescue/run_phase48_compressed_geofm_rescue.py	experiment_runner	Phase 48 compressed GeoFM rescue analyze-only CLI runner.
 tests/test_phase48_compressed_geofm_rescue.py	test	Tests for Phase 48 compressed route status rules, artifacts, and CLI behavior.
 paper/phase28_results/17_phase48_compressed_geofm_rescue.md	results	Reviewer-facing interpretation of the Phase 48 real compressed GeoFM rescue audit.
+docs/superpowers/specs/2026-07-07-phase49-compressed-route-robustness-design.md	design	Phase 49 design for statistical robustness checks of the compressed GeoFM route.
+docs/superpowers/plans/2026-07-07-phase49-compressed-route-robustness.md	implementation_plan	Phase 49 compressed route robustness implementation plan.
+src/paper11_geofm/phase49_compressed_route_robustness.py	source	Phase 49 read-only compressed route robustness audit module.
+experiments/phase49_compressed_route_robustness/run_phase49_compressed_route_robustness.py	experiment_runner	Phase 49 compressed route robustness analyze-only CLI runner.
+tests/test_phase49_compressed_route_robustness.py	test	Tests for Phase 49 robustness status rules, artifacts, and CLI behavior.
+paper/phase28_results/18_phase49_compressed_route_robustness.md	results	Reviewer-facing interpretation of the Phase 49 real compressed route robustness audit.

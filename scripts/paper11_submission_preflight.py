@@ -40,6 +40,7 @@ DOCX_REQUIRED_TEXT = {
         "Compressed GeoFM representations improve held-out farmland layout optimization",
         "Phase 48 reports",
         "compressed_geofm_route_supported",
+        "compressed_route_statistically_robust",
         "phase41_independent_label_inputs_missing",
         "bounded positive compressed-GeoFM representation conclusion",
     ],
@@ -49,6 +50,7 @@ DOCX_REQUIRED_TEXT = {
         "Declaration of Competing Interest",
         "Claim Boundary for Upload",
         "bounded positive compressed-GeoFM",
+        "Phase 49",
     ],
 }
 
@@ -57,8 +59,8 @@ CLAIM_BOUNDARY_TEXT = [
     "It does not claim raw GeoFM B1 superiority",
     "Current conclusion: raw GeoFM state injection remains unsupported",
     "supports compressed GeoFM state routes",
+    "statistically robust",
 ]
-
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest().upper()
 

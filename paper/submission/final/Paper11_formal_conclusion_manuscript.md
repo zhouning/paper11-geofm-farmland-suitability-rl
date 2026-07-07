@@ -42,7 +42,9 @@ favoring B1. Phase 48 changes the broader conclusion by re-evaluating the
 PCA-compressed GeoFM variants as candidate state routes. D4P8 and D4P16 exceed
 B0, raw B1, random D2, and shuffled D3 on mean learned-policy reward; the
 pooled compressed-control delta is `0.4673011499`, with `48 / 72` positive
-comparisons. D4P16 reaches mean reward `0.9918299718`, compared with
+comparisons. Phase 49 further reports `compressed_route_statistically_robust`,
+with one-sided sign-test p `0.0031549137` and bootstrap CI95
+`[0.2827829983, 0.6639974489]`. D4P16 reaches mean reward `0.9918299718`, compared with
 `0.4825072170` for B0 and `0.3506359482` for raw B1. Normalized-B1 and budget
 checks do not displace the compressed route: Phase 30 improves raw B1 but
 remains below D4P8/D4P16, and Phase 33 reports `budget_not_explanatory` for the
@@ -203,6 +205,9 @@ compressed-control delta is `0.4673011499`, with `48 / 72` positive
 comparisons. The supported representation claim is therefore compressed and
 bounded: D4P8 and D4P16 improve mean learned-policy reward under the current
 Bishan base-reward held-out protocol, while raw B1 remains unsupported.
+Phase 49 strengthens this result with a pooled one-sided sign-test p of
+`0.0031549137`, bootstrap CI95 `[0.2827829983, 0.6639974489]`, and positive
+leave-one-tile and leave-one-seed sensitivity checks.
 ### 4.3 Normalization and Budget Robustness
 
 Phase 30 tests whether normalizing B1 embeddings repairs raw-B1 underperformance.
@@ -271,7 +276,8 @@ is conditional. Raw 64-dimensional B1 direct injection does not stably
 outperform B0 across held-out Bishan tiles and seeds. However, Phase 48 shows
 that compressed GeoFM state routes D4P8 and D4P16 outperform B0, raw B1,
 random D2, and shuffled D3 on mean learned-policy reward under the same
-base-reward held-out protocol.
+base-reward held-out protocol. Phase 49 shows that this result is statistically
+robust within the current Bishan protocol.
 
 This distinction matters scientifically. A negative raw-B1 result could have
 been misread as evidence that GeoFM information is irrelevant to farmland
@@ -311,7 +317,8 @@ GeoFM-enhanced farmland layout optimization on real planning units. The
 completed evidence supports a compressed GeoFM representation route under the
 Bishan base-reward held-out protocol. Raw B1 direct injection remains
 unsupported, but D4P8 and D4P16 improve over B0, raw B1, random D2, and
-shuffled D3 on mean learned-policy reward. The appropriate current conclusion
+shuffled D3 on mean learned-policy reward, and Phase 49 robustness checks keep
+the pooled effect positive. The appropriate current conclusion
 is therefore not that GeoFM fails, but that GeoFM must be represented through a
 controlled compressed state route before it improves the learned planning
 policy in this setting. Suitability-reward work remains blocked until an
@@ -325,6 +332,7 @@ GeoFM prior passes Phase 41.
 | Raw GeoFM B1 improves learned-policy planning decisions. | Phase 26 B1-B0 mean delta `-0.1318712688`, `3 / 9` positive tile-seed pairs. | Not supported |
 | Raw B1 carries a stable representation advantage over controls. | Phase 28 reports `compression_matches_raw`; D4P8 and D4P16 exceed B1 at 4096 steps. | Not supported |
 | Compressed GeoFM state routes improve learned-policy planning decisions under the base reward. | Phase 48 reports `compressed_geofm_route_supported`; pooled compressed-control delta `0.4673011499`, `48 / 72` positive comparisons. | Supported |
+| The compressed GeoFM state-route effect is statistically robust within the current Bishan protocol. | Phase 49 reports `compressed_route_statistically_robust`; sign-test p `0.0031549137`; bootstrap CI95 `[0.2827829983, 0.6639974489]`; leave-one tile/seed means remain positive. | Supported |
 | Normalization or more budget resolves the raw-B1 representation problem. | Phase 30 partially improves B1; Phase 33 full bounded aggregate reports `budget_not_explanatory`. | Not supported |
 | Suitability reward is ready for B2/B3. | Phase 36 `proxy_signal_not_supported`; Phase 38 `proxy_rebuild_diagnostic_only`; Phase 40 `independent_label_inputs_missing`; Phase 41 `phase41_independent_label_inputs_missing`. | Not supported |
 | Local files already contain a usable independent Paper11 suitability label. | Phase 42 finds only diagnostic DLTB/slope weak labels and unrelated Paper10/Paper58 labels. | Not supported |

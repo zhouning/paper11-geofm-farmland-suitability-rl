@@ -19,8 +19,11 @@ and a calibrated-prior gate. The central finding is positive but bounded. Raw
 64-dimensional GeoFM direct injection does not stably outperform
 explicit-feature B0, but Phase 48 shows that compressed GeoFM state routes
 D4P8 and D4P16 outperform B0, raw B1, random D2, and shuffled D3 on mean
-held-out base-reward policy reward. Suitability-reward and B2/B3 claims remain
-blocked by independent-label and calibrated-prior gates.
+held-out base-reward policy reward. Phase 49 further shows that this compressed
+route is statistically robust in the current Bishan protocol, with pooled
+sign-test p `0.0031549137` and bootstrap CI95 `[0.2827829983, 0.6639974489]`.
+Suitability-reward and B2/B3 claims remain blocked by independent-label and
+calibrated-prior gates.
 
 This manuscript should be relevant to readers of IJAEOG because it provides a
 reproducible test for using Earth-observation foundation-model embeddings in
@@ -105,6 +108,7 @@ representation manuscript. It does not support claims of raw GeoFM B1
 superiority, B2/B3 readiness, suitability-reward improvement, cross-region
 transfer, or independently validated agronomic suitability. The current
 defensible conclusion is that compressed GeoFM state routes improve mean
-held-out base-reward policy reward under the Bishan protocol, while raw GeoFM
-state injection and the current suitability-reward route remain unsupported
-under the completed Paper11 evidence gates.
+held-out base-reward policy reward under the Bishan protocol and remain
+positive under Phase 49 robustness checks, while raw GeoFM state injection and
+the current suitability-reward route remain unsupported under the completed
+Paper11 evidence gates.

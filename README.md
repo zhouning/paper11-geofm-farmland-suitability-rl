@@ -63,8 +63,8 @@ Paper11 is also distinct from future-aware planning work. The target framing is 
 - `experiments/phase39_independent_label_audit/`: executable read-only Phase 39 independent-label audit runner over existing Phase 2 real feature tables before any Phase 38 rerun with non-leakage labels.
 - `experiments/phase40_independent_label_gate/`: executable Phase 40 hard independent-label go/no-go gate before any Phase 38 rerun or B2/B3 reward integration.
 - `experiments/phase41_geofm_suitability_prior/`: executable Phase 41 independent-label-calibrated GeoFM suitability-prior gate before any low-dimensional prior export or B2/B3 reward experiment.
-- `experiments/phase48_compressed_geofm_rescue/`: executable read-only Phase 48 compressed GeoFM route audit over existing Phase 28 held-out summary rows.
-- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 31 case diagnostics, Phase 32 action-order diagnostics, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, Phase 39 independent-label audits, Phase 40 independent-label gates, Phase 41 GeoFM suitability-prior gates, and Phase 48 compressed GeoFM rescue audits.
+- `experiments/phase48_compressed_geofm_rescue/`: executable read-only Phase 48 compressed GeoFM route audit over existing Phase 28 held-out summary rows.`r`n- `experiments/phase49_compressed_route_robustness/`: executable read-only Phase 49 statistical robustness audit over Phase 48 compressed-route deltas.
+- `src/paper11_geofm/`: focused utilities for sample loading, deterministic region aggregation, block feature assembly, suitability proxy scoring, base planning reward scoring, artifact export, proxy validation, reward-readiness gating, bounded tiled training pilots, cross-tile block-scorer pilots, multi-tile scorer evaluation pilots, multi-seed training pilots, IJAEOG evidence packaging, padded held-out policy pilots, Phase 26 empirical analysis, Phase 27 stability diagnosis, Phase 28 representation-control diagnostics, Phase 28 compression diagnostics, Phase 29 representation-scale diagnostics, Phase 30 normalized-B1 ablations, Phase 31 case diagnostics, Phase 32 action-order diagnostics, Phase 33 budget-robustness analysis, Phase 34 case-map diagnostics, Phase 35 Phase 33 action-overlap diagnostics, Phase 36 suitability-proxy validation, Phase 37 decision-alignment diagnostics, Phase 38 proxy-rebuild diagnostics, Phase 39 independent-label audits, Phase 40 independent-label gates, Phase 41 GeoFM suitability-prior gates, Phase 48 compressed GeoFM rescue audits, and Phase 49 compressed-route robustness audits.
 - `src/legacy_runtime/`: copied legacy county/block RL runtime files imported by the experiment scripts.
 - `data/bishan_alphaearth_sample/`: lightweight Bishan AlphaEarth embedding sample for smoke tests and reviewer inspection.
 - `reproducibility/`: reproduction guide, data manifest, and file manifest.
@@ -394,6 +394,21 @@ unsupported, but compressed GeoFM state routes are supported under the current
 base-reward held-out protocol. Suitability reward and B2/B3 remain blocked by
 the Phase 40/41 independent-label gates.
 
+Run the read-only Phase 49 statistical robustness audit over the Phase 48 delta
+table:
+
+```powershell
+python experiments\phase49_compressed_route_robustness\run_phase49_compressed_route_robustness.py --phase48-delta-csv experiments\phase48_compressed_geofm_rescue\outputs\real_bishan_4096\phase48_compressed_geofm_rescue_delta_table.csv --output-dir experiments\phase49_compressed_route_robustness\outputs\real_bishan_4096 --bootstrap-iterations 10000 --random-seed 49
+```
+
+The current real Bishan audit reports `compressed_route_statistically_robust`:
+pooled mean delta `0.4673011499`, `48 / 72` positive comparisons, one-sided
+sign-test p `0.0031549137`, bootstrap CI95 `[0.2827829983, 0.6639974489]`,
+minimum leave-one-tile mean `0.1613586660`, and minimum leave-one-seed mean
+`0.3644002401`. This strengthens the compressed GeoFM base-reward claim while
+leaving suitability reward, B2/B3, transfer, and independent agronomic
+suitability claims blocked.
+
 Run the read-only Phase 29 representation-scale follow-up after the Phase 2
 B1 feature table, Phase 8 D4 feature tables, Phase 13 tile index, and optional
 Phase 28 summary CSV are available:
@@ -629,6 +644,7 @@ that can pass Phase 40.
 - Phase 41 GeoFM suitability-prior gate: `paper/phase28_results/15_phase41_geofm_suitability_prior.md`
 - Phase 42 local label-source audit: `paper/phase28_results/16_phase42_local_label_source_audit.md`
 - Phase 48 compressed GeoFM rescue audit: `paper/phase28_results/17_phase48_compressed_geofm_rescue.md`
+- Phase 49 compressed route robustness audit: `paper/phase28_results/18_phase49_compressed_route_robustness.md`
 - Main embedding environment: `experiments/geofm_runtime/embedding_space_env.py`
 - Phase 1 Bishan baseline runner: `experiments/phase1_bishan_baseline/run_phase1.py`
 - Phase 2 block feature assembly runner: `experiments/phase2_block_geofm_features/run_phase2.py`
@@ -693,10 +709,12 @@ that can pass Phase 40.
 - Phase 40 independent-label gate runner: `experiments/phase40_independent_label_gate/run_phase40_independent_label_gate.py`
 - Phase 41 GeoFM suitability-prior gate runner: `experiments/phase41_geofm_suitability_prior/run_phase41_geofm_suitability_prior.py`
 - Phase 48 compressed GeoFM rescue runner: `experiments/phase48_compressed_geofm_rescue/run_phase48_compressed_geofm_rescue.py`
+- Phase 49 compressed route robustness runner: `experiments/phase49_compressed_route_robustness/run_phase49_compressed_route_robustness.py`
 - Phase 39 independent-label audit module: `src/paper11_geofm/phase39_independent_label_audit.py`
 - Phase 40 independent-label gate module: `src/paper11_geofm/phase40_independent_label_gate.py`
 - Phase 41 GeoFM suitability-prior gate module: `src/paper11_geofm/phase41_geofm_suitability_prior.py`
 - Phase 48 compressed GeoFM rescue module: `src/paper11_geofm/phase48_compressed_geofm_rescue.py`
+- Phase 49 compressed route robustness module: `src/paper11_geofm/phase49_compressed_route_robustness.py`
 - Phase 1 utility package: `src/paper11_geofm/`
 - Embedding RL training script: `experiments/geofm_runtime/train_embedding_rl.py`
 - Dual-representation environment: `experiments/geofm_runtime/dual_rep_env.py`

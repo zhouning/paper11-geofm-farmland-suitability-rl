@@ -1000,3 +1000,37 @@ Suitability reward, B2/B3, and independent-label-calibrated suitability priors
 remain blocked by Phase 40/41 because independent labels are still missing.
 
 Formal manuscript update completed: `paper/submission/04_formal_conclusion_manuscript.md`, the final editable manuscript copy, DOCX export, cover letter/declarations, final README, bundle checksums, and Phase 47 preflight report now use the Phase 48 bounded positive compressed-GeoFM representation route. Raw B1 and suitability reward remain unsupported.
+## Phase 49 Compressed Route Robustness Audit
+
+Phase 49 adds read-only statistical robustness checks over the Phase 48 delta
+table:
+
+```text
+src/paper11_geofm/phase49_compressed_route_robustness.py
+experiments/phase49_compressed_route_robustness/run_phase49_compressed_route_robustness.py
+tests/test_phase49_compressed_route_robustness.py
+paper/phase28_results/18_phase49_compressed_route_robustness.md
+```
+
+Real Phase 49 status:
+
+```text
+compressed_route_statistically_robust
+```
+
+Core real Bishan robustness evidence:
+
+```text
+pooled mean delta: 0.4673011499
+positive comparisons: 48 / 72
+one-sided sign-test p: 0.0031549137
+bootstrap CI95: [0.2827829983, 0.6639974489]
+minimum leave-one-tile mean: 0.1613586660
+minimum leave-one-seed mean: 0.3644002401
+```
+
+Conclusion update: Phase 49 strengthens Phase 48 from mean-supported to
+statistically robust within the current Bishan base-reward held-out protocol.
+The boundary remains unchanged: raw B1 direct injection is unsupported, and
+suitability reward, B2/B3, transfer, and independent agronomic suitability
+claims remain blocked.
