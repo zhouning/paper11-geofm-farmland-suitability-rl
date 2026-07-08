@@ -2,10 +2,13 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 from pathlib import Path
+import random
+import statistics
 
 import numpy as np
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from .padded_heldout_policy import _normalize_seeds, _select_train_eval_tiles
 from .planning_reward import compute_base_planning_reward_from_matrix_row
@@ -212,6 +215,185 @@ def _masked_mean_tensor(values: torch.Tensor, mask: torch.Tensor) -> torch.Tenso
     weights = mask.to(dtype=values.dtype).unsqueeze(-1)
     denom = torch.clamp(weights.sum(dim=1), min=1.0)
     return (values * weights).sum(dim=1) / denom
+
+
+def build_phase63_bc_examples(tiled_input, eval_max_steps: int) -> list[dict[str, object]]:
+    trajectory = build_phase63_oracle_trajectory(tiled_input, eval_max_steps)
+    examples: list[dict[str, object]] = []
+    selected: list[int] = []
+    for step in trajectory["steps"]:
+        action_index = int(step["action_index"])
+        inputs = build_phase63_model_inputs(tiled_input, selected)
+        examples.append(
+            {
+                "block_features": inputs["block_features"],
+                "valid_mask": inputs["valid_mask"],
+                "selected_mask": inputs["selected_mask"],
+                "target_action": action_index,
+            }
+        )
+        selected.append(action_index)
+    return examples
+
+
+def train_phase63_behavior_cloner(
+    tiled_input,
+    seed: int,
+    eval_max_steps: int,
+    epochs: int,
+    learning_rate: float,
+    hidden_dim: int,
+    top_k: int = 3,
+    device: str = "cpu",
+) -> tuple[Phase63SetPolicyScorer, list[dict[str, object]]]:
+    torch.manual_seed(int(seed))
+    np.random.seed(int(seed))
+    random.seed(int(seed))
+    examples = build_phase63_bc_examples(tiled_input, eval_max_steps)
+    if not examples:
+        raise ValueError("Phase 63 behavior cloning requires at least one example")
+    model = Phase63SetPolicyScorer(
+        n_features=len(tiled_input.feature_columns),
+        hidden_dim=int(hidden_dim),
+    ).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(learning_rate))
+    history: list[dict[str, object]] = []
+    for epoch in range(1, int(epochs) + 1):
+        losses = []
+        correct = 0
+        topk_hits = 0
+        for example in examples:
+            block_features = torch.tensor(
+                example["block_features"],
+                dtype=torch.float32,
+                device=device,
+            ).unsqueeze(0)
+            valid_mask = torch.tensor(
+                example["valid_mask"],
+                dtype=torch.bool,
+                device=device,
+            ).unsqueeze(0)
+            selected_mask = torch.tensor(
+                example["selected_mask"],
+                dtype=torch.bool,
+                device=device,
+            ).unsqueeze(0)
+            target = torch.tensor(
+                [int(example["target_action"])],
+                dtype=torch.long,
+                device=device,
+            )
+            logits = model(block_features, valid_mask, selected_mask)
+            loss = F.cross_entropy(logits, target)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            losses.append(float(loss.detach().cpu()))
+            predicted = int(torch.argmax(logits.detach(), dim=1).item())
+            correct += int(predicted == int(example["target_action"]))
+            k = min(int(top_k), logits.shape[1])
+            topk = torch.topk(logits.detach(), k=k, dim=1).indices[0].cpu().tolist()
+            topk_hits += int(int(example["target_action"]) in topk)
+        history.append(
+            {
+                "variant_id": str(tiled_input.variant_id),
+                "train_tile_id": str(tiled_input.tile_id),
+                "seed": int(seed),
+                "epoch": int(epoch),
+                "loss": _round_float(statistics.mean(losses)),
+                "top1_accuracy": _round_float(correct / len(examples)),
+                "topk_hit_rate": _round_float(topk_hits / len(examples)),
+                "learning_rate": float(learning_rate),
+                "hidden_dim": int(hidden_dim),
+                "claim_boundary": PHASE63_CLAIM_BOUNDARY,
+            }
+        )
+    model.eval()
+    return model, history
+
+
+def rollout_phase63_greedy_policy(
+    model: Phase63SetPolicyScorer,
+    tiled_input,
+    train_tile_id: str,
+    eval_tile_rank: int,
+    seed: int,
+    phase63_seed_rank: int,
+    eval_max_steps: int,
+    device: str = "cpu",
+) -> dict[str, object]:
+    selected: list[int] = []
+    selected_block_ids: list[str] = []
+    rewards: list[float] = []
+    invalid_action_count = 0
+    for _step_index in range(min(int(eval_max_steps), len(tiled_input.block_ids))):
+        inputs = build_phase63_model_inputs(tiled_input, selected)
+        available = inputs["available_mask"]
+        if not bool(available.any()):
+            break
+        with torch.no_grad():
+            logits = model(
+                torch.tensor(
+                    inputs["block_features"],
+                    dtype=torch.float32,
+                    device=device,
+                ).unsqueeze(0),
+                torch.tensor(
+                    inputs["valid_mask"],
+                    dtype=torch.bool,
+                    device=device,
+                ).unsqueeze(0),
+                torch.tensor(
+                    inputs["selected_mask"],
+                    dtype=torch.bool,
+                    device=device,
+                ).unsqueeze(0),
+            )
+        action = int(torch.argmax(logits, dim=1).item())
+        if action in selected or not bool(available[action]):
+            invalid_action_count += 1
+            valid_indices = [
+                int(index) for index, flag in enumerate(available.tolist()) if flag
+            ]
+            action = valid_indices[0]
+        selected.append(action)
+        selected_block_ids.append(str(tiled_input.block_ids[action]))
+        rewards.append(
+            compute_base_planning_reward_from_matrix_row(
+                tiled_input.feature_columns,
+                tiled_input.state_matrix[action],
+            )
+        )
+    oracle = build_phase63_oracle_trajectory(tiled_input, eval_max_steps)
+    total_reward = _round_float(sum(rewards))
+    oracle_total = float(oracle["total_oracle_reward"])
+    oracle_gap = _round_float(oracle_total - total_reward)
+    oracle_gap_fraction = _round_float(oracle_gap / max(abs(oracle_total), 1.0e-9))
+    terminated = len(selected) == len(tiled_input.block_ids)
+    return {
+        "row_type": "bc_greedy_policy",
+        "variant_id": str(tiled_input.variant_id),
+        "train_tile_id": str(train_tile_id),
+        "eval_tile_id": str(tiled_input.tile_id),
+        "eval_tile_rank": int(eval_tile_rank),
+        "seed": int(seed),
+        "phase63_seed_rank": int(phase63_seed_rank),
+        "eval_max_steps": int(eval_max_steps),
+        "n_blocks": len(tiled_input.block_ids),
+        "n_features": len(tiled_input.feature_columns),
+        "episode_steps": len(selected),
+        "terminated": bool(terminated),
+        "truncated": bool(not terminated and len(selected) >= int(eval_max_steps)),
+        "all_actions_valid": bool(invalid_action_count == 0),
+        "invalid_action_count": int(invalid_action_count),
+        "total_contract_reward": total_reward,
+        "oracle_total_reward": _round_float(oracle_total),
+        "oracle_gap": oracle_gap,
+        "oracle_gap_fraction": oracle_gap_fraction,
+        "selected_block_ids": ";".join(selected_block_ids),
+        "selected_action_indices": ";".join(str(index) for index in selected),
+        "claim_boundary": PHASE63_CLAIM_BOUNDARY,
+    }
 
 
 def build_phase63_oracle_trajectory(tiled_input, eval_max_steps: int) -> dict[str, object]:

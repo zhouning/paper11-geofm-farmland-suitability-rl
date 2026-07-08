@@ -168,3 +168,61 @@ def test_phase63_set_policy_scorer_masks_selected_and_invalid_actions():
     assert logits[0, 1].item() < -1e8
     assert logits[0, 2].item() < -1e8
     assert logits[0, 3].item() < -1e8
+
+
+def test_phase63_behavior_cloning_loss_decreases_on_tiny_tile():
+    from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+        train_phase63_behavior_cloner,
+    )
+
+    model, history = train_phase63_behavior_cloner(
+        _tiled_input(block_ids=("b1", "b2", "b3", "b4"), scores=(0.9, 0.7, 0.2, 0.1)),
+        seed=63,
+        eval_max_steps=3,
+        epochs=25,
+        learning_rate=0.01,
+        hidden_dim=16,
+        top_k=2,
+    )
+
+    assert model.n_features == 9
+    assert len(history) == 25
+    assert history[-1]["loss"] < history[0]["loss"]
+    assert history[-1]["top1_accuracy"] >= history[0]["top1_accuracy"]
+
+
+def test_phase63_greedy_rollout_never_selects_invalid_or_repeated_actions():
+    from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+        rollout_phase63_greedy_policy,
+        train_phase63_behavior_cloner,
+    )
+
+    tiled = _tiled_input(
+        block_ids=("b3", "b1", "b2", "b4"),
+        scores=(0.2, 0.9, 0.7, 0.1),
+    )
+    model, _history = train_phase63_behavior_cloner(
+        tiled,
+        seed=63,
+        eval_max_steps=3,
+        epochs=30,
+        learning_rate=0.01,
+        hidden_dim=16,
+        top_k=2,
+    )
+    rollout = rollout_phase63_greedy_policy(
+        model,
+        tiled,
+        train_tile_id="tile_train",
+        eval_tile_rank=1,
+        seed=63,
+        phase63_seed_rank=1,
+        eval_max_steps=3,
+    )
+
+    assert rollout["row_type"] == "bc_greedy_policy"
+    assert rollout["all_actions_valid"] is True
+    assert rollout["invalid_action_count"] == 0
+    assert len(rollout["selected_action_indices"].split(";")) == 3
+    assert len(set(rollout["selected_action_indices"].split(";"))) == 3
+    assert float(rollout["total_contract_reward"]) > 0.0
