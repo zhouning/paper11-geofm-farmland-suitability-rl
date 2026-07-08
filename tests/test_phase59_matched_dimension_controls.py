@@ -364,3 +364,64 @@ def test_phase59_cli_build_controls_and_analyze_only(tmp_path, capsys):
     assert analyze_exit == 0
     assert "Phase 59 matched-dimension status: matched_dimension_geofm_supported" in stdout
     assert "phase59_matched_dimension_controls.json" in stdout
+
+
+def test_phase59_contract_accepts_d5_only_variant_subset(tmp_path):
+    from paper11_geofm.phase59_matched_dimension_controls import (
+        build_phase59_matched_dimension_control_contract,
+    )
+
+    tile_index = _write_csv(
+        tmp_path / "tiles.csv",
+        [
+            {"tile_id": "tile_train", "block_ids": "b1;b2;b3;b4"},
+            {"tile_id": "tile_a", "block_ids": "b1;b2"},
+        ],
+    )
+    contract = build_phase59_matched_dimension_control_contract(
+        phase8_output_dir=tmp_path / "phase8",
+        phase59_control_dir=tmp_path / "phase59_controls",
+        tile_index_csv=tile_index,
+        train_tile_id="tile_train",
+        eval_tile_ids="tile_a",
+        variants="D5R8,D5S8,D5R16,D5S16",
+        seeds="0",
+    )
+
+    assert contract["variants"] == ["D5R8", "D5S8", "D5R16", "D5S16"]
+    assert set(contract["variant_source_dirs"]) == {"D5R8", "D5S8", "D5R16", "D5S16"}
+
+
+def test_phase59_cli_run_and_analyze_accepts_existing_summary_arg():
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase59_matched_dimension_controls"
+        / "run_phase59_matched_dimension_controls.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase59_runner_existing", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    parser = module._build_parser()
+    args = parser.parse_args(
+        [
+            "--mode",
+            "run-and-analyze",
+            "--phase8-output-dir",
+            "phase8",
+            "--phase59-control-dir",
+            "phase59",
+            "--tile-index-csv",
+            "tiles.csv",
+            "--existing-summary-csv",
+            "existing.csv",
+            "--variants",
+            "D5R8,D5S8,D5R16,D5S16",
+            "--output-dir",
+            "outputs",
+        ]
+    )
+
+    assert args.existing_summary_csv == Path("existing.csv")
+    assert args.variants == "D5R8,D5S8,D5R16,D5S16"

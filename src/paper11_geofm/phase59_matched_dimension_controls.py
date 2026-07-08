@@ -1082,6 +1082,7 @@ def build_phase59_matched_dimension_control_contract(
     phase8_output_dir: Path | str,
     phase59_control_dir: Path | str,
     tile_index_csv: Path | str,
+    variants: Sequence[str] | str = PHASE59_REQUIRED_VARIANTS,
     train_tile_id: str | None = None,
     eval_tile_ids: Sequence[str] | str | None = None,
     max_eval_tiles: int = 5,
@@ -1104,20 +1105,18 @@ def build_phase59_matched_dimension_control_contract(
     selected_counts = dict(selected["selected_tile_block_counts"])
     max_blocks = max(int(selected_counts[tile_id]) for tile_id in selected_counts)
     train_id = str(selected["train_tile_id"])
+    normalized_variants = _normalize_phase59_variants(variants)
     return {
         "phase": "phase59_matched_dimension_control_evaluation",
         "phase8_output_dir": str(Path(phase8_output_dir)),
         "phase59_control_dir": str(Path(phase59_control_dir)),
         "tile_index_csv": str(Path(tile_index_csv)),
-        "variants": list(PHASE59_REQUIRED_VARIANTS),
-        "variant_source_dirs": {
-            "D4P8": str(Path(phase8_output_dir)),
-            "D4P16": str(Path(phase8_output_dir)),
-            "D5R8": str(Path(phase59_control_dir)),
-            "D5S8": str(Path(phase59_control_dir)),
-            "D5R16": str(Path(phase59_control_dir)),
-            "D5S16": str(Path(phase59_control_dir)),
-        },
+        "variants": normalized_variants,
+        "variant_source_dirs": _phase59_variant_source_dirs(
+            normalized_variants,
+            phase8_output_dir=phase8_output_dir,
+            phase59_control_dir=phase59_control_dir,
+        ),
         "train_tile_id": train_id,
         "train_tile_ids": [train_id],
         "eval_tile_ids": eval_ids,
@@ -1144,6 +1143,8 @@ def run_phase59_matched_dimension_control_evaluation(
     phase8_output_dir: Path | str,
     phase59_control_dir: Path | str,
     tile_index_csv: Path | str,
+    variants: Sequence[str] | str = PHASE59_REQUIRED_VARIANTS,
+    existing_summary_csv: Path | str | None = None,
     train_tile_id: str | None = None,
     eval_tile_ids: Sequence[str] | str | None = None,
     max_eval_tiles: int = 5,
@@ -1157,6 +1158,7 @@ def run_phase59_matched_dimension_control_evaluation(
         phase8_output_dir=phase8_output_dir,
         phase59_control_dir=phase59_control_dir,
         tile_index_csv=tile_index_csv,
+        variants=variants,
         train_tile_id=train_tile_id,
         eval_tile_ids=eval_tile_ids,
         max_eval_tiles=max_eval_tiles,
@@ -1244,8 +1246,11 @@ def run_phase59_matched_dimension_control_evaluation(
                         int(seed),
                         baseline_steps,
                     )
+    analysis_rows = list(summaries)
+    if existing_summary_csv is not None:
+        analysis_rows = _load_summary_rows(existing_summary_csv) + analysis_rows
     analysis = build_phase59_matched_dimension_control_analysis(
-        summaries,
+        analysis_rows,
         metadata={
             "eval_tile_ids": contract["eval_tile_ids"],
             "seeds": contract["seeds"],
@@ -1254,7 +1259,8 @@ def run_phase59_matched_dimension_control_evaluation(
         random_seed=int(random_seed),
     )
     analysis["contract"] = contract
-    analysis["summaries"] = summaries
+    analysis["summaries"] = analysis_rows
+    analysis["new_summaries"] = summaries
     analysis["traces"] = traces
     analysis["dependencies"] = _dependency_metadata()
     return analysis
@@ -1277,3 +1283,33 @@ def _load_phase59_tiled_variant_input(
         tile_id,
         variant_id=variant_id,
     )
+
+def _normalize_phase59_variants(variants: Sequence[str] | str) -> list[str]:
+    if isinstance(variants, str):
+        values = [part.strip() for part in variants.split(",")]
+    else:
+        values = [str(item).strip() for item in variants]
+    normalized = [value.upper() for value in values if value]
+    if not normalized:
+        raise ValueError("At least one Phase 59 variant must be requested")
+    allowed = set(PHASE59_REQUIRED_VARIANTS)
+    unsupported = [variant for variant in normalized if variant not in allowed]
+    if unsupported:
+        raise ValueError(f"unsupported Phase 59 variants: {unsupported}")
+    if len(set(normalized)) != len(normalized):
+        raise ValueError("Phase 59 variants must be unique")
+    return normalized
+
+
+def _phase59_variant_source_dirs(
+    variants: Sequence[str],
+    phase8_output_dir: Path | str,
+    phase59_control_dir: Path | str,
+) -> dict[str, str]:
+    source_dirs: dict[str, str] = {}
+    for variant_id in variants:
+        if str(variant_id) in PHASE59_COMPRESSED_VARIANTS:
+            source_dirs[str(variant_id)] = str(Path(phase8_output_dir))
+        else:
+            source_dirs[str(variant_id)] = str(Path(phase59_control_dir))
+    return source_dirs

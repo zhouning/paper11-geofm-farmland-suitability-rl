@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import argparse
 import sys
@@ -43,6 +43,8 @@ def main(argv: list[str] | None = None) -> int:
                 phase8_output_dir=args.phase8_output_dir,
                 phase59_control_dir=args.phase59_control_dir,
                 tile_index_csv=args.tile_index_csv,
+                variants=args.variants,
+                existing_summary_csv=args.existing_summary_csv,
                 train_tile_id=args.train_tile_id,
                 eval_tile_ids=args.eval_tile_ids,
                 max_eval_tiles=args.max_eval_tiles,
@@ -99,6 +101,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--existing-summary-csv", type=Path, default=None)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--train-tile-id", default=None)
+    parser.add_argument("--variants", default="D4P8,D4P16,D5R8,D5S8,D5R16,D5S16")
     parser.add_argument("--eval-tile-ids", default=None)
     parser.add_argument("--max-eval-tiles", type=int, default=5)
     parser.add_argument("--total-timesteps", type=int, default=4096)
