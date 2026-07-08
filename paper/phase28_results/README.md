@@ -71,6 +71,9 @@ base-reward protocol.
   representation-geometry audit showing that D4P8/D4P16 retain most raw GeoFM
   variance while reducing effective rank and conditioning burden relative to
   raw B1.
+- `25_phase59_matched_dimension_controls.md`: matched-dimension control audit
+  showing that D4P8/D4P16 do not clearly outperform same-dimension random or
+  shuffled controls under the expanded Bishan base-reward protocol.
 
 ## Reproduction Link
 
@@ -423,6 +426,19 @@ to `16.2704676982`. D4P16 retains `94.96006154%` of raw GeoFM variance while
 reducing effective rank to `7.3009059917` and condition number to
 `53.6978527088`. The expanded-replication reward gains remain positive for
 both compressed variants.
+
+Phase 59 then tests the rival explanation that the D4P8/D4P16 gains are mainly
+a same-dimension optimization effect rather than a GeoFM-specific compressed
+signal. The current Phase 59 status is `matched_dimension_geofm_not_supported`:
+D4P8 - D5R8 mean `-0.0107871307` (`5 / 15` positive), D4P8 - D5S8 mean
+`0.0003232239` (`7 / 15` positive), D4P16 - D5R16 mean `-0.1193811247`
+(`2 / 15` positive), and D4P16 - D5S16 mean `0.060921975` (`8 / 15` positive).
+The pooled matched-control mean is `-0.0172307641`, with `22 / 60` positive
+rows, bootstrap CI95 `[-0.1081223337, 0.0751760409]`, cluster sign-test p `0.5`,
+and signed-rank p `0.6192321777`. This narrows the mechanism wording: the
+earlier compressed-route evidence remains valid against B0/B1/D2/D3, but the
+current run does not support a stronger GeoFM-specific advantage over matched
+low-dimensional controls.
 
 ## Claim Boundary
 

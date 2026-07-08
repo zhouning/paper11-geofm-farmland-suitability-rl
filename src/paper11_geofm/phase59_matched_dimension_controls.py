@@ -363,25 +363,36 @@ def build_phase59_matched_dimension_control_analysis(
     trained_rows = [
         row for row in rows if str(row.get("row_type", "")) == "trained_policy"
     ]
+    required_variant_ids = {str(variant_id) for variant_id in PHASE59_REQUIRED_VARIANTS}
+    comparable_rows = [
+        row
+        for row in trained_rows
+        if str(row.get("variant_id", "")) in required_variant_ids
+    ]
+    ignored_rows = [
+        row
+        for row in trained_rows
+        if str(row.get("variant_id", "")) not in required_variant_ids
+    ]
     metadata_map = {} if metadata is None else dict(metadata)
     eval_tile_ids = _metadata_string_list(
         metadata_map,
         "eval_tile_ids",
-        fallback=_unique_strings(trained_rows, "eval_tile_id"),
+        fallback=_unique_strings(comparable_rows, "eval_tile_id"),
     )
     seeds = _metadata_int_list(
         metadata_map,
         "seeds",
-        fallback=_unique_ints(trained_rows, "seed"),
+        fallback=_unique_ints(comparable_rows, "seed"),
     )
     coverage_issues = _coverage_issues(
-        trained_rows,
+        comparable_rows,
         variants=PHASE59_REQUIRED_VARIANTS,
         eval_tile_ids=eval_tile_ids,
         seeds=seeds,
     )
-    delta_rows = _matched_delta_rows(trained_rows, eval_tile_ids, seeds)
-    learned_policy = _phase59_policy_summary(trained_rows, delta_rows)
+    delta_rows = _matched_delta_rows(comparable_rows, eval_tile_ids, seeds)
+    learned_policy = _phase59_policy_summary(comparable_rows, delta_rows)
     pooled = _delta_summary(
         [
             float(row["compressed_minus_matched_control_reward"])
@@ -409,7 +420,8 @@ def build_phase59_matched_dimension_control_analysis(
         "eval_tile_ids": eval_tile_ids,
         "seeds": seeds,
         "source_rows": rows,
-        "main_summary_rows": _main_summary_rows(rows),
+        "main_summary_rows": _main_summary_rows(comparable_rows),
+        "ignored_historical_variant_row_count": len(ignored_rows),
         "delta_rows": delta_rows,
         "learned_policy": learned_policy,
         "pooled_matched_control_delta": pooled,

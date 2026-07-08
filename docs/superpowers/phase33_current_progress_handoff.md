@@ -1417,3 +1417,70 @@ Next required human-provided submission items:
 ```text
 target journal, author list, affiliations, corresponding author, funding, author contributions, final external DLTB data access wording, code release tag/DOI, and journal-specific formatting requirements
 ```
+
+## Phase 59 Matched-Dimension Control Audit - 2026-07-08 10:49 +08:00
+
+Phase 59 adds a matched-dimension control audit for the current Paper11
+compressed-route conclusion. The audit was run on the current main branch, as
+requested, and no formal manuscript files were revised in this step.
+
+New implementation and evidence files:
+
+```text
+src/paper11_geofm/phase59_matched_dimension_controls.py
+experiments/phase59_matched_dimension_controls/run_phase59_matched_dimension_controls.py
+tests/test_phase59_matched_dimension_controls.py
+paper/phase28_results/25_phase59_matched_dimension_controls.md
+experiments/phase59_matched_dimension_controls/outputs/phase52_full5_seed3/phase59_matched_dimension_controls.json
+experiments/phase59_matched_dimension_controls/outputs/phase52_full5_seed3/phase59_matched_dimension_control_summary.csv
+experiments/phase59_matched_dimension_controls/outputs/phase52_full5_seed3/phase59_matched_dimension_delta_table.csv
+experiments/phase59_matched_dimension_controls/outputs/phase52_full5_seed3/phase59_matched_dimension_controls.md
+```
+
+Real analyze-only command after fixing historical-variant filtering:
+
+```powershell
+python experiments\phase59_matched_dimension_controls\run_phase59_matched_dimension_controls.py --mode analyze-only --existing-summary-csv experiments\phase59_matched_dimension_controls\outputs\phase52_full5_seed3\phase59_matched_dimension_control_summary.csv --output-dir experiments\phase59_matched_dimension_controls\outputs\phase52_full5_seed3 --eval-tile-ids tile_r002_c003,tile_r005_c004,tile_r005_c003,tile_r000_c004,tile_r001_c004 --seeds 0,1,2 --bootstrap-iterations 5000 --seed 59
+```
+
+Real Phase 59 status:
+
+```text
+matched_dimension_geofm_not_supported
+```
+
+Core matched-dimension values:
+
+```text
+ignored historical trained-policy rows: 60
+coverage issues after filtering: missing 0, duplicate 0, unexpected 0
+D4P8 - D5R8: mean -0.0107871307, positive 5 / 15
+D4P8 - D5S8: mean 0.0003232239, positive 7 / 15
+D4P16 - D5R16: mean -0.1193811247, positive 2 / 15
+D4P16 - D5S16: mean 0.060921975, positive 8 / 15
+pooled mean delta: -0.0172307641
+pooled positive rows: 22 / 60
+pooled bootstrap CI95: [-0.1081223337, 0.0751760409]
+cluster mean delta: -0.0172307641
+positive tile-seed clusters: 8 / 15
+cluster sign-test p: 0.5
+signed-rank positive rank sum: 55 / 120
+signed-rank p: 0.6192321777
+```
+
+Interpretation update:
+
+```text
+Phase 59 does not support a GeoFM-specific matched-dimension advantage for the
+current D4P8/D4P16 compressed route. The earlier Phase 52/53 compressed-route
+evidence remains valid against B0, raw B1, random D2, and shuffled D3, but the
+mechanism wording must now be narrower: the defensible claim is a bounded
+low-dimensional compressed state route under the Bishan base-reward protocol,
+not a proven unique advantage of the current PCA-compressed GeoFM coordinates
+over same-dimension controls.
+```
+
+Claim boundary remains unchanged: Phase 59 does not enable suitability reward,
+B2/B3, cross-region transfer, PCA optimality, or independent agronomic
+suitability claims. The next Paper11 work should continue on algorithm/model
+and experiment design before revising the formal manuscript.

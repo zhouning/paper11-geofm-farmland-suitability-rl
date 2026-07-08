@@ -425,3 +425,20 @@ def test_phase59_cli_run_and_analyze_accepts_existing_summary_arg():
 
     assert args.existing_summary_csv == Path("existing.csv")
     assert args.variants == "D5R8,D5S8,D5R16,D5S16"
+
+
+def test_phase59_analysis_ignores_extra_historical_variants():
+    from paper11_geofm.phase59_matched_dimension_controls import (
+        build_phase59_matched_dimension_control_analysis,
+    )
+
+    rows = _phase59_summary_rows("supported")
+    rows.append(_summary_row("B0", 99.0, tile_id="tile_a", seed=0))
+    analysis = build_phase59_matched_dimension_control_analysis(
+        rows,
+        metadata={"eval_tile_ids": ["tile_a", "tile_b"], "seeds": [0, 1]},
+        bootstrap_iterations=100,
+    )
+
+    assert analysis["phase59_matched_dimension_status"] == "matched_dimension_geofm_supported"
+    assert analysis["coverage_issues"]["unexpected_variant_rows"] == []
