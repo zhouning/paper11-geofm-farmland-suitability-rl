@@ -81,6 +81,9 @@ base-reward protocol.
 - `27_phase61_d6_geofm_projection_controls.md`: D6 GeoFM projection-control
   feature and geometry audit preparing raw-B1 random and PCA projection
   controls for later matched training.
+- `28_phase62_d4_d6_matched_ppo.md`: matched PPO training evaluation showing
+  that D4P8/D4P16 do not outperform D6R8/D6R16 raw-B1 random orthonormal
+  projection controls under the Phase 52 five-tile, three-seed protocol.
 
 ## Reproduction Link
 
@@ -478,6 +481,22 @@ variance. D6P8 and D6P16 reproduce D4P8/D4P16 exactly by column correlation
 projection controls with D4 similarities `0.13402939` and `0.1827507258`. This
 prepares the next matched training experiment but does not itself support a
 learned-policy performance claim.
+
+Phase 62 then trains the primary D4/D6R comparison under the same Phase 52
+five-tile, three-seed base-reward protocol:
+
+```powershell
+python experiments\phase62_d4_d6_matched_ppo\run_phase62_d4_d6_matched_ppo.py --mode run-and-analyze --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --phase61-output-dir experiments\phase61_d6_geofm_projection_controls\outputs\phase52_full5_seed3 --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants D4P8,D4P16,D6R8,D6R16 --eval-tile-ids tile_r002_c003,tile_r005_c004,tile_r005_c003,tile_r000_c004,tile_r001_c004 --total-timesteps 4096 --eval-max-steps 8 --seeds 0,1,2 --bootstrap-iterations 5000 --seed 62 --output-dir experiments\phase62_d4_d6_matched_ppo\outputs\phase52_full5_seed3
+```
+
+The current Phase 62 status is `d6_random_projection_advantage`. D4P8 - D6R8
+has mean delta `-0.0279096981` (`5 / 15` positive), D4P16 - D6R16 has mean
+`-0.1004704046` (`1 / 15` positive), and the pooled primary D4-D6R mean is
+`-0.0641900514` (`6 / 30` positive), with bootstrap CI95 `[-0.1459486743,
+0.01836613]`, cluster mean `-0.0641900514`, positive clusters `5 / 15`, and
+signed-rank p `0.8793945312`. Phase 62 therefore does not support a
+PCA-specific D4 advantage over raw-B1 random orthonormal projections; it
+preserves the Phase 60 narrowed claim rather than strengthening it.
 
 ## Claim Boundary
 

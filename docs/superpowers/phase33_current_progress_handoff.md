@@ -1610,3 +1610,85 @@ B2/B3, cross-region transfer, PCA optimality, independent agronomic suitability,
 or submission-level learned-policy claims. The next Paper11 work should remain
 focused on algorithm/model and experiment design before revising the formal
 manuscript.
+
+## Phase 62 D4/D6 Matched PPO Evaluation - 2026-07-08 18:17 +08:00
+
+Phase 62 was run on the current `main` branch as a bounded matched PPO training
+experiment. It compares D4P8/D4P16 against D6R8/D6R16 raw-B1 random orthonormal
+projection controls under the Phase 52 five-tile, three-seed base-reward
+protocol. No formal manuscript files were changed.
+
+New implementation and evidence files:
+
+```text
+src/paper11_geofm/phase62_d4_d6_matched_ppo.py
+experiments/phase62_d4_d6_matched_ppo/run_phase62_d4_d6_matched_ppo.py
+tests/test_phase62_d4_d6_matched_ppo.py
+paper/phase28_results/28_phase62_d4_d6_matched_ppo.md
+experiments/phase62_d4_d6_matched_ppo/outputs/phase52_full5_seed3/phase62_d4_d6_matched_ppo.json
+experiments/phase62_d4_d6_matched_ppo/outputs/phase52_full5_seed3/phase62_d4_d6_matched_ppo_summary.csv
+experiments/phase62_d4_d6_matched_ppo/outputs/phase52_full5_seed3/phase62_d4_d6_matched_ppo_traces.json
+experiments/phase62_d4_d6_matched_ppo/outputs/phase52_full5_seed3/phase62_d4_d6_delta_table.csv
+experiments/phase62_d4_d6_matched_ppo/outputs/phase52_full5_seed3/phase62_d4_d6_cluster_summary.csv
+experiments/phase62_d4_d6_matched_ppo/outputs/phase52_full5_seed3/phase62_d4_d6_matched_ppo.md
+```
+
+Real Phase 62 command:
+
+```powershell
+python experiments/phase62_d4_d6_matched_ppo/run_phase62_d4_d6_matched_ppo.py --mode run-and-analyze --phase8-output-dir experiments/phase8_ablation_controls/outputs/real_bishan_controls --phase61-output-dir experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3 --tile-index-csv experiments/phase13_tiled_real_contract/outputs/real_bishan/phase13_tile_index.csv --variants D4P8,D4P16,D6R8,D6R16 --eval-tile-ids tile_r002_c003,tile_r005_c004,tile_r005_c003,tile_r000_c004,tile_r001_c004 --total-timesteps 4096 --eval-max-steps 8 --seeds 0,1,2 --bootstrap-iterations 5000 --seed 62 --output-dir experiments/phase62_d4_d6_matched_ppo/outputs/phase52_full5_seed3
+```
+
+Real Phase 62 status:
+
+```text
+d6_random_projection_advantage
+```
+
+Core matched PPO values:
+
+```text
+coverage issues: missing 0, duplicate 0, unexpected 0
+D4P8 - D6R8: mean -0.0279096981, positive 5 / 15
+D4P16 - D6R16: mean -0.1004704046, positive 1 / 15
+pooled primary D4-D6R mean: -0.0641900514
+pooled positive rows: 6 / 30
+pooled bootstrap CI95: [-0.1459486743, 0.01836613]
+pooled sign-test p: 0.9998375429
+cluster mean delta: -0.0641900514
+positive tile-seed clusters: 5 / 15
+cluster sign-test p: 0.9407653809
+signed-rank positive rank sum: 34 / 105
+signed-rank p: 0.8793945312
+```
+
+Interpretation update:
+
+```text
+Phase 62 does not support a PCA-specific D4 advantage over D6 raw-B1 random
+orthonormal projections. Together with Phase 59, it prevents strengthening the
+mechanism claim beyond the Phase 60 narrowed wording. D4P8/D4P16 remain part of
+the earlier positive compressed-route evidence against B0, raw B1, random D2,
+and shuffled D3, but the current defendable claim remains a bounded
+low-dimensional compressed state route under the Bishan base-reward protocol,
+not PCA optimality, not a unique GeoFM-specific same-dimension advantage, and
+not a final submission-level planning-performance claim.
+```
+
+Recommended next algorithm/experiment step:
+
+```text
+Do not revise the formal manuscript yet. First decide whether to run a small
+replication/sensitivity around D6R controls, for example alternate D6 random
+projection seeds or longer-budget matched PPO, only if the goal is to test
+whether Phase 62 is projection-seed sensitive. Otherwise preserve the narrowed
+Phase 60/62 claim and move to the next model/experiment bottleneck: independent
+suitability labels and reward design remain blocked until the Phase 40/41 gate
+is satisfied.
+```
+
+Claim boundary remains unchanged: Phase 62 does not enable suitability reward,
+B2/B3, cross-region transfer, PCA optimality, independent agronomic suitability,
+or submission-level learned-policy claims. The next Paper11 work should remain
+focused on algorithm/model and experiment design before revising the formal
+manuscript.
