@@ -538,3 +538,312 @@ def build_phase64_feature_diagnostics(
         "feature_scale_rows": feature_rows,
         "feature_effective_rank_rows": rank_rows,
     }
+
+
+PHASE64_FAILURE_CASE_FIELDNAMES = [
+    "case_type",
+    "variant_id",
+    "eval_tile_id",
+    "seed",
+    "bc_reward",
+    "oracle_total_reward",
+    "oracle_gap",
+    "oracle_gap_fraction",
+    "selected_overlap_fraction",
+    "worst_selected_rank",
+    "reward_loss_from_missed_oracle",
+    "selected_block_ids",
+    "missed_oracle_block_ids",
+    "training_best_top1_accuracy",
+    "training_best_topk_hit_rate",
+    "feature_flags",
+    "claim_boundary",
+]
+
+
+def _mean_numeric(rows: Sequence[Mapping[str, object]], field: str) -> float:
+    values = [
+        _safe_float(row.get(field))
+        for row in rows
+        if str(row.get(field, "")).strip() != ""
+    ]
+    return statistics.mean(values) if values else 0.0
+
+
+def _coverage_incomplete(comparison: Mapping[str, object]) -> bool:
+    coverage = comparison.get("coverage_issues", {})
+    if not isinstance(coverage, Mapping):
+        return True
+    return bool(
+        coverage.get("missing_rollout_rows")
+        or coverage.get("duplicate_rollout_rows")
+        or coverage.get("unexpected_rollout_rows")
+    )
+
+
+def _d4_underperforms(comparison: Mapping[str, object]) -> bool:
+    d4_b0 = comparison.get("d4_b0_delta_summary", {})
+    d4_d6 = comparison.get("d4_d6_delta_summary", {})
+    return (
+        _safe_float(d4_b0.get("mean_delta"), 0.0) <= 0.0
+        or _safe_float(d4_d6.get("mean_delta"), 0.0) <= 0.0
+    )
+
+
+def _geofm_feature_flags(feature_effective_rank_rows: Sequence[Mapping[str, object]]) -> dict[str, int]:
+    flags = {"scale_flag_count": 0, "shift_flag_count": 0, "rank_flag_count": 0}
+    for row in feature_effective_rank_rows:
+        variant_id = str(row.get("variant_id", ""))
+        if not (variant_id.startswith("D4") or variant_id.startswith("D6")):
+            continue
+        if str(row.get("tile_role", "")) not in {"train", "eval"}:
+            continue
+        if bool(row.get("scale_flag")):
+            flags["scale_flag_count"] += 1
+        if bool(row.get("shift_flag")):
+            flags["shift_flag_count"] += 1
+        if bool(row.get("rank_flag")):
+            flags["rank_flag_count"] += 1
+    return flags
+
+
+def build_phase64_standardization_gate(
+    phase63_comparison: Mapping[str, object],
+    convergence_rows: Sequence[Mapping[str, object]],
+    feature_effective_rank_rows: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
+    flags = _geofm_feature_flags(feature_effective_rank_rows)
+    mean_best_top1 = _mean_numeric(convergence_rows, "best_top1_accuracy")
+    mean_best_topk = _mean_numeric(convergence_rows, "best_topk_hit_rate")
+    capacity_limited = (
+        mean_best_top1 < PHASE64_WEAK_TOP1_THRESHOLD
+        and mean_best_topk < PHASE64_WEAK_TOPK_THRESHOLD
+    )
+    d4_underperformance = _d4_underperforms(phase63_comparison)
+    feature_flagged = any(value > 0 for value in flags.values())
+    if _coverage_incomplete(phase63_comparison):
+        status = PHASE64_STATUS_INCONCLUSIVE
+        recommendation = False
+        reason = "Phase 63 coverage is incomplete."
+    elif capacity_limited:
+        status = PHASE64_STATUS_CAPACITY
+        recommendation = False
+        reason = "Behavior cloning convergence is weak across variants."
+    elif d4_underperformance and feature_flagged:
+        status = PHASE64_STATUS_STANDARDIZATION
+        recommendation = True
+        reason = "D4/D6 underperformance coincides with feature scale, shift, or rank flags."
+    elif d4_underperformance and not feature_flagged and mean_best_topk >= PHASE64_WEAK_TOPK_THRESHOLD:
+        status = PHASE64_STATUS_NOT_HELPFUL
+        recommendation = False
+        reason = "D4 remains behind without scale, shift, or rank flags under adequate convergence."
+    else:
+        status = PHASE64_STATUS_INCONCLUSIVE
+        recommendation = False
+        reason = "Diagnostics do not isolate one next experiment."
+    return {
+        "phase": "phase64_standardization_gate",
+        "phase64_status": status,
+        "recommend_standardized_rerun": bool(recommendation),
+        "reason": reason,
+        "mean_best_top1_accuracy": _round_float(mean_best_top1),
+        "mean_best_topk_hit_rate": _round_float(mean_best_topk),
+        "d4_underperformance": bool(d4_underperformance),
+        **flags,
+        "claim_boundary": PHASE64_CLAIM_BOUNDARY,
+    }
+
+
+def _index_by_variant_tile_seed(rows: Sequence[Mapping[str, object]]) -> dict[tuple[str, str, int], Mapping[str, object]]:
+    return {
+        (
+            str(row.get("variant_id", "")),
+            str(row.get("eval_tile_id", row.get("tile_id", ""))),
+            _safe_int(row.get("seed")),
+        ): row
+        for row in rows
+    }
+
+
+def _training_index(rows: Sequence[Mapping[str, object]]) -> dict[tuple[str, int], Mapping[str, object]]:
+    return {
+        (str(row.get("variant_id", "")), _safe_int(row.get("seed"))): row
+        for row in rows
+    }
+
+
+def _feature_flag_index(rows: Sequence[Mapping[str, object]]) -> dict[tuple[str, str], str]:
+    output: dict[tuple[str, str], str] = {}
+    for row in rows:
+        flags = []
+        if bool(row.get("scale_flag")):
+            flags.append("scale")
+        if bool(row.get("shift_flag")):
+            flags.append("shift")
+        if bool(row.get("rank_flag")):
+            flags.append("rank")
+        output[(str(row.get("variant_id", "")), str(row.get("tile_id", "")))] = ";".join(flags)
+    return output
+
+
+def build_phase64_failure_cases(
+    phase63_comparison: Mapping[str, object],
+    overlap_rows: Sequence[Mapping[str, object]],
+    oracle_rank_rows: Sequence[Mapping[str, object]],
+    convergence_rows: Sequence[Mapping[str, object]],
+    feature_effective_rank_rows: Sequence[Mapping[str, object]],
+    limit: int = 12,
+) -> list[dict[str, object]]:
+    rank_index = _index_by_variant_tile_seed(oracle_rank_rows)
+    train_index = _training_index(convergence_rows)
+    flag_index = _feature_flag_index(feature_effective_rank_rows)
+    candidates: list[tuple[float, str, Mapping[str, object]]] = []
+    for row in overlap_rows:
+        candidates.append((_safe_float(row.get("oracle_gap_fraction")), "highest_oracle_gap", row))
+        if str(row.get("variant_id", "")).startswith("D4"):
+            candidates.append((_safe_float(row.get("oracle_gap_fraction")), "d4_high_oracle_gap", row))
+        if _safe_float(row.get("selected_overlap_fraction"), 1.0) < 0.5:
+            candidates.append((1.0 - _safe_float(row.get("selected_overlap_fraction")), "weak_selected_overlap", row))
+    for delta_row in phase63_comparison.get("d4_b0_delta_rows", []):
+        if _safe_float(delta_row.get("left_minus_right_reward")) < 0.0:
+            candidates.append(
+                (
+                    abs(_safe_float(delta_row.get("left_minus_right_reward"))),
+                    "d4_loses_to_b0",
+                    {
+                        "variant_id": delta_row.get("left_variant_id", ""),
+                        "eval_tile_id": delta_row.get("eval_tile_id", ""),
+                        "seed": delta_row.get("seed", 0),
+                    },
+                )
+            )
+    for delta_row in phase63_comparison.get("d4_d6_delta_rows", []):
+        if _safe_float(delta_row.get("left_minus_right_reward")) < 0.0:
+            candidates.append(
+                (
+                    abs(_safe_float(delta_row.get("left_minus_right_reward"))),
+                    "d4_loses_to_d6",
+                    {
+                        "variant_id": delta_row.get("left_variant_id", ""),
+                        "eval_tile_id": delta_row.get("eval_tile_id", ""),
+                        "seed": delta_row.get("seed", 0),
+                    },
+                )
+            )
+    output: list[dict[str, object]] = []
+    seen: set[tuple[str, str, str, int]] = set()
+    overlap_index = _index_by_variant_tile_seed(overlap_rows)
+    for _score, case_type, base_row in sorted(candidates, key=lambda item: (-item[0], item[1])):
+        variant_id = str(base_row.get("variant_id", ""))
+        eval_tile_id = str(base_row.get("eval_tile_id", ""))
+        seed = _safe_int(base_row.get("seed"))
+        seen_key = (case_type, variant_id, eval_tile_id, seed)
+        if seen_key in seen:
+            continue
+        seen.add(seen_key)
+        key = (variant_id, eval_tile_id, seed)
+        overlap = overlap_index.get(key, base_row)
+        rank = rank_index.get(key, {})
+        training = train_index.get((variant_id, seed), {})
+        feature_flags = flag_index.get((variant_id, eval_tile_id), "")
+        output.append(
+            {
+                "case_type": case_type,
+                "variant_id": variant_id,
+                "eval_tile_id": eval_tile_id,
+                "seed": seed,
+                "bc_reward": _round_float(overlap.get("bc_reward", 0.0)),
+                "oracle_total_reward": _round_float(overlap.get("oracle_total_reward", 0.0)),
+                "oracle_gap": _round_float(overlap.get("oracle_gap", 0.0)),
+                "oracle_gap_fraction": _round_float(overlap.get("oracle_gap_fraction", 0.0)),
+                "selected_overlap_fraction": _round_float(overlap.get("selected_overlap_fraction", 0.0)),
+                "worst_selected_rank": _safe_int(rank.get("worst_selected_rank")),
+                "reward_loss_from_missed_oracle": _round_float(rank.get("reward_loss_from_missed_oracle", 0.0)),
+                "selected_block_ids": str(overlap.get("selected_block_ids", "")),
+                "missed_oracle_block_ids": str(overlap.get("missed_oracle_block_ids", "")),
+                "training_best_top1_accuracy": _round_float(training.get("best_top1_accuracy", 0.0)),
+                "training_best_topk_hit_rate": _round_float(training.get("best_topk_hit_rate", 0.0)),
+                "feature_flags": feature_flags,
+                "claim_boundary": PHASE64_CLAIM_BOUNDARY,
+            }
+        )
+        if len(output) >= int(limit):
+            break
+    return output
+
+
+def _write_csv_rows(path: Path, fieldnames: Sequence[str], rows: Sequence[Mapping[str, object]]) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _phase64_markdown(analysis: Mapping[str, object]) -> str:
+    gate = dict(analysis.get("standardization_gate", {}))
+    lines = [
+        "# Phase 64 Set-Policy Error Diagnosis",
+        "",
+        f"Status: {gate.get('phase64_status', '')}",
+        "",
+        f"Recommendation: standardized rerun = {gate.get('recommend_standardized_rerun', False)}",
+        "",
+        f"Reason: {gate.get('reason', '')}",
+        "",
+        "Gate evidence:",
+        f"- mean best top-1 accuracy: {gate.get('mean_best_top1_accuracy', '')}",
+        f"- mean best top-k hit rate: {gate.get('mean_best_topk_hit_rate', '')}",
+        f"- D4 underperformance: {gate.get('d4_underperformance', '')}",
+        f"- scale flag count: {gate.get('scale_flag_count', '')}",
+        f"- shift flag count: {gate.get('shift_flag_count', '')}",
+        f"- rank flag count: {gate.get('rank_flag_count', '')}",
+        "",
+        "Failure case rows:",
+        f"- {len(analysis.get('failure_case_rows', []))}",
+        "",
+        "Claim boundary:",
+        str(analysis.get("claim_boundary", PHASE64_CLAIM_BOUNDARY)),
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_phase64_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    paths = {
+        "convergence_csv": output_path / "phase64_convergence_summary.csv",
+        "overlap_csv": output_path / "phase64_rollout_overlap.csv",
+        "oracle_rank_csv": output_path / "phase64_oracle_rank_gap.csv",
+        "feature_scale_csv": output_path / "phase64_feature_scale_summary.csv",
+        "effective_rank_csv": output_path / "phase64_feature_effective_rank.csv",
+        "failure_cases_csv": output_path / "phase64_failure_cases.csv",
+        "gate_json": output_path / "phase64_standardization_gate.json",
+        "diagnosis_md": output_path / "phase64_set_policy_error_diagnosis.md",
+    }
+    _write_csv_rows(paths["convergence_csv"], PHASE64_CONVERGENCE_FIELDNAMES, analysis.get("convergence_rows", []))
+    _write_csv_rows(paths["overlap_csv"], PHASE64_OVERLAP_FIELDNAMES, analysis.get("overlap_rows", []))
+    _write_csv_rows(paths["oracle_rank_csv"], PHASE64_ORACLE_RANK_FIELDNAMES, analysis.get("oracle_rank_gap_rows", []))
+    _write_csv_rows(paths["feature_scale_csv"], PHASE64_FEATURE_SCALE_FIELDNAMES, analysis.get("feature_scale_rows", []))
+    _write_csv_rows(paths["effective_rank_csv"], PHASE64_EFFECTIVE_RANK_FIELDNAMES, analysis.get("feature_effective_rank_rows", []))
+    _write_csv_rows(paths["failure_cases_csv"], PHASE64_FAILURE_CASE_FIELDNAMES, analysis.get("failure_case_rows", []))
+    paths["gate_json"].write_text(
+        json.dumps(_json_ready(analysis.get("standardization_gate", {})), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    paths["diagnosis_md"].write_text(_phase64_markdown(analysis), encoding="utf-8")
+    return paths

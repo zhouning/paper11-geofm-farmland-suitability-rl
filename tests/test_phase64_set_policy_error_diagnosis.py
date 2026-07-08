@@ -293,3 +293,176 @@ def test_phase64_feature_diagnostics_detect_scale_shift_and_low_rank():
     assert eval_rank["zero_variance_feature_count"] == 1
     assert eval_rank["rank_flag"] is True
     assert eval_rank["shift_flag"] is True
+
+
+def _comparison(
+    d4_b0_mean=-0.1,
+    d4_d6_mean=-0.05,
+    missing=None,
+    duplicate=None,
+    unexpected=None,
+):
+    return {
+        "coverage_issues": {
+            "missing_rollout_rows": [] if missing is None else missing,
+            "duplicate_rollout_rows": [] if duplicate is None else duplicate,
+            "unexpected_rollout_rows": [] if unexpected is None else unexpected,
+        },
+        "d4_b0_delta_summary": {"mean_delta": d4_b0_mean, "positive_count": 0, "total_count": 4},
+        "d4_d6_delta_summary": {"mean_delta": d4_d6_mean, "positive_count": 0, "total_count": 4},
+        "oracle_gap_fraction_summary": {"mean_delta": 0.08, "positive_count": 4, "total_count": 4},
+        "d4_b0_delta_rows": [
+            {
+                "left_variant_id": "D4P8",
+                "right_variant_id": "B0",
+                "eval_tile_id": "tile_eval",
+                "seed": 0,
+                "left_minus_right_reward": -0.2,
+            }
+        ],
+        "d4_d6_delta_rows": [],
+    }
+
+
+def test_phase64_standardization_gate_reports_supported_capacity_not_helpful_and_inconclusive():
+    from paper11_geofm.phase64_set_policy_error_diagnosis import (
+        build_phase64_standardization_gate,
+    )
+
+    strong_convergence = [
+        {"variant_id": "B0", "best_top1_accuracy": 0.6, "best_topk_hit_rate": 0.9},
+        {"variant_id": "D4P8", "best_top1_accuracy": 0.5, "best_topk_hit_rate": 0.8},
+    ]
+    weak_convergence = [
+        {"variant_id": "B0", "best_top1_accuracy": 0.1, "best_topk_hit_rate": 0.2},
+        {"variant_id": "D4P8", "best_top1_accuracy": 0.1, "best_topk_hit_rate": 0.2},
+    ]
+    flagged_rank = [
+        {
+            "variant_id": "D4P8",
+            "scale_flag": True,
+            "shift_flag": False,
+            "rank_flag": False,
+            "tile_role": "eval",
+        }
+    ]
+    clean_rank = [
+        {
+            "variant_id": "D4P8",
+            "scale_flag": False,
+            "shift_flag": False,
+            "rank_flag": False,
+            "tile_role": "eval",
+        }
+    ]
+
+    supported = build_phase64_standardization_gate(
+        _comparison(),
+        strong_convergence,
+        flagged_rank,
+    )
+    assert supported["phase64_status"] == "standardization_route_supported"
+    assert supported["recommend_standardized_rerun"] is True
+
+    capacity = build_phase64_standardization_gate(
+        _comparison(),
+        weak_convergence,
+        flagged_rank,
+    )
+    assert capacity["phase64_status"] == "bc_training_capacity_limited"
+
+    not_helpful = build_phase64_standardization_gate(
+        _comparison(),
+        strong_convergence,
+        clean_rank,
+    )
+    assert not_helpful["phase64_status"] == "geofm_features_not_helpful_under_set_policy"
+
+    inconclusive = build_phase64_standardization_gate(
+        _comparison(missing=["B0:tile_eval:0"]),
+        strong_convergence,
+        flagged_rank,
+    )
+    assert inconclusive["phase64_status"] == "diagnostic_inconclusive"
+
+
+def test_phase64_writer_outputs_csv_json_and_markdown(tmp_path):
+    from paper11_geofm.phase64_set_policy_error_diagnosis import (
+        build_phase64_failure_cases,
+        build_phase64_standardization_gate,
+        write_phase64_artifacts,
+    )
+
+    convergence = [
+        {
+            "variant_id": "D4P8",
+            "train_tile_id": "tile_train",
+            "seed": 0,
+            "best_top1_accuracy": 0.5,
+            "best_topk_hit_rate": 0.75,
+            "final_loss": 1.0,
+            "claim_boundary": "phase64",
+        }
+    ]
+    overlap = [
+        {
+            "variant_id": "D4P8",
+            "eval_tile_id": "tile_eval",
+            "seed": 0,
+            "oracle_gap_fraction": 0.4,
+            "selected_overlap_fraction": 0.25,
+            "missed_oracle_block_ids": "b2",
+            "selected_block_ids": "b1",
+        }
+    ]
+    rank_gap = [
+        {
+            "variant_id": "D4P8",
+            "eval_tile_id": "tile_eval",
+            "seed": 0,
+            "reward_loss_from_missed_oracle": 0.2,
+            "worst_selected_rank": 4,
+        }
+    ]
+    effective_rank = [
+        {
+            "variant_id": "D4P8",
+            "tile_role": "eval",
+            "tile_id": "tile_eval",
+            "scale_flag": True,
+            "shift_flag": False,
+            "rank_flag": False,
+        }
+    ]
+    gate = build_phase64_standardization_gate(_comparison(), convergence, effective_rank)
+    failure_cases = build_phase64_failure_cases(
+        _comparison(),
+        overlap,
+        rank_gap,
+        convergence,
+        effective_rank,
+        limit=3,
+    )
+    analysis = {
+        "phase": "phase64_set_policy_error_diagnosis",
+        "convergence_rows": convergence,
+        "overlap_rows": overlap,
+        "oracle_rank_gap_rows": rank_gap,
+        "feature_scale_rows": [],
+        "feature_effective_rank_rows": effective_rank,
+        "failure_case_rows": failure_cases,
+        "standardization_gate": gate,
+        "claim_boundary": "phase64",
+    }
+
+    paths = write_phase64_artifacts(analysis, tmp_path / "outputs")
+
+    assert paths["convergence_csv"].name == "phase64_convergence_summary.csv"
+    assert paths["overlap_csv"].name == "phase64_rollout_overlap.csv"
+    assert paths["oracle_rank_csv"].name == "phase64_oracle_rank_gap.csv"
+    assert paths["gate_json"].name == "phase64_standardization_gate.json"
+    saved = json.loads(paths["gate_json"].read_text(encoding="utf-8"))
+    assert saved["phase64_status"] == "standardization_route_supported"
+    markdown = paths["diagnosis_md"].read_text(encoding="utf-8")
+    assert "Phase 64 Set-Policy Error Diagnosis" in markdown
+    assert "standardization_route_supported" in markdown
