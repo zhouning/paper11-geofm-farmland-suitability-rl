@@ -345,3 +345,196 @@ def build_phase64_oracle_rank_gap(
             }
         )
     return output
+
+PHASE64_FEATURE_SCALE_FIELDNAMES = [
+    "variant_id",
+    "tile_role",
+    "tile_id",
+    "feature_index",
+    "feature_name",
+    "mean",
+    "std",
+    "min",
+    "max",
+    "median",
+    "p1",
+    "p99",
+    "train_mean",
+    "train_std",
+    "eval_mean_z_shift",
+    "zero_variance",
+    "claim_boundary",
+]
+
+PHASE64_EFFECTIVE_RANK_FIELDNAMES = [
+    "variant_id",
+    "tile_role",
+    "tile_id",
+    "n_blocks",
+    "n_features",
+    "zero_variance_feature_count",
+    "std_ratio",
+    "mean_scale_ratio",
+    "max_train_eval_abs_z_shift",
+    "effective_rank",
+    "effective_rank_fraction",
+    "pc1_variance_share",
+    "pc3_variance_share",
+    "scale_flag",
+    "shift_flag",
+    "rank_flag",
+    "claim_boundary",
+]
+
+
+def _feature_distribution(values: np.ndarray) -> dict[str, float]:
+    array = np.asarray(values, dtype=float)
+    return {
+        "mean": _round_float(np.mean(array)),
+        "std": _round_float(np.std(array, ddof=0)),
+        "min": _round_float(np.min(array)),
+        "max": _round_float(np.max(array)),
+        "median": _round_float(np.median(array)),
+        "p1": _round_float(np.percentile(array, 1)),
+        "p99": _round_float(np.percentile(array, 99)),
+    }
+
+
+def _effective_rank_stats(matrix: np.ndarray) -> dict[str, float]:
+    values = np.asarray(matrix, dtype=float)
+    if values.size == 0:
+        return {
+            "effective_rank": 0.0,
+            "effective_rank_fraction": 0.0,
+            "pc1_variance_share": 0.0,
+            "pc3_variance_share": 0.0,
+        }
+    centered = values - np.mean(values, axis=0, keepdims=True)
+    singular_values = np.linalg.svd(centered, full_matrices=False, compute_uv=False)
+    positive = singular_values[singular_values > 1.0e-12]
+    if positive.size == 0:
+        effective_rank = 0.0
+    else:
+        probabilities = positive / np.sum(positive)
+        entropy = -float(np.sum(probabilities * np.log(probabilities)))
+        effective_rank = float(np.exp(entropy))
+    squared = singular_values ** 2
+    variance_total = float(np.sum(squared))
+    pc1_share = float(squared[0] / variance_total) if variance_total > 0.0 else 0.0
+    pc3_share = float(np.sum(squared[:3]) / variance_total) if variance_total > 0.0 else 0.0
+    max_rank = max(1, min(values.shape))
+    return {
+        "effective_rank": _round_float(effective_rank),
+        "effective_rank_fraction": _round_float(effective_rank / max_rank),
+        "pc1_variance_share": _round_float(pc1_share),
+        "pc3_variance_share": _round_float(pc3_share),
+    }
+
+
+def _train_feature_reference(
+    tiled_inputs: Sequence[tuple[str, object]],
+    train_tile_ids: Mapping[str, str],
+) -> dict[str, dict[str, np.ndarray]]:
+    reference: dict[str, dict[str, np.ndarray]] = {}
+    for role, tiled_input in tiled_inputs:
+        variant_id = str(tiled_input.variant_id)
+        if str(role) != "train":
+            continue
+        if str(tiled_input.tile_id) != str(train_tile_ids.get(variant_id, tiled_input.tile_id)):
+            continue
+        matrix = np.asarray(tiled_input.state_matrix, dtype=float)
+        reference[variant_id] = {
+            "mean": np.mean(matrix, axis=0),
+            "std": np.std(matrix, axis=0, ddof=0),
+        }
+    return reference
+
+
+def build_phase64_feature_diagnostics(
+    tiled_inputs: Sequence[tuple[str, object]],
+    train_tile_ids: Mapping[str, str],
+) -> dict[str, list[dict[str, object]]]:
+    train_reference = _train_feature_reference(tiled_inputs, train_tile_ids)
+    feature_rows: list[dict[str, object]] = []
+    rank_rows: list[dict[str, object]] = []
+    for tile_role, tiled_input in tiled_inputs:
+        variant_id = str(tiled_input.variant_id)
+        matrix = np.asarray(tiled_input.state_matrix, dtype=float)
+        train_stats = train_reference.get(variant_id)
+        if train_stats is None:
+            train_mean = np.mean(matrix, axis=0)
+            train_std = np.std(matrix, axis=0, ddof=0)
+        else:
+            train_mean = train_stats["mean"]
+            train_std = train_stats["std"]
+        safe_train_std = np.where(train_std > 1.0e-12, train_std, np.nan)
+        z_shift_values: list[float] = []
+        std_values: list[float] = []
+        mean_scale_values: list[float] = []
+        zero_variance_count = 0
+        for feature_index, feature_name in enumerate(tiled_input.feature_columns):
+            values = matrix[:, feature_index]
+            dist = _feature_distribution(values)
+            feature_std = float(dist["std"])
+            if feature_std <= 1.0e-12:
+                zero_variance_count += 1
+            else:
+                std_values.append(feature_std)
+            train_std_value = float(train_std[feature_index])
+            z_shift = 0.0
+            if train_std_value > 1.0e-12:
+                z_shift = (float(dist["mean"]) - float(train_mean[feature_index])) / train_std_value
+                z_shift_values.append(abs(z_shift))
+            median_non_zero_std = max(float(np.nanmedian(safe_train_std)), 1.0e-12)
+            mean_scale_values.append(abs(float(dist["mean"])) / median_non_zero_std)
+            feature_rows.append(
+                {
+                    "variant_id": variant_id,
+                    "tile_role": str(tile_role),
+                    "tile_id": str(tiled_input.tile_id),
+                    "feature_index": int(feature_index),
+                    "feature_name": str(feature_name),
+                    **dist,
+                    "train_mean": _round_float(train_mean[feature_index]),
+                    "train_std": _round_float(train_std_value),
+                    "eval_mean_z_shift": _round_float(z_shift),
+                    "zero_variance": bool(feature_std <= 1.0e-12),
+                    "claim_boundary": PHASE64_CLAIM_BOUNDARY,
+                }
+            )
+        non_zero_std = [value for value in std_values if value > 1.0e-12]
+        std_ratio = max(non_zero_std) / min(non_zero_std) if non_zero_std else 0.0
+        mean_scale_ratio = max(mean_scale_values) if mean_scale_values else 0.0
+        max_z_shift = max(z_shift_values) if z_shift_values else 0.0
+        rank_stats = _effective_rank_stats(matrix)
+        scale_flag = (
+            std_ratio >= PHASE64_STD_RATIO_THRESHOLD
+            or mean_scale_ratio >= PHASE64_MEAN_SCALE_RATIO_THRESHOLD
+        )
+        shift_flag = max_z_shift >= PHASE64_Z_SHIFT_THRESHOLD
+        rank_flag = (
+            rank_stats["effective_rank_fraction"] <= PHASE64_EFFECTIVE_RANK_FRACTION_THRESHOLD
+            or rank_stats["pc1_variance_share"] >= PHASE64_PC1_SHARE_THRESHOLD
+        )
+        rank_rows.append(
+            {
+                "variant_id": variant_id,
+                "tile_role": str(tile_role),
+                "tile_id": str(tiled_input.tile_id),
+                "n_blocks": int(matrix.shape[0]),
+                "n_features": int(matrix.shape[1]),
+                "zero_variance_feature_count": int(zero_variance_count),
+                "std_ratio": _round_float(std_ratio),
+                "mean_scale_ratio": _round_float(mean_scale_ratio),
+                "max_train_eval_abs_z_shift": _round_float(max_z_shift),
+                **rank_stats,
+                "scale_flag": bool(scale_flag),
+                "shift_flag": bool(shift_flag),
+                "rank_flag": bool(rank_flag),
+                "claim_boundary": PHASE64_CLAIM_BOUNDARY,
+            }
+        )
+    return {
+        "feature_scale_rows": feature_rows,
+        "feature_effective_rank_rows": rank_rows,
+    }

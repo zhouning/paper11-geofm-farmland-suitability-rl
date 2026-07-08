@@ -222,3 +222,74 @@ def test_phase64_oracle_rank_gap_reports_missed_blocks_and_rank_losses():
     assert row["missed_oracle_block_ids"] == "b2;b4"
     assert row["worst_selected_rank"] == 4
     assert row["selected_outside_top_eval_max_steps"] == 1
+    assert row["selected_outside_top16"] == 0
+    assert row["selected_outside_top32"] == 0
+    assert row["reward_loss_from_missed_oracle"] > 0.0
+
+
+def _matrix_tiled_input(matrix, variant_id="D4P8", tile_id="tile_train"):
+    from paper11_geofm.tiled_inputs import TiledVariantInput
+
+    feature_columns = tuple(f"feature_{index:02d}" for index in range(np.asarray(matrix).shape[1]))
+    block_ids = tuple(f"b{index}" for index in range(np.asarray(matrix).shape[0]))
+    return TiledVariantInput(
+        tile_id=tile_id,
+        variant_id=variant_id,
+        block_ids=block_ids,
+        feature_columns=feature_columns,
+        state_matrix=np.asarray(matrix, dtype=np.float32),
+        reward_mode="base_planning_reward",
+        state_groups=("synthetic",),
+        source_table=Path(f"variant_{variant_id}_features.csv"),
+        tile_index_csv=Path("tiles.csv"),
+    )
+
+
+def test_phase64_feature_diagnostics_detect_scale_shift_and_low_rank():
+    from paper11_geofm.phase64_set_policy_error_diagnosis import (
+        build_phase64_feature_diagnostics,
+    )
+
+    train = _matrix_tiled_input(
+        [
+            [1.0, 10.0, 0.0],
+            [2.0, 20.0, 0.0],
+            [3.0, 30.0, 0.0],
+            [4.0, 40.0, 0.0],
+        ],
+        variant_id="D4P8",
+        tile_id="tile_train",
+    )
+    eval_tile = _matrix_tiled_input(
+        [
+            [11.0, 100.0, 0.0],
+            [12.0, 120.0, 0.0],
+        ],
+        variant_id="D4P8",
+        tile_id="tile_eval",
+    )
+
+    diagnostics = build_phase64_feature_diagnostics(
+        [("train", train), ("eval", eval_tile)],
+        {"D4P8": "tile_train"},
+    )
+
+    feature_rows = diagnostics["feature_scale_rows"]
+    rank_rows = diagnostics["feature_effective_rank_rows"]
+    assert len(feature_rows) == 6
+    train_feature0 = [
+        row for row in feature_rows
+        if row["tile_role"] == "train" and row["feature_name"] == "feature_00"
+    ][0]
+    assert train_feature0["mean"] == 2.5
+    assert train_feature0["zero_variance"] is False
+    eval_feature0 = [
+        row for row in feature_rows
+        if row["tile_role"] == "eval" and row["feature_name"] == "feature_00"
+    ][0]
+    assert eval_feature0["eval_mean_z_shift"] > 3.0
+
+    eval_rank = [row for row in rank_rows if row["tile_role"] == "eval"][0]
+    assert eval_rank["zero_variance_feature_count"] == 1
+    assert eval_rank["rank_flag"] is True
+    assert eval_rank["shift_flag"] is True
