@@ -88,7 +88,10 @@ base-reward protocol.
   experiment showing that explicit per-block scoring plus deterministic
   behavior cloning improves base-reward block selection over the flattened PPO
   route, while GeoFM-derived variants are not distinguished from B0.
-
+- `30_phase64_set_policy_error_diagnosis.md`: set-policy error diagnosis and
+  standardization gate using Phase 63 behavior-cloned rollout, oracle summary,
+  training-history, and feature-scale artifacts to decide whether standardized
+  set-policy BC is the next justified algorithm experiment.
 ## Reproduction Link
 
 Run the diagnostic from the repository root after the Phase 11/13 real Bishan
@@ -513,6 +516,11 @@ and D4/D6 mean delta is `-0.0479468867` (`7 / 30` positive). This supports
 continuing algorithm/model work before manuscript revision, without reviving a
 GeoFM-specific or PCA-optimality claim.
 
+Phase 64 keeps the work in algorithm/experiment mode. It does not retrain a
+policy. It reads Phase 63 set-policy artifacts, diagnoses selected-block
+overlap, oracle-rank gaps, training convergence, and feature scale/effective
+rank, then records a standardization gate decision in
+`30_phase64_set_policy_error_diagnosis.md`.
 ## Claim Boundary
 
 These representation-branch follow-ups are diagnostic only. They do not enable

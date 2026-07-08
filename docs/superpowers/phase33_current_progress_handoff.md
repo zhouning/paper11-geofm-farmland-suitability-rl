@@ -1759,3 +1759,37 @@ itself: audit why B0 remains slightly ahead of D4/D6 under BC rollout, add
 feature standardization or reward-aware per-block labels if justified, and only
 then consider optional PPO fine-tuning as a later Phase 64.
 ```
+
+## Phase 64 Set-Policy Error Diagnosis and Standardization Gate - 2026-07-08
+
+- Branch: `main`
+- Formal manuscript files changed: no
+- Implementation module: `src/paper11_geofm/phase64_set_policy_error_diagnosis.py`
+- Runner: `experiments/phase64_set_policy_error_diagnosis/run_phase64_set_policy_error_diagnosis.py`
+- Tests: `tests/test_phase64_set_policy_error_diagnosis.py`
+- Evidence document: `paper/phase28_results/30_phase64_set_policy_error_diagnosis.md`
+- Generated output directory: `experiments/phase64_set_policy_error_diagnosis/outputs/phase52_full5_seed3`
+- Phase 64 status: `standardization_route_supported`
+- Standardized rerun recommended: `True`
+- Gate reason: `D4/D6 underperformance coincides with feature scale, shift, or rank flags.`
+- Gate evidence: `{'mean_best_top1_accuracy': 0.9916666667, 'mean_best_topk_hit_rate': 1.0, 'd4_underperformance': True, 'scale_flag_count': 24, 'shift_flag_count': 0, 'rank_flag_count': 24}`
+- Claim boundary: base-reward diagnostic evidence only; no new policy training, no suitability reward, no B2/B3, no transfer, no GeoFM-advantage claim, no PCA-optimality claim, no formal submission-level performance claim.
+
+Real Phase 64 command used locally:
+
+```powershell
+D:\adk\.venv\Scripts\python.exe experiments\phase64_set_policy_error_diagnosis\run_phase64_set_policy_error_diagnosis.py --phase63-comparison-json experiments\phase63_set_policy_oracle_pretraining\outputs\phase52_full5_seed3\phase63_set_policy_comparison.json --phase63-rollout-csv experiments\phase63_set_policy_oracle_pretraining\outputs\phase52_full5_seed3\phase63_bc_rollout_summary.csv --phase63-history-csv experiments\phase63_set_policy_oracle_pretraining\outputs\phase52_full5_seed3\phase63_bc_training_history.csv --phase63-oracle-summary-csv experiments\phase63_set_policy_oracle_pretraining\outputs\phase52_full5_seed3\phase63_oracle_summary.csv --output-dir experiments\phase64_set_policy_error_diagnosis\outputs\phase52_full5_seed3
+```
+
+Interpretation update:
+
+```text
+Phase 64 supports a train-tile-fitted standardized set-policy BC rerun as the
+next algorithm experiment. The gate is not based on weak behavior cloning:
+mean best top-1 accuracy is 0.9916666667 and mean best top-k hit rate is 1.0.
+The reason is that Phase 63 D4/D6 underperformance coincides with feature-scale
+or effective-rank flags: scale flag count 24, rank flag count 24, shift flag
+count 0. This does not revive a GeoFM advantage claim; it only justifies testing
+whether feature standardization removes a conditioning bottleneck under the
+same base-reward set-policy route.
+```
