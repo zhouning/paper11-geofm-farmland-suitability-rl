@@ -278,3 +278,89 @@ def test_phase59_writer_outputs_json_summary_delta_and_markdown(tmp_path):
     markdown = paths["readiness_md"].read_text(encoding="utf-8")
     assert "Matched-dimension control audit" in markdown
     assert "does not enable suitability reward" in markdown
+
+
+def test_phase59_contract_routes_d4p_and_d5_variants(tmp_path):
+    from paper11_geofm.phase59_matched_dimension_controls import (
+        build_phase59_matched_dimension_control_contract,
+    )
+
+    tile_index = _write_csv(
+        tmp_path / "tiles.csv",
+        [
+            {"tile_id": "tile_train", "block_ids": "b1;b2;b3;b4"},
+            {"tile_id": "tile_a", "block_ids": "b1;b2"},
+            {"tile_id": "tile_b", "block_ids": "b3;b4"},
+        ],
+    )
+    contract = build_phase59_matched_dimension_control_contract(
+        phase8_output_dir=tmp_path / "phase8",
+        phase59_control_dir=tmp_path / "phase59_controls",
+        tile_index_csv=tile_index,
+        train_tile_id="tile_train",
+        eval_tile_ids="tile_a,tile_b",
+        total_timesteps=4096,
+        eval_max_steps=8,
+        seeds="0,1",
+    )
+
+    assert contract["variants"] == ["D4P8", "D4P16", "D5R8", "D5S8", "D5R16", "D5S16"]
+    assert contract["variant_source_dirs"]["D4P8"].endswith("phase8")
+    assert contract["variant_source_dirs"]["D5S16"].endswith("phase59_controls")
+    assert contract["eval_tile_ids"] == ["tile_a", "tile_b"]
+    assert contract["seeds"] == [0, 1]
+
+
+def test_phase59_cli_build_controls_and_analyze_only(tmp_path, capsys):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase59_matched_dimension_controls"
+        / "run_phase59_matched_dimension_controls.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase59_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    build_exit = module.main(
+        [
+            "--mode",
+            "build-controls",
+            "--b0-features-csv",
+            str(_write_csv(tmp_path / "b0.csv", _b0_rows())),
+            "--d4p8-features-csv",
+            str(_write_csv(tmp_path / "d4p8.csv", _d4p8_rows())),
+            "--d4p16-features-csv",
+            str(_write_csv(tmp_path / "d4p16.csv", _d4p16_rows())),
+            "--output-dir",
+            str(tmp_path / "controls"),
+            "--seed",
+            "59",
+        ]
+    )
+    assert build_exit == 0
+    assert (tmp_path / "controls" / "experiment_variants.json").exists()
+
+    summary_csv = _write_csv(tmp_path / "summary.csv", _phase59_summary_rows("supported"))
+    analyze_exit = module.main(
+        [
+            "--mode",
+            "analyze-only",
+            "--existing-summary-csv",
+            str(summary_csv),
+            "--output-dir",
+            str(tmp_path / "analysis"),
+            "--eval-tile-ids",
+            "tile_a,tile_b",
+            "--seeds",
+            "0,1",
+            "--bootstrap-iterations",
+            "100",
+        ]
+    )
+
+    stdout = capsys.readouterr().out
+    assert analyze_exit == 0
+    assert "Phase 59 matched-dimension status: matched_dimension_geofm_supported" in stdout
+    assert "phase59_matched_dimension_controls.json" in stdout

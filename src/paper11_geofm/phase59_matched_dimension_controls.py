@@ -13,7 +13,18 @@ from pathlib import Path
 import numpy as np
 
 from .block_schema import EXPLICIT_FEATURE_COLUMNS
-from .padded_heldout_policy import SUMMARY_FIELDNAMES
+from .padded_heldout_policy import (
+    SUMMARY_FIELDNAMES,
+    Phase25PaddedTileEnv,
+    _dependency_metadata,
+    _evaluate_baseline_policy,
+    _evaluate_trained_policy,
+    _normalize_seeds,
+    _select_train_eval_tiles,
+    _store_trace,
+)
+from .phase28_representation_controls import _train_maskable_ppo_model
+from .tiled_inputs import load_tiled_variant_input
 
 
 PHASE59_CLAIM_BOUNDARY = (
@@ -1064,3 +1075,205 @@ def _json_ready(value: object) -> object:
     if isinstance(value, Path):
         return str(value)
     return value
+
+
+
+def build_phase59_matched_dimension_control_contract(
+    phase8_output_dir: Path | str,
+    phase59_control_dir: Path | str,
+    tile_index_csv: Path | str,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 5,
+    total_timesteps: int = 4096,
+    eval_max_steps: int = 8,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+) -> dict[str, object]:
+    if int(total_timesteps) <= 0:
+        raise ValueError("total_timesteps must be positive")
+    if int(eval_max_steps) <= 0:
+        raise ValueError("eval_max_steps must be positive")
+    normalized_seeds = _normalize_seeds(seeds)
+    selected = _select_train_eval_tiles(
+        Path(tile_index_csv),
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+    )
+    eval_ids = list(selected["eval_tile_ids"])
+    selected_counts = dict(selected["selected_tile_block_counts"])
+    max_blocks = max(int(selected_counts[tile_id]) for tile_id in selected_counts)
+    train_id = str(selected["train_tile_id"])
+    return {
+        "phase": "phase59_matched_dimension_control_evaluation",
+        "phase8_output_dir": str(Path(phase8_output_dir)),
+        "phase59_control_dir": str(Path(phase59_control_dir)),
+        "tile_index_csv": str(Path(tile_index_csv)),
+        "variants": list(PHASE59_REQUIRED_VARIANTS),
+        "variant_source_dirs": {
+            "D4P8": str(Path(phase8_output_dir)),
+            "D4P16": str(Path(phase8_output_dir)),
+            "D5R8": str(Path(phase59_control_dir)),
+            "D5S8": str(Path(phase59_control_dir)),
+            "D5R16": str(Path(phase59_control_dir)),
+            "D5S16": str(Path(phase59_control_dir)),
+        },
+        "train_tile_id": train_id,
+        "train_tile_ids": [train_id],
+        "eval_tile_ids": eval_ids,
+        "eval_tile_count": len(eval_ids),
+        "eval_tile_ranks": {
+            str(tile_id): rank for rank, tile_id in enumerate(eval_ids, start=1)
+        },
+        "selected_tile_block_counts": selected_counts,
+        "train_tile_selection": selected["train_tile_selection"],
+        "eval_tile_selection": selected["eval_tile_selection"],
+        "max_blocks": int(max_blocks),
+        "total_timesteps": int(total_timesteps),
+        "eval_max_steps": int(eval_max_steps),
+        "seeds": normalized_seeds,
+        "seed_count": len(normalized_seeds),
+        "seed_ranks": {
+            str(seed): rank for rank, seed in enumerate(normalized_seeds, start=1)
+        },
+        "claim_boundary": PHASE59_CLAIM_BOUNDARY,
+    }
+
+
+def run_phase59_matched_dimension_control_evaluation(
+    phase8_output_dir: Path | str,
+    phase59_control_dir: Path | str,
+    tile_index_csv: Path | str,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 5,
+    total_timesteps: int = 4096,
+    eval_max_steps: int = 8,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+    bootstrap_iterations: int = 5000,
+    random_seed: int = 59,
+) -> dict[str, object]:
+    contract = build_phase59_matched_dimension_control_contract(
+        phase8_output_dir=phase8_output_dir,
+        phase59_control_dir=phase59_control_dir,
+        tile_index_csv=tile_index_csv,
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+        total_timesteps=total_timesteps,
+        eval_max_steps=eval_max_steps,
+        seeds=seeds,
+    )
+    summaries: list[dict[str, object]] = []
+    traces: dict[str, dict[str, dict[str, dict[str, list[dict[str, object]]]]]] = {
+        "trained_policy": {},
+        "first_valid": {},
+        "seeded_random": {},
+    }
+    train_n_blocks = int(
+        contract["selected_tile_block_counts"][str(contract["train_tile_id"])]
+    )
+    for variant_id in contract["variants"]:
+        for seed in contract["seeds"]:
+            train_tiled = _load_phase59_tiled_variant_input(
+                contract,
+                str(contract["train_tile_id"]),
+                str(variant_id),
+            )
+            train_env = Phase25PaddedTileEnv(
+                train_tiled,
+                max_blocks=int(contract["max_blocks"]),
+                max_steps=int(contract["total_timesteps"]),
+            )
+            train_env.reset(seed=int(seed))
+            model = _train_maskable_ppo_model(
+                train_env,
+                seed=int(seed),
+                total_timesteps=int(contract["total_timesteps"]),
+            )
+            for eval_tile_id in contract["eval_tile_ids"]:
+                eval_tiled = _load_phase59_tiled_variant_input(
+                    contract,
+                    str(eval_tile_id),
+                    str(variant_id),
+                )
+                eval_tile_rank = int(contract["eval_tile_ranks"][str(eval_tile_id)])
+                seed_rank = int(contract["seed_ranks"][str(int(seed))])
+                trained_summary, trained_steps = _evaluate_trained_policy(
+                    model,
+                    eval_tiled,
+                    train_tile_id=str(contract["train_tile_id"]),
+                    train_n_blocks=train_n_blocks,
+                    max_blocks=int(contract["max_blocks"]),
+                    eval_tile_rank=eval_tile_rank,
+                    phase25_seed_rank=seed_rank,
+                    eval_max_steps=int(contract["eval_max_steps"]),
+                    train_timesteps=int(contract["total_timesteps"]),
+                    seed=int(seed),
+                )
+                trained_summary["claim_boundary"] = PHASE59_CLAIM_BOUNDARY
+                summaries.append(trained_summary)
+                _store_trace(
+                    traces,
+                    "trained_policy",
+                    str(variant_id),
+                    str(eval_tile_id),
+                    int(seed),
+                    trained_steps,
+                )
+                for policy_id in ("first_valid", "seeded_random"):
+                    baseline_summary, baseline_steps = _evaluate_baseline_policy(
+                        eval_tiled,
+                        policy_id=policy_id,
+                        train_tile_id=str(contract["train_tile_id"]),
+                        train_n_blocks=train_n_blocks,
+                        max_blocks=int(contract["max_blocks"]),
+                        eval_tile_rank=eval_tile_rank,
+                        phase25_seed_rank=seed_rank,
+                        eval_max_steps=int(contract["eval_max_steps"]),
+                        train_timesteps=int(contract["total_timesteps"]),
+                        seed=int(seed),
+                    )
+                    baseline_summary["claim_boundary"] = PHASE59_CLAIM_BOUNDARY
+                    summaries.append(baseline_summary)
+                    _store_trace(
+                        traces,
+                        policy_id,
+                        str(variant_id),
+                        str(eval_tile_id),
+                        int(seed),
+                        baseline_steps,
+                    )
+    analysis = build_phase59_matched_dimension_control_analysis(
+        summaries,
+        metadata={
+            "eval_tile_ids": contract["eval_tile_ids"],
+            "seeds": contract["seeds"],
+        },
+        bootstrap_iterations=int(bootstrap_iterations),
+        random_seed=int(random_seed),
+    )
+    analysis["contract"] = contract
+    analysis["summaries"] = summaries
+    analysis["traces"] = traces
+    analysis["dependencies"] = _dependency_metadata()
+    return analysis
+
+
+def _load_phase59_tiled_variant_input(
+    contract: Mapping[str, object],
+    tile_id: str,
+    variant_id: str,
+):
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 59 contract is missing variant source routing")
+    source_dir = variant_source_dirs.get(variant_id)
+    if source_dir is None:
+        raise ValueError(f"Phase 59 contract has no source for variant {variant_id}")
+    return load_tiled_variant_input(
+        source_dir,
+        str(contract["tile_index_csv"]),
+        tile_id,
+        variant_id=variant_id,
+    )
