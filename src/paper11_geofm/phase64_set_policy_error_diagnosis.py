@@ -847,3 +847,99 @@ def write_phase64_artifacts(
     )
     paths["diagnosis_md"].write_text(_phase64_markdown(analysis), encoding="utf-8")
     return paths
+
+
+def _contract_tiled_inputs(contract: Mapping[str, object]) -> list[tuple[str, object]]:
+    variant_source_dirs = contract.get("variant_source_dirs", {})
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 63 contract is missing variant_source_dirs")
+    variants = [str(value) for value in contract.get("variants", [])]
+    train_tile_id = str(contract.get("train_tile_id", ""))
+    eval_tile_ids = [str(value) for value in contract.get("eval_tile_ids", [])]
+    tile_index_csv = str(contract.get("tile_index_csv", ""))
+    tiled_inputs: list[tuple[str, object]] = []
+    for variant_id in variants:
+        source_dir = variant_source_dirs.get(variant_id)
+        if source_dir is None:
+            raise ValueError(f"Phase 63 contract has no source for variant {variant_id}")
+        tiled_inputs.append(
+            (
+                "train",
+                load_tiled_variant_input(
+                    source_dir,
+                    tile_index_csv,
+                    train_tile_id,
+                    variant_id=variant_id,
+                ),
+            )
+        )
+        for eval_tile_id in eval_tile_ids:
+            tiled_inputs.append(
+                (
+                    "eval",
+                    load_tiled_variant_input(
+                        source_dir,
+                        tile_index_csv,
+                        eval_tile_id,
+                        variant_id=variant_id,
+                    ),
+                )
+            )
+    return tiled_inputs
+
+
+def _tiled_input_index(tiled_inputs: Sequence[tuple[str, object]]) -> dict[tuple[str, str], object]:
+    return {
+        (str(tiled_input.variant_id), str(tiled_input.tile_id)): tiled_input
+        for _role, tiled_input in tiled_inputs
+    }
+
+
+def run_phase64_set_policy_error_diagnosis(
+    phase63_comparison_json: Path | str,
+    phase63_rollout_csv: Path | str,
+    phase63_history_csv: Path | str,
+    phase63_oracle_summary_csv: Path | str,
+) -> dict[str, object]:
+    comparison = _load_json_object(phase63_comparison_json, "Phase 63 comparison JSON")
+    contract = comparison.get("contract")
+    if not isinstance(contract, Mapping):
+        raise ValueError("Phase 63 comparison JSON is missing contract metadata")
+    train_tile_id = str(contract.get("train_tile_id", ""))
+    variants = [str(value) for value in contract.get("variants", [])]
+    train_tile_ids = {variant_id: train_tile_id for variant_id in variants}
+    tiled_inputs = _contract_tiled_inputs(contract)
+    tiled_index = _tiled_input_index(tiled_inputs)
+    convergence_rows = build_phase64_convergence_summary(phase63_history_csv)
+    overlap_rows = build_phase64_rollout_overlap(phase63_rollout_csv, phase63_oracle_summary_csv)
+    oracle_rank_gap_rows = build_phase64_oracle_rank_gap(phase63_rollout_csv, tiled_index)
+    feature_diagnostics = build_phase64_feature_diagnostics(tiled_inputs, train_tile_ids)
+    standardization_gate = build_phase64_standardization_gate(
+        comparison,
+        convergence_rows,
+        feature_diagnostics["feature_effective_rank_rows"],
+    )
+    failure_case_rows = build_phase64_failure_cases(
+        comparison,
+        overlap_rows,
+        oracle_rank_gap_rows,
+        convergence_rows,
+        feature_diagnostics["feature_effective_rank_rows"],
+    )
+    return {
+        "phase": "phase64_set_policy_error_diagnosis",
+        "phase63_comparison_json": str(Path(phase63_comparison_json)),
+        "phase63_rollout_csv": str(Path(phase63_rollout_csv)),
+        "phase63_history_csv": str(Path(phase63_history_csv)),
+        "phase63_oracle_summary_csv": str(Path(phase63_oracle_summary_csv)),
+        "contract": dict(contract),
+        "phase63_comparison": comparison,
+        "convergence_rows": convergence_rows,
+        "overlap_rows": overlap_rows,
+        "oracle_rank_gap_rows": oracle_rank_gap_rows,
+        "feature_scale_rows": feature_diagnostics["feature_scale_rows"],
+        "feature_effective_rank_rows": feature_diagnostics["feature_effective_rank_rows"],
+        "failure_case_rows": failure_case_rows,
+        "standardization_gate": standardization_gate,
+        "claim_boundary": PHASE64_CLAIM_BOUNDARY,
+    }

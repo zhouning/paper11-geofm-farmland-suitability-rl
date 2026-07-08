@@ -466,3 +466,125 @@ def test_phase64_writer_outputs_csv_json_and_markdown(tmp_path):
     markdown = paths["diagnosis_md"].read_text(encoding="utf-8")
     assert "Phase 64 Set-Policy Error Diagnosis" in markdown
     assert "standardization_route_supported" in markdown
+
+
+def _write_variant_fixture(output_dir: Path, variant_id: str, rows: list[dict[str, float]], columns: list[str]) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    table = output_dir / f"variant_{variant_id}_features.csv"
+    with table.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["block_id", *columns])
+        writer.writeheader()
+        for row in rows:
+            writer.writerow(row)
+    manifest = {
+        "variants": {
+            variant_id: {
+                "ready": True,
+                "feature_table": table.name,
+                "required_columns": columns,
+                "reward": "base_planning_reward",
+                "state_groups": ["synthetic"],
+            }
+        }
+    }
+    (output_dir / "experiment_variants.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+def test_phase64_run_wrapper_loads_phase63_artifacts_and_writes_analysis(tmp_path):
+    from paper11_geofm.phase64_set_policy_error_diagnosis import (
+        run_phase64_set_policy_error_diagnosis,
+    )
+
+    columns = _required_feature_columns()
+    feature_rows = [
+        {**{"block_id": "b1"}, **{column: 0.0 for column in columns}},
+        {**{"block_id": "b2"}, **{column: 0.0 for column in columns}},
+        {**{"block_id": "b3"}, **{column: 0.0 for column in columns}},
+    ]
+    feature_rows[0]["explicit_feature_16"] = 0.9
+    feature_rows[1]["explicit_feature_16"] = 0.8
+    feature_rows[2]["explicit_feature_16"] = 0.2
+    phase2 = tmp_path / "phase2"
+    _write_variant_fixture(phase2, "B0", feature_rows, list(columns))
+    tile_index = _write_csv(
+        tmp_path / "tiles.csv",
+        [
+            {"tile_id": "tile_train", "block_ids": "b1;b2;b3"},
+            {"tile_id": "tile_eval", "block_ids": "b1;b2;b3"},
+        ],
+    )
+    comparison = _comparison(d4_b0_mean=0.1, d4_d6_mean=0.1)
+    comparison["contract"] = {
+        "phase2_output_dir": str(phase2),
+        "phase8_output_dir": str(tmp_path / "phase8"),
+        "phase61_output_dir": str(tmp_path / "phase61"),
+        "tile_index_csv": str(tile_index),
+        "variant_source_dirs": {"B0": str(phase2)},
+        "variants": ["B0"],
+        "train_tile_id": "tile_train",
+        "eval_tile_ids": ["tile_eval"],
+        "seeds": [0],
+        "eval_max_steps": 2,
+    }
+    comparison_path = tmp_path / "comparison.json"
+    comparison_path.write_text(json.dumps(comparison), encoding="utf-8")
+    rollout_csv = _write_csv(tmp_path / "rollout.csv", [_rollout_row(selected="b1;b3", eval_max_steps=2)])
+    history_csv = _write_csv(
+        tmp_path / "history.csv",
+        [
+            _history_row("B0", 0, 1, loss=2.0, top1=0.0, topk=0.5),
+            _history_row("B0", 0, 2, loss=1.0, top1=0.5, topk=1.0),
+        ],
+    )
+    oracle_csv = _write_csv(tmp_path / "oracle.csv", [_oracle_row(selected="b1;b2", eval_max_steps=2)])
+
+    analysis = run_phase64_set_policy_error_diagnosis(
+        phase63_comparison_json=comparison_path,
+        phase63_rollout_csv=rollout_csv,
+        phase63_history_csv=history_csv,
+        phase63_oracle_summary_csv=oracle_csv,
+    )
+
+    assert analysis["phase"] == "phase64_set_policy_error_diagnosis"
+    assert len(analysis["convergence_rows"]) == 1
+    assert len(analysis["overlap_rows"]) == 1
+    assert len(analysis["oracle_rank_gap_rows"]) == 1
+    assert analysis["standardization_gate"]["phase64_status"] in {
+        "diagnostic_inconclusive",
+        "geofm_features_not_helpful_under_set_policy",
+        "standardization_route_supported",
+    }
+
+
+def test_phase64_cli_parser_accepts_required_inputs():
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase64_set_policy_error_diagnosis"
+        / "run_phase64_set_policy_error_diagnosis.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase64_runner_args", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    parser = module._build_parser()
+    args = parser.parse_args(
+        [
+            "--phase63-comparison-json",
+            "comparison.json",
+            "--phase63-rollout-csv",
+            "rollout.csv",
+            "--phase63-history-csv",
+            "history.csv",
+            "--phase63-oracle-summary-csv",
+            "oracle.csv",
+            "--output-dir",
+            "outputs",
+        ]
+    )
+
+    assert args.phase63_comparison_json == Path("comparison.json")
+    assert args.output_dir == Path("outputs")
