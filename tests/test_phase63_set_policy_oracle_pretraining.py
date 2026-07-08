@@ -131,3 +131,40 @@ def test_phase63_oracle_stops_at_eval_max_steps():
     assert trajectory["selected_block_ids"] == ["b1", "b2"]
     assert trajectory["episode_steps"] == 2
     assert trajectory["terminated"] is False
+
+
+def test_phase63_model_inputs_encode_valid_selected_and_available_masks():
+    from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+        build_phase63_model_inputs,
+    )
+
+    inputs = build_phase63_model_inputs(
+        _tiled_input(block_ids=("b1", "b2", "b3"), scores=(0.9, 0.4, 0.2)),
+        selected_indices=(1,),
+    )
+
+    assert inputs["block_features"].shape == (3, 9)
+    assert inputs["valid_mask"].tolist() == [True, True, True]
+    assert inputs["selected_mask"].tolist() == [False, True, False]
+    assert inputs["available_mask"].tolist() == [True, False, True]
+
+
+def test_phase63_set_policy_scorer_masks_selected_and_invalid_actions():
+    import torch
+    from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+        Phase63SetPolicyScorer,
+    )
+
+    torch.manual_seed(63)
+    model = Phase63SetPolicyScorer(n_features=9, hidden_dim=12)
+    block_features = torch.zeros((1, 4, 9), dtype=torch.float32)
+    valid_mask = torch.tensor([[True, True, False, False]])
+    selected_mask = torch.tensor([[False, True, False, False]])
+
+    logits = model(block_features, valid_mask, selected_mask)
+
+    assert logits.shape == (1, 4)
+    assert torch.isfinite(logits[0, 0])
+    assert logits[0, 1].item() < -1e8
+    assert logits[0, 2].item() < -1e8
+    assert logits[0, 3].item() < -1e8

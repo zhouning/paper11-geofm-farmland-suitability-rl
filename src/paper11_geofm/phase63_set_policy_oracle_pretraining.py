@@ -3,6 +3,10 @@ from __future__ import annotations
 from collections.abc import Sequence
 from pathlib import Path
 
+import numpy as np
+import torch
+from torch import nn
+
 from .padded_heldout_policy import _normalize_seeds, _select_train_eval_tiles
 from .planning_reward import compute_base_planning_reward_from_matrix_row
 
@@ -95,6 +99,119 @@ def build_phase63_set_policy_contract(
         "top_k": int(top_k),
         "claim_boundary": PHASE63_CLAIM_BOUNDARY,
     }
+
+
+def build_phase63_model_inputs(
+    tiled_input,
+    selected_indices: Sequence[int] = (),
+) -> dict[str, np.ndarray]:
+    n_blocks = len(tiled_input.block_ids)
+    selected = np.zeros(n_blocks, dtype=bool)
+    for index in selected_indices:
+        action_index = int(index)
+        if action_index < 0 or action_index >= n_blocks:
+            raise ValueError(f"Selected action out of range: {action_index}")
+        if selected[action_index]:
+            raise ValueError(f"Selected action repeated: {action_index}")
+        selected[action_index] = True
+    valid = np.ones(n_blocks, dtype=bool)
+    available = np.logical_and(valid, ~selected)
+    return {
+        "block_features": tiled_input.state_matrix.astype(np.float32, copy=True),
+        "valid_mask": valid,
+        "selected_mask": selected,
+        "available_mask": available,
+    }
+
+
+class Phase63SetPolicyScorer(nn.Module):
+    def __init__(self, n_features: int, hidden_dim: int = 64) -> None:
+        super().__init__()
+        if int(n_features) <= 0:
+            raise ValueError("n_features must be positive")
+        if int(hidden_dim) <= 0:
+            raise ValueError("hidden_dim must be positive")
+        self.n_features = int(n_features)
+        self.hidden_dim = int(hidden_dim)
+        self.block_encoder = nn.Sequential(
+            nn.Linear(self.n_features + 2, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
+        )
+        self.context_encoder = nn.Sequential(
+            nn.Linear((3 * self.n_features) + 3, self.hidden_dim),
+            nn.ReLU(),
+        )
+        self.scorer = nn.Sequential(
+            nn.Linear(2 * self.hidden_dim, self.hidden_dim),
+            nn.ReLU(),
+            nn.Linear(self.hidden_dim, 1),
+        )
+
+    def forward(
+        self,
+        block_features: torch.Tensor,
+        valid_mask: torch.Tensor,
+        selected_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        if block_features.ndim != 3:
+            raise ValueError("block_features must have shape [batch, blocks, features]")
+        if block_features.shape[-1] != self.n_features:
+            raise ValueError("block_features feature count does not match model")
+        valid = valid_mask.to(dtype=torch.bool, device=block_features.device)
+        selected = selected_mask.to(dtype=torch.bool, device=block_features.device)
+        available = torch.logical_and(valid, torch.logical_not(selected))
+        valid_f = valid.to(dtype=block_features.dtype).unsqueeze(-1)
+        selected_f = selected.to(dtype=block_features.dtype).unsqueeze(-1)
+        block_input = torch.cat([block_features, valid_f, selected_f], dim=-1)
+        block_encoded = self.block_encoder(block_input)
+        context = self._context_features(block_features, valid, selected, available)
+        context_encoded = self.context_encoder(context).unsqueeze(1)
+        context_encoded = context_encoded.expand(-1, block_features.shape[1], -1)
+        logits = self.scorer(
+            torch.cat([block_encoded, context_encoded], dim=-1)
+        ).squeeze(-1)
+        return logits.masked_fill(torch.logical_not(available), -1.0e9)
+
+    def _context_features(
+        self,
+        block_features: torch.Tensor,
+        valid_mask: torch.Tensor,
+        selected_mask: torch.Tensor,
+        available_mask: torch.Tensor,
+    ) -> torch.Tensor:
+        valid_mean = _masked_mean_tensor(block_features, valid_mask)
+        selected_mean = _masked_mean_tensor(block_features, selected_mask)
+        available_mean = _masked_mean_tensor(block_features, available_mask)
+        denom = torch.clamp(
+            valid_mask.sum(dim=1, keepdim=True).to(block_features.dtype),
+            min=1.0,
+        )
+        valid_fraction = valid_mask.to(block_features.dtype).mean(dim=1, keepdim=True)
+        selected_fraction = (
+            selected_mask.sum(dim=1, keepdim=True).to(block_features.dtype) / denom
+        )
+        available_fraction = (
+            available_mask.sum(dim=1, keepdim=True).to(block_features.dtype) / denom
+        )
+        return torch.cat(
+            [
+                valid_mean,
+                selected_mean,
+                available_mean,
+                valid_fraction,
+                selected_fraction,
+                available_fraction,
+            ],
+            dim=1,
+        )
+
+
+def _masked_mean_tensor(values: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+    weights = mask.to(dtype=values.dtype).unsqueeze(-1)
+    denom = torch.clamp(weights.sum(dim=1), min=1.0)
+    return (values * weights).sum(dim=1) / denom
 
 
 def build_phase63_oracle_trajectory(tiled_input, eval_max_steps: int) -> dict[str, object]:
