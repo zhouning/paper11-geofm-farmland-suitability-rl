@@ -225,3 +225,25 @@ def test_phase60_cli_run(tmp_path, capsys):
     assert exit_code == 0
     assert "Phase 60 attribution status: mechanism_claim_narrowed" in stdout
     assert "phase60_information_optimization_attribution.json" in stdout
+
+
+def test_phase60_accepts_real_phase53_top_level_summary_shape():
+    from paper11_geofm.phase60_information_optimization_attribution import (
+        build_phase60_information_optimization_attribution,
+    )
+
+    phase53 = {
+        "phase53_cluster_mean_status": "cluster_mean_support",
+        "mean_cluster_delta": 0.2921767818,
+        "exact_sign_flip_mean_p": 0.0196838379,
+    }
+    analysis = build_phase60_information_optimization_attribution(
+        phase48=_phase48(),
+        phase53=phase53,
+        phase57=_phase57(),
+        phase59=_phase59(),
+    )
+
+    axes = {row["axis_id"]: row for row in analysis["attribution_axes"]}
+    assert axes["cluster_level_robustness"]["axis_status"] == "supported"
+    assert analysis["phase60_attribution_status"] == "mechanism_claim_narrowed"

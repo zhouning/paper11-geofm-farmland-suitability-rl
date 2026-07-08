@@ -83,7 +83,7 @@ def _compressed_route_axis(phase48: Mapping[str, object]) -> dict[str, object]:
 
 
 def _cluster_robustness_axis(phase53: Mapping[str, object]) -> dict[str, object]:
-    summary = _required_mapping(phase53, "cluster_mean_summary")
+    summary = _phase53_summary(phase53)
     mean_delta = _required_float(summary, "mean_cluster_delta")
     p_value = _optional_float(summary.get("exact_sign_flip_mean_p"))
     status = str(phase53.get("phase53_cluster_mean_status", ""))
@@ -107,6 +107,12 @@ def _cluster_robustness_axis(phase53: Mapping[str, object]) -> dict[str, object]
         ),
     )
 
+
+def _phase53_summary(phase53: Mapping[str, object]) -> Mapping[str, object]:
+    summary = phase53.get("cluster_mean_summary")
+    if isinstance(summary, Mapping):
+        return summary
+    return phase53
 
 def _compressed_geometry_axis(phase57: Mapping[str, object]) -> dict[str, object]:
     geometry_rows = _required_list(phase57, "geometry_rows")
