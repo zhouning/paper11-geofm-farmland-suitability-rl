@@ -145,3 +145,203 @@ def build_phase64_convergence_summary(
             }
         )
     return output
+
+PHASE64_OVERLAP_FIELDNAMES = [
+    "variant_id",
+    "train_tile_id",
+    "eval_tile_id",
+    "seed",
+    "eval_max_steps",
+    "selected_overlap_count",
+    "selected_overlap_fraction",
+    "prefix_overlap_count",
+    "jaccard_similarity",
+    "duplicate_selection_count",
+    "invalid_action_count",
+    "bc_reward",
+    "oracle_total_reward",
+    "oracle_gap",
+    "oracle_gap_fraction",
+    "selected_block_ids",
+    "oracle_block_ids",
+    "missed_oracle_block_ids",
+    "extra_selected_block_ids",
+    "claim_boundary",
+]
+
+PHASE64_ORACLE_RANK_FIELDNAMES = [
+    "variant_id",
+    "eval_tile_id",
+    "seed",
+    "eval_max_steps",
+    "selected_rank_values",
+    "selected_reward_values",
+    "missed_oracle_block_ids",
+    "missed_oracle_rewards",
+    "reward_loss_from_missed_oracle",
+    "worst_selected_rank",
+    "selected_outside_top_eval_max_steps",
+    "selected_outside_top16",
+    "selected_outside_top32",
+    "claim_boundary",
+]
+
+
+def _phase64_row_key(row: Mapping[str, object]) -> tuple[str, str, int]:
+    return (
+        str(row.get("variant_id", "")),
+        str(row.get("eval_tile_id", row.get("tile_id", ""))),
+        _safe_int(row.get("seed")),
+    )
+
+
+def build_phase64_rollout_overlap(
+    rollout_rows_or_csv: Path | str | Sequence[Mapping[str, object]],
+    oracle_rows_or_csv: Path | str | Sequence[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    rollout_rows = (
+        _load_csv_rows(rollout_rows_or_csv, "Phase 63 rollout CSV")
+        if isinstance(rollout_rows_or_csv, (str, Path))
+        else [dict(row) for row in rollout_rows_or_csv]
+    )
+    oracle_rows = (
+        _load_csv_rows(oracle_rows_or_csv, "Phase 63 oracle summary CSV")
+        if isinstance(oracle_rows_or_csv, (str, Path))
+        else [dict(row) for row in oracle_rows_or_csv]
+    )
+    oracle_index = {
+        (
+            str(row.get("variant_id", "")),
+            str(row.get("tile_id", "")),
+            _safe_int(row.get("seed")),
+        ): row
+        for row in oracle_rows
+    }
+
+    output: list[dict[str, object]] = []
+    for rollout in rollout_rows:
+        key = _phase64_row_key(rollout)
+        oracle = oracle_index.get(key)
+        if oracle is None:
+            oracle_blocks: list[str] = []
+        else:
+            oracle_blocks = _split_semicolon_values(oracle.get("selected_block_ids"))
+        selected_blocks = _split_semicolon_values(rollout.get("selected_block_ids"))
+        selected_unique = set(selected_blocks)
+        oracle_set = set(oracle_blocks)
+        overlap = selected_unique.intersection(oracle_set)
+        union = selected_unique.union(oracle_set)
+        prefix_overlap = sum(
+            1
+            for left, right in zip(selected_blocks, oracle_blocks)
+            if left == right
+        )
+        duplicate_count = len(selected_blocks) - len(selected_unique)
+        missed = [block_id for block_id in oracle_blocks if block_id not in selected_unique]
+        extra = list(dict.fromkeys(block_id for block_id in selected_blocks if block_id not in oracle_set))
+        denom = max(len(oracle_blocks), 1)
+        output.append(
+            {
+                "variant_id": key[0],
+                "train_tile_id": str(rollout.get("train_tile_id", "")),
+                "eval_tile_id": key[1],
+                "seed": key[2],
+                "eval_max_steps": _safe_int(rollout.get("eval_max_steps")),
+                "selected_overlap_count": len(overlap),
+                "selected_overlap_fraction": _round_float(len(overlap) / denom),
+                "prefix_overlap_count": int(prefix_overlap),
+                "jaccard_similarity": _round_float(len(overlap) / max(len(union), 1)),
+                "duplicate_selection_count": int(duplicate_count),
+                "invalid_action_count": _safe_int(rollout.get("invalid_action_count")),
+                "bc_reward": _round_float(rollout.get("total_contract_reward")),
+                "oracle_total_reward": _round_float(rollout.get("oracle_total_reward")),
+                "oracle_gap": _round_float(rollout.get("oracle_gap")),
+                "oracle_gap_fraction": _round_float(rollout.get("oracle_gap_fraction")),
+                "selected_block_ids": ";".join(selected_blocks),
+                "oracle_block_ids": ";".join(oracle_blocks),
+                "missed_oracle_block_ids": ";".join(missed),
+                "extra_selected_block_ids": ";".join(extra),
+                "claim_boundary": PHASE64_CLAIM_BOUNDARY,
+            }
+        )
+    return output
+
+
+def _block_reward_ranking(tiled_input) -> list[dict[str, object]]:
+    rewards = [
+        compute_base_planning_reward_from_matrix_row(
+            tiled_input.feature_columns,
+            tiled_input.state_matrix[index],
+        )
+        for index in range(len(tiled_input.block_ids))
+    ]
+    ranked_indices = sorted(
+        range(len(tiled_input.block_ids)),
+        key=lambda index: (-rewards[index], str(tiled_input.block_ids[index]), index),
+    )
+    output: list[dict[str, object]] = []
+    for rank, index in enumerate(ranked_indices, start=1):
+        output.append(
+            {
+                "rank": rank,
+                "action_index": int(index),
+                "block_id": str(tiled_input.block_ids[index]),
+                "reward": _round_float(rewards[index]),
+            }
+        )
+    return output
+
+
+def build_phase64_oracle_rank_gap(
+    rollout_rows_or_csv: Path | str | Sequence[Mapping[str, object]],
+    tiled_inputs: Mapping[tuple[str, str], object],
+) -> list[dict[str, object]]:
+    rollout_rows = (
+        _load_csv_rows(rollout_rows_or_csv, "Phase 63 rollout CSV")
+        if isinstance(rollout_rows_or_csv, (str, Path))
+        else [dict(row) for row in rollout_rows_or_csv]
+    )
+    output: list[dict[str, object]] = []
+    ranking_cache: dict[tuple[str, str], list[dict[str, object]]] = {}
+    for rollout in rollout_rows:
+        variant_id, eval_tile_id, seed = _phase64_row_key(rollout)
+        input_key = (variant_id, eval_tile_id)
+        if input_key not in ranking_cache:
+            ranking_cache[input_key] = _block_reward_ranking(tiled_inputs[input_key])
+        ranking = ranking_cache[input_key]
+        by_block = {str(row["block_id"]): row for row in ranking}
+        eval_max_steps = _safe_int(rollout.get("eval_max_steps"))
+        oracle_top = [str(row["block_id"]) for row in ranking[:eval_max_steps]]
+        selected = _split_semicolon_values(rollout.get("selected_block_ids"))
+        selected_set = set(selected)
+        selected_rows = [by_block[block_id] for block_id in selected if block_id in by_block]
+        selected_ranks = [_safe_int(row["rank"]) for row in selected_rows]
+        selected_rewards = [_safe_float(row["reward"]) for row in selected_rows]
+        missed = [block_id for block_id in oracle_top if block_id not in selected_set]
+        missed_rewards = [_safe_float(by_block[block_id]["reward"]) for block_id in missed]
+        selected_non_oracle = [
+            row
+            for row in selected_rows
+            if _safe_int(row["rank"]) > eval_max_steps
+        ]
+        selected_non_oracle_rewards = [_safe_float(row["reward"]) for row in selected_non_oracle]
+        reward_loss = sum(missed_rewards) - sum(selected_non_oracle_rewards[: len(missed_rewards)])
+        output.append(
+            {
+                "variant_id": variant_id,
+                "eval_tile_id": eval_tile_id,
+                "seed": seed,
+                "eval_max_steps": eval_max_steps,
+                "selected_rank_values": ";".join(str(rank) for rank in selected_ranks),
+                "selected_reward_values": ";".join(str(_round_float(value)) for value in selected_rewards),
+                "missed_oracle_block_ids": ";".join(missed),
+                "missed_oracle_rewards": ";".join(str(_round_float(value)) for value in missed_rewards),
+                "reward_loss_from_missed_oracle": _round_float(max(reward_loss, 0.0)),
+                "worst_selected_rank": max(selected_ranks) if selected_ranks else 0,
+                "selected_outside_top_eval_max_steps": sum(1 for rank in selected_ranks if rank > eval_max_steps),
+                "selected_outside_top16": sum(1 for rank in selected_ranks if rank > 16),
+                "selected_outside_top32": sum(1 for rank in selected_ranks if rank > 32),
+                "claim_boundary": PHASE64_CLAIM_BOUNDARY,
+            }
+        )
+    return output
