@@ -6,7 +6,6 @@ import json
 import math
 from os import PathLike
 from pathlib import Path
-import statistics
 
 import numpy as np
 
@@ -476,3 +475,191 @@ def _json_ready(value: object) -> object:
     if isinstance(value, np.generic):
         return value.item()
     return value
+
+def write_phase61_d6_projection_control_artifacts(
+    protocol: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+
+    manifest = protocol.get("manifest")
+    summary = protocol.get("summary")
+    variant_tables = protocol.get("variant_tables")
+    geometry_rows = protocol.get("geometry_rows")
+    similarity_rows = protocol.get("similarity_rows")
+    if not isinstance(manifest, Mapping):
+        raise ValueError("Phase 61 protocol is missing manifest")
+    if not isinstance(summary, Mapping):
+        raise ValueError("Phase 61 protocol is missing summary")
+    if not isinstance(variant_tables, Mapping):
+        raise ValueError("Phase 61 protocol is missing variant tables")
+    if not isinstance(geometry_rows, list):
+        raise ValueError("Phase 61 protocol is missing geometry rows")
+    if not isinstance(similarity_rows, list):
+        raise ValueError("Phase 61 protocol is missing similarity rows")
+
+    manifest_variants = manifest.get("variants")
+    if not isinstance(manifest_variants, Mapping):
+        raise ValueError("Phase 61 manifest is missing variants")
+
+    paths: dict[str, Path] = {}
+    for variant_id, rows in variant_tables.items():
+        variant = manifest_variants[str(variant_id)]
+        if not isinstance(variant, Mapping):
+            raise ValueError(f"Phase 61 variant metadata must be an object: {variant_id}")
+        feature_table = variant.get("feature_table")
+        required_columns = variant.get("required_columns")
+        if not feature_table:
+            raise ValueError(f"Phase 61 variant has no feature table: {variant_id}")
+        if not isinstance(required_columns, list):
+            raise ValueError(f"Phase 61 variant has no required columns: {variant_id}")
+        path = output_path / str(feature_table)
+        _write_variant_csv(path, rows, [str(column) for column in required_columns])
+        paths[f"variant_{variant_id}"] = path
+
+    manifest_path = output_path / "experiment_variants.json"
+    feature_summary_path = output_path / "phase61_d6_projection_feature_summary.json"
+    geometry_json_path = output_path / "phase61_d6_projection_geometry.json"
+    geometry_csv_path = output_path / "phase61_d6_projection_geometry.csv"
+    similarity_csv_path = output_path / "phase61_d6_projection_similarity.csv"
+    readiness_md_path = output_path / "phase61_d6_projection_controls.md"
+
+    manifest_path.write_text(
+        json.dumps(_json_ready(manifest), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    feature_summary_path.write_text(
+        json.dumps(_json_ready(summary), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    geometry_payload = {
+        key: value
+        for key, value in dict(protocol).items()
+        if key not in {"variant_tables", "manifest"}
+    }
+    geometry_json_path.write_text(
+        json.dumps(_json_ready(geometry_payload), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    _write_csv_mapping_rows(
+        geometry_csv_path,
+        PHASE61_GEOMETRY_FIELDNAMES,
+        geometry_rows,
+        "geometry_rows",
+    )
+    _write_csv_mapping_rows(
+        similarity_csv_path,
+        PHASE61_SIMILARITY_FIELDNAMES,
+        similarity_rows,
+        "similarity_rows",
+    )
+    readiness_md_path.write_text(_phase61_readiness_markdown(protocol), encoding="utf-8")
+
+    paths.update(
+        {
+            "manifest": manifest_path,
+            "feature_summary": feature_summary_path,
+            "geometry_json": geometry_json_path,
+            "geometry_csv": geometry_csv_path,
+            "similarity_csv": similarity_csv_path,
+            "readiness_md": readiness_md_path,
+        }
+    )
+    return paths
+
+
+def _write_variant_csv(
+    path: Path,
+    rows: object,
+    required_columns: Sequence[str],
+) -> None:
+    if not isinstance(rows, list):
+        raise ValueError("Phase 61 variant table rows must be a list")
+    fieldnames = ["block_id", *required_columns]
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise ValueError("Phase 61 variant table rows must be objects")
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _write_csv_mapping_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: object,
+    row_key: str,
+) -> None:
+    if not isinstance(rows, list):
+        raise ValueError(f"Phase 61 protocol is missing {row_key}")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise ValueError(f"Phase 61 {row_key} rows must be objects")
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _phase61_readiness_markdown(protocol: Mapping[str, object]) -> str:
+    summary = protocol.get("summary")
+    if not isinstance(summary, Mapping):
+        summary = {}
+    geometry_rows = protocol.get("geometry_rows")
+    if not isinstance(geometry_rows, list):
+        geometry_rows = []
+    similarity_rows = protocol.get("similarity_rows")
+    if not isinstance(similarity_rows, list):
+        similarity_rows = []
+
+    lines = [
+        "# Phase 61 D6 GeoFM Projection Controls",
+        "",
+        f"Status: {protocol.get('phase61_d6_projection_status', '')}",
+        "",
+        "Conclusion:",
+        str(protocol.get("conclusion", "")),
+        "",
+        "Generated variants:",
+    ]
+    for variant_id in sorted(summary):
+        row = summary[variant_id]
+        if not isinstance(row, Mapping):
+            continue
+        lines.append(
+            "- "
+            f"{variant_id}: dimension={row.get('projection_dimension')}, "
+            f"type={row.get('projection_type')}, "
+            f"rows={row.get('row_count')}, "
+            f"table={row.get('feature_table')}"
+        )
+    lines.extend(["", "Geometry:"])
+    for row in geometry_rows:
+        if not isinstance(row, Mapping):
+            continue
+        lines.append(
+            "- "
+            f"{row.get('variant_id')}: retention={row.get('raw_variance_retention')}, "
+            f"effective_rank={row.get('effective_rank')}, "
+            f"variance={row.get('total_centered_variance')}"
+        )
+    lines.extend(["", "D4 similarity diagnostics:"])
+    for row in similarity_rows:
+        if not isinstance(row, Mapping):
+            continue
+        lines.append(
+            "- "
+            f"{row.get('variant_id')} vs {row.get('reference_variant_id')}: "
+            f"mean_abs_column_correlation={row.get('mean_abs_column_correlation')}"
+        )
+    lines.extend(
+        [
+            "",
+            "Claim boundary:",
+            str(protocol.get("claim_boundary", PHASE61_CLAIM_BOUNDARY)),
+            "",
+        ]
+    )
+    return "\n".join(lines)

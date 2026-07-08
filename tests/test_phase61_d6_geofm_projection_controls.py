@@ -131,3 +131,74 @@ def test_phase61_status_blocks_zero_variance_projection():
     )
 
     assert analysis["phase61_d6_projection_status"] == "d6_projection_controls_blocked"
+
+def test_phase61_writer_outputs_feature_manifest_geometry_and_markdown(tmp_path):
+    from paper11_geofm.phase61_d6_geofm_projection_controls import (
+        build_phase61_d6_projection_controls,
+        write_phase61_d6_projection_control_artifacts,
+    )
+
+    protocol = build_phase61_d6_projection_controls(
+        _b0_rows(),
+        _b1_rows(),
+        _d4p2_rows(),
+        _d4p3_rows(),
+        dimensions=(2, 3),
+        seed=61,
+    )
+    paths = write_phase61_d6_projection_control_artifacts(
+        protocol,
+        tmp_path / "outputs",
+    )
+
+    assert paths["manifest"].name == "experiment_variants.json"
+    assert paths["feature_summary"].name == "phase61_d6_projection_feature_summary.json"
+    assert paths["geometry_json"].name == "phase61_d6_projection_geometry.json"
+    assert paths["geometry_csv"].name == "phase61_d6_projection_geometry.csv"
+    assert paths["similarity_csv"].name == "phase61_d6_projection_similarity.csv"
+    assert paths["readiness_md"].name == "phase61_d6_projection_controls.md"
+    assert (tmp_path / "outputs" / "variant_D6R2_features.csv").exists()
+    assert (tmp_path / "outputs" / "variant_D6P3_features.csv").exists()
+
+    saved = json.loads(paths["geometry_json"].read_text(encoding="utf-8"))
+    assert saved["phase61_d6_projection_status"] == "d6_projection_controls_ready_for_training"
+    readiness_text = paths["readiness_md"].read_text(encoding="utf-8")
+    assert "does not train PPO policies" in readiness_text
+
+
+def test_phase61_cli_builds_and_audits_projection_controls(tmp_path, capsys):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase61_d6_geofm_projection_controls"
+        / "run_phase61_d6_geofm_projection_controls.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase61_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    exit_code = module.main(
+        [
+            "--b0-features-csv",
+            str(_write_csv(tmp_path / "b0.csv", _b0_rows())),
+            "--b1-features-csv",
+            str(_write_csv(tmp_path / "b1.csv", _b1_rows())),
+            "--d4p8-features-csv",
+            str(_write_csv(tmp_path / "d4p8.csv", _d4p2_rows())),
+            "--d4p16-features-csv",
+            str(_write_csv(tmp_path / "d4p16.csv", _d4p3_rows())),
+            "--output-dir",
+            str(tmp_path / "outputs"),
+            "--dimensions",
+            "2,3",
+            "--seed",
+            "61",
+        ]
+    )
+
+    stdout = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Phase 61 D6 projection status: d6_projection_controls_ready_for_training" in stdout
+    assert "phase61_d6_projection_geometry.json" in stdout
+    assert (tmp_path / "outputs" / "variant_D6R2_features.csv").exists()
