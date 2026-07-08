@@ -1692,3 +1692,70 @@ B2/B3, cross-region transfer, PCA optimality, independent agronomic suitability,
 or submission-level learned-policy claims. The next Paper11 work should remain
 focused on algorithm/model and experiment design before revising the formal
 manuscript.
+
+## Phase 63 Set-Policy Oracle Pretraining - 2026-07-08 15:33 +08:00
+
+Phase 63 was run on the current `main` branch as algorithm/model work. It trains
+a task-aware set-style block scorer from deterministic base-reward oracle
+trajectories and rolls the behavior-cloned policy out on the Phase 52 five-tile,
+three-seed Bishan base-reward protocol. No formal manuscript files were changed.
+
+Implementation and evidence files:
+
+```text
+src/paper11_geofm/phase63_set_policy_oracle_pretraining.py
+experiments/phase63_set_policy_oracle_pretraining/run_phase63_set_policy_oracle_pretraining.py
+tests/test_phase63_set_policy_oracle_pretraining.py
+paper/phase28_results/29_phase63_set_policy_oracle_pretraining.md
+experiments/phase63_set_policy_oracle_pretraining/outputs/phase52_full5_seed3/phase63_set_policy_comparison.json
+experiments/phase63_set_policy_oracle_pretraining/outputs/phase52_full5_seed3/phase63_bc_rollout_summary.csv
+experiments/phase63_set_policy_oracle_pretraining/outputs/phase52_full5_seed3/phase63_bc_training_history.csv
+experiments/phase63_set_policy_oracle_pretraining/outputs/phase52_full5_seed3/phase63_oracle_summary.csv
+experiments/phase63_set_policy_oracle_pretraining/outputs/phase52_full5_seed3/phase63_set_policy_delta_table.csv
+```
+
+Real Phase 63 command used locally:
+
+```powershell
+D:\adk\.venv\Scripts\python.exe experiments\phase63_set_policy_oracle_pretraining\run_phase63_set_policy_oracle_pretraining.py --mode run-and-analyze --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --phase61-output-dir experiments\phase61_d6_geofm_projection_controls\outputs\phase52_full5_seed3 --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --variants B0,D4P8,D4P16,D6R8,D6R16 --eval-tile-ids tile_r002_c003,tile_r005_c004,tile_r005_c003,tile_r000_c004,tile_r001_c004 --eval-max-steps 8 --seeds 0,1,2 --bc-epochs 80 --learning-rate 0.001 --hidden-dim 64 --top-k 3 --existing-flattened-summary-csvs experiments\phase52_expanded_cluster_replication\outputs\real_bishan_4096_5tiles\phase28_representation_control_summary.csv,experiments\phase62_d4_d6_matched_ppo\outputs\phase52_full5_seed3\phase62_d4_d6_matched_ppo_summary.csv --output-dir experiments\phase63_set_policy_oracle_pretraining\outputs\phase52_full5_seed3
+```
+
+Real Phase 63 status:
+
+```text
+architecture_improves_but_geofm_not_distinguished
+```
+
+Core Phase 63 values:
+
+```text
+coverage issues: missing 0, duplicate 0, unexpected 0
+architecture delta vs flattened PPO: mean 4.4387176072, positive 75 / 75, min 2.3454884885, max 6.0659705018
+D4/B0 set-policy delta: mean -0.0677835004, positive 10 / 30, min -0.5905151188, max 0.1363046136
+D4/D6 set-policy delta: mean -0.0479468867, positive 7 / 30, min -0.574438559, max 0.0775225301
+oracle gap fraction: mean 0.0882844088, positive 75 / 75, min 0.0177772236, max 0.2099909286
+mean BC reward by variant: B0 4.9556965601, D4P8 4.8935972062, D4P16 4.8822289094, D6R8 4.9472654273, D6R16 4.9244544652
+mean oracle reward by variant: all variants 5.3920694097
+```
+
+Interpretation update:
+
+```text
+Phase 63 supports changing the algorithm architecture before revising the
+manuscript: explicit per-block set-policy scoring plus deterministic oracle
+behavior cloning strongly improves over the current flattened padded MLP PPO
+route and keeps the average oracle gap below 0.1. It does not distinguish
+GeoFM-derived D4 variants from B0 or D6 under this protocol. Therefore Phase 63
+supports the architecture/training-signal bottleneck hypothesis, not a
+GeoFM-specific advantage, PCA optimality, suitability reward, B2/B3, transfer,
+or final submission-level planning-performance claims.
+```
+
+Recommended next algorithm/experiment step:
+
+```text
+Do not revise the formal manuscript yet. Next, strengthen the set-policy route
+itself: audit why B0 remains slightly ahead of D4/D6 under BC rollout, add
+feature standardization or reward-aware per-block labels if justified, and only
+then consider optional PPO fine-tuning as a later Phase 64.
+```

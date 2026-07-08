@@ -84,6 +84,10 @@ base-reward protocol.
 - `28_phase62_d4_d6_matched_ppo.md`: matched PPO training evaluation showing
   that D4P8/D4P16 do not outperform D6R8/D6R16 raw-B1 random orthonormal
   projection controls under the Phase 52 five-tile, three-seed protocol.
+- `29_phase63_set_policy_oracle_pretraining.md`: set-policy oracle-pretraining
+  experiment showing that explicit per-block scoring plus deterministic
+  behavior cloning improves base-reward block selection over the flattened PPO
+  route, while GeoFM-derived variants are not distinguished from B0.
 
 ## Reproduction Link
 
@@ -497,6 +501,17 @@ has mean delta `-0.0279096981` (`5 / 15` positive), D4P16 - D6R16 has mean
 signed-rank p `0.8793945312`. Phase 62 therefore does not support a
 PCA-specific D4 advantage over raw-B1 random orthonormal projections; it
 preserves the Phase 60 narrowed claim rather than strengthening it.
+
+Phase 63 then switches from representation-only diagnosis to algorithm/model
+work. It trains a set-style block scorer from deterministic base-reward oracle
+trajectories and rolls the behavior-cloned policy out on the same five held-out
+tiles and three seeds. The current status is
+`architecture_improves_but_geofm_not_distinguished`: the architecture improves
+over the flattened PPO baseline with mean delta `4.4387176072` and `75 / 75`
+positive rows, but D4/B0 mean delta is `-0.0677835004` (`10 / 30` positive)
+and D4/D6 mean delta is `-0.0479468867` (`7 / 30` positive). This supports
+continuing algorithm/model work before manuscript revision, without reviving a
+GeoFM-specific or PCA-optimality claim.
 
 ## Claim Boundary
 
