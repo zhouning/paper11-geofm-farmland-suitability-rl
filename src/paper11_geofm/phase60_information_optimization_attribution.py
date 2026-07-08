@@ -317,3 +317,121 @@ def _phase60_conclusion(status: str) -> str:
             "sufficiently supported by the required upstream axes."
         )
     return "Phase 60 conclusion: insufficient input evidence for attribution."
+
+
+def build_phase60_information_optimization_attribution_from_paths(
+    phase48_json: Path | str,
+    phase53_json: Path | str,
+    phase57_json: Path | str,
+    phase59_json: Path | str,
+) -> dict[str, object]:
+    paths = {
+        "phase48": str(Path(phase48_json)),
+        "phase53": str(Path(phase53_json)),
+        "phase57": str(Path(phase57_json)),
+        "phase59": str(Path(phase59_json)),
+    }
+    return build_phase60_information_optimization_attribution(
+        phase48=_load_json(phase48_json, "Phase 48 JSON"),
+        phase53=_load_json(phase53_json, "Phase 53 JSON"),
+        phase57=_load_json(phase57_json, "Phase 57 JSON"),
+        phase59=_load_json(phase59_json, "Phase 59 JSON"),
+        source_paths=paths,
+    )
+
+
+def write_phase60_information_optimization_attribution_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    comparison_path = output_path / "phase60_information_optimization_attribution.json"
+    axes_path = output_path / "phase60_attribution_axes.csv"
+    readiness_path = output_path / "phase60_information_optimization_attribution.md"
+
+    comparison_path.write_text(
+        json.dumps(_json_ready(dict(analysis)), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    _write_axes_csv(axes_path, analysis.get("attribution_axes"))
+    readiness_path.write_text(_phase60_markdown(analysis), encoding="utf-8")
+    return {
+        "comparison_json": comparison_path,
+        "axes_csv": axes_path,
+        "readiness_md": readiness_path,
+    }
+
+
+def _load_json(path_or_str: Path | str, label: str) -> dict[str, object]:
+    path = Path(path_or_str)
+    if not path.exists():
+        raise FileNotFoundError(f"Missing {label}: {path}")
+    value = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(value, dict):
+        raise ValueError(f"{label} must contain a JSON object")
+    return value
+
+
+def _write_axes_csv(path: Path, rows: object) -> None:
+    if not isinstance(rows, list):
+        raise ValueError("Phase 60 analysis is missing attribution_axes")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=PHASE60_AXIS_FIELDNAMES)
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise ValueError("Phase 60 attribution axis rows must be objects")
+            writer.writerow(
+                {field: row.get(field, "") for field in PHASE60_AXIS_FIELDNAMES}
+            )
+
+
+def _phase60_markdown(analysis: Mapping[str, object]) -> str:
+    axes = analysis.get("attribution_axes")
+    if not isinstance(axes, list):
+        axes = []
+    lines = [
+        "# Phase 60 Information-vs-Optimization Attribution",
+        "",
+        f"Status: {analysis.get('phase60_attribution_status', '')}",
+        "",
+        "Attribution conclusion:",
+        str(analysis.get("conclusion", "")),
+        "",
+        "Attribution axes:",
+    ]
+    for row in axes:
+        if not isinstance(row, Mapping):
+            continue
+        lines.append(
+            "- "
+            f"{row.get('axis_id')}: {row.get('axis_status')} "
+            f"({row.get('primary_metric')}={row.get('primary_value')}). "
+            f"{row.get('interpretation')}"
+        )
+    lines.extend(
+        [
+            "",
+            "Claim-boundary recommendation:",
+            str(analysis.get("claim_boundary_recommendation", "")),
+            "",
+            "Next-experiment recommendation:",
+            str(analysis.get("next_experiment_recommendation", "")),
+            "",
+            "Claim boundary:",
+            str(analysis.get("claim_boundary", PHASE60_CLAIM_BOUNDARY)),
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value

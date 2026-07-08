@@ -153,3 +153,75 @@ def test_phase60_reports_low_dimensional_route_uncertain():
     )
 
     assert analysis["phase60_attribution_status"] == "low_dimensional_route_uncertain"
+
+
+def test_phase60_writes_json_csv_and_markdown(tmp_path):
+    from paper11_geofm.phase60_information_optimization_attribution import (
+        build_phase60_information_optimization_attribution,
+        write_phase60_information_optimization_attribution_artifacts,
+    )
+
+    analysis = build_phase60_information_optimization_attribution(
+        phase48=_phase48(),
+        phase53=_phase53(),
+        phase57=_phase57(),
+        phase59=_phase59(),
+        source_paths={"phase48": "phase48.json"},
+    )
+    paths = write_phase60_information_optimization_attribution_artifacts(
+        analysis,
+        tmp_path / "out",
+    )
+
+    assert (
+        paths["comparison_json"].name
+        == "phase60_information_optimization_attribution.json"
+    )
+    assert paths["axes_csv"].name == "phase60_attribution_axes.csv"
+    assert paths["readiness_md"].name == "phase60_information_optimization_attribution.md"
+    saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
+    readiness_text = paths["readiness_md"].read_text(encoding="utf-8")
+    assert saved["phase60_attribution_status"] == "mechanism_claim_narrowed"
+    assert "GeoFM-specific matched-dimension advantage is not supported" in readiness_text
+
+
+def test_phase60_cli_run(tmp_path, capsys):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase60_information_optimization_attribution"
+        / "run_phase60_information_optimization_attribution.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase60_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    phase48_path = tmp_path / "phase48.json"
+    phase53_path = tmp_path / "phase53.json"
+    phase57_path = tmp_path / "phase57.json"
+    phase59_path = tmp_path / "phase59.json"
+    phase48_path.write_text(json.dumps(_phase48()), encoding="utf-8")
+    phase53_path.write_text(json.dumps(_phase53()), encoding="utf-8")
+    phase57_path.write_text(json.dumps(_phase57()), encoding="utf-8")
+    phase59_path.write_text(json.dumps(_phase59()), encoding="utf-8")
+
+    exit_code = module.main(
+        [
+            "--phase48-json",
+            str(phase48_path),
+            "--phase53-json",
+            str(phase53_path),
+            "--phase57-json",
+            str(phase57_path),
+            "--phase59-json",
+            str(phase59_path),
+            "--output-dir",
+            str(tmp_path / "out"),
+        ]
+    )
+
+    stdout = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Phase 60 attribution status: mechanism_claim_narrowed" in stdout
+    assert "phase60_information_optimization_attribution.json" in stdout
