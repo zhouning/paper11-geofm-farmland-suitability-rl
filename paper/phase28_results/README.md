@@ -78,6 +78,9 @@ base-reward protocol.
   information-vs-optimization attribution audit reconciling Phase 48/52,
   Phase 53, Phase 57, and Phase 59 evidence and narrowing the mechanism claim
   to a bounded low-dimensional compressed state route.
+- `27_phase61_d6_geofm_projection_controls.md`: D6 GeoFM projection-control
+  feature and geometry audit preparing raw-B1 random and PCA projection
+  controls for later matched training.
 
 ## Reproduction Link
 
@@ -460,6 +463,21 @@ route under the Bishan base-reward protocol, not a proven unique advantage of
 the current PCA-compressed GeoFM coordinates over same-dimension controls.
 Before a stronger mechanism claim, the next optional experiment is a D6-style
 GeoFM projection-control audit.
+
+Phase 61 builds that D6-style projection-control set without training PPO
+policies:
+
+```powershell
+python experiments\phase61_d6_geofm_projection_controls\run_phase61_d6_geofm_projection_controls.py --b0-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B0_features.csv --b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --output-dir experiments\phase61_d6_geofm_projection_controls\outputs\phase52_full5_seed3 --dimensions 8,16 --seed 61
+```
+
+The current Phase 61 status is `d6_projection_controls_ready_for_training`.
+All four generated D6 controls have `64,984` aligned rows and valid projection
+variance. D6P8 and D6P16 reproduce D4P8/D4P16 exactly by column correlation
+(`1.0`), while D6R8 and D6R16 provide distinct raw-B1 random orthonormal
+projection controls with D4 similarities `0.13402939` and `0.1827507258`. This
+prepares the next matched training experiment but does not itself support a
+learned-policy performance claim.
 
 ## Claim Boundary
 

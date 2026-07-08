@@ -1540,3 +1540,73 @@ Claim boundary remains unchanged: Phase 60 does not enable suitability reward,
 B2/B3, cross-region transfer, PCA optimality, or independent agronomic
 suitability claims. The next Paper11 work should remain focused on
 algorithm/model and experiment design before revising the formal manuscript.
+
+## Phase 61 D6 GeoFM Projection Controls - 2026-07-08 12:10 +08:00
+
+Phase 61 builds and audits D6 projection-control feature tables on the current
+`main` branch. It does not train PPO policies and no formal manuscript files
+were changed.
+
+New implementation and evidence files:
+
+```text
+src/paper11_geofm/phase61_d6_geofm_projection_controls.py
+experiments/phase61_d6_geofm_projection_controls/run_phase61_d6_geofm_projection_controls.py
+tests/test_phase61_d6_geofm_projection_controls.py
+paper/phase28_results/27_phase61_d6_geofm_projection_controls.md
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/variant_D6R8_features.csv
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/variant_D6P8_features.csv
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/variant_D6R16_features.csv
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/variant_D6P16_features.csv
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/experiment_variants.json
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/phase61_d6_projection_feature_summary.json
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/phase61_d6_projection_geometry.json
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/phase61_d6_projection_geometry.csv
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/phase61_d6_projection_similarity.csv
+experiments/phase61_d6_geofm_projection_controls/outputs/phase52_full5_seed3/phase61_d6_projection_controls.md
+```
+
+Real Phase 61 command:
+
+```powershell
+python experiments\phase61_d6_geofm_projection_controls\run_phase61_d6_geofm_projection_controls.py --b0-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B0_features.csv --b1-features-csv experiments\phase11_bishan_dltb_real\outputs\phase2_real\variant_B1_features.csv --d4p8-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P8_features.csv --d4p16-features-csv experiments\phase8_ablation_controls\outputs\real_bishan_controls\variant_D4P16_features.csv --output-dir experiments\phase61_d6_geofm_projection_controls\outputs\phase52_full5_seed3 --dimensions 8,16 --seed 61
+```
+
+Real Phase 61 status:
+
+```text
+d6_projection_controls_ready_for_training
+```
+
+Core geometry values:
+
+```text
+D6R8: retention 0.1257182217, effective rank 4.2966518122, D4 similarity 0.13402939
+D6P8: retention 0.8587823898, effective rank 5.1322783588, D4 similarity 1.0
+D6R16: retention 0.2492633812, effective rank 6.9432558615, D4 similarity 0.1827507258
+D6P16: retention 0.9496006154, effective rank 7.3009059917, D4 similarity 1.0
+```
+
+Interpretation update:
+
+```text
+D6P8/D6P16 reproduce the existing D4P8/D4P16 PCA controls exactly by column
+correlation, confirming D4 lineage. D6R8/D6R16 are distinct raw-B1 random
+orthonormal projections and are now ready for later matched training. Phase 61
+prepares the next experiment but does not provide learned-policy reward evidence.
+```
+
+Recommended next experiment:
+
+```text
+Run a bounded Phase 62 matched PPO evaluation using D4P8,D4P16,D6R8,D6R16 and
+optionally D6P8,D6P16 under the Phase 52 five-tile, three-seed base-reward
+protocol, then compare D4/D6 deltas before strengthening any GeoFM-specific
+mechanism claim.
+```
+
+Claim boundary remains unchanged: Phase 61 does not enable suitability reward,
+B2/B3, cross-region transfer, PCA optimality, independent agronomic suitability,
+or submission-level learned-policy claims. The next Paper11 work should remain
+focused on algorithm/model and experiment design before revising the formal
+manuscript.
