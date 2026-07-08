@@ -226,3 +226,192 @@ def test_phase63_greedy_rollout_never_selects_invalid_or_repeated_actions():
     assert len(rollout["selected_action_indices"].split(";")) == 3
     assert len(set(rollout["selected_action_indices"].split(";"))) == 3
     assert float(rollout["total_contract_reward"]) > 0.0
+
+
+def _rollout_row(variant_id, reward, oracle=1.0, tile_id="tile_a", seed=0):
+    return {
+        "row_type": "bc_greedy_policy",
+        "variant_id": variant_id,
+        "train_tile_id": "tile_train",
+        "eval_tile_id": tile_id,
+        "eval_tile_rank": 1 if tile_id == "tile_a" else 2,
+        "seed": seed,
+        "phase63_seed_rank": seed + 1,
+        "eval_max_steps": 8,
+        "n_blocks": 4,
+        "n_features": 9,
+        "episode_steps": 3,
+        "terminated": False,
+        "truncated": True,
+        "all_actions_valid": True,
+        "invalid_action_count": 0,
+        "total_contract_reward": reward,
+        "oracle_total_reward": oracle,
+        "oracle_gap": oracle - reward,
+        "oracle_gap_fraction": (oracle - reward) / oracle,
+        "selected_block_ids": "b1;b2;b3",
+        "selected_action_indices": "0;1;2",
+        "claim_boundary": "fixture",
+    }
+
+
+def _flattened_row(variant_id, reward, tile_id="tile_a", seed=0):
+    return {
+        "row_type": "trained_policy",
+        "variant_id": variant_id,
+        "train_tile_id": "tile_train",
+        "eval_tile_id": tile_id,
+        "seed": seed,
+        "total_contract_reward": reward,
+    }
+
+
+def test_phase63_analysis_reports_architecture_improvement_with_complete_baseline():
+    from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+        build_phase63_set_policy_analysis,
+    )
+
+    pairs = [("tile_a", 0), ("tile_a", 1), ("tile_b", 0), ("tile_b", 1)]
+    rollout_rows = []
+    flattened_rows = []
+    for tile_id, seed in pairs:
+        rollout_rows.extend(
+            [
+                _rollout_row("B0", 1.10, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P8", 1.30, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P16", 1.35, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R8", 1.25, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R16", 1.28, tile_id=tile_id, seed=seed),
+            ]
+        )
+        flattened_rows.extend(
+            [
+                _flattened_row("B0", 0.90, tile_id=tile_id, seed=seed),
+                _flattened_row("D4P8", 1.00, tile_id=tile_id, seed=seed),
+                _flattened_row("D4P16", 1.00, tile_id=tile_id, seed=seed),
+                _flattened_row("D6R8", 1.00, tile_id=tile_id, seed=seed),
+                _flattened_row("D6R16", 1.00, tile_id=tile_id, seed=seed),
+            ]
+        )
+    analysis = build_phase63_set_policy_analysis(
+        rollout_rows,
+        existing_flattened_rows=flattened_rows,
+        metadata={"eval_tile_ids": ["tile_a", "tile_b"], "seeds": [0, 1]},
+    )
+
+    assert analysis["phase63_set_policy_status"] == "geofm_set_policy_advantage"
+    assert analysis["architecture_delta_summary"]["mean_delta"] > 0
+    assert analysis["d4_b0_delta_summary"]["positive_count"] == 8
+    assert analysis["coverage_issues"]["missing_rollout_rows"] == []
+
+
+def test_phase63_writer_outputs_json_csv_and_markdown(tmp_path):
+    from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+        build_phase63_set_policy_analysis,
+        write_phase63_set_policy_artifacts,
+    )
+
+    rollout_rows = [_rollout_row("B0", 1.0), _rollout_row("D4P8", 1.2)]
+    flattened_rows = [_flattened_row("B0", 0.8), _flattened_row("D4P8", 0.9)]
+    analysis = build_phase63_set_policy_analysis(
+        rollout_rows,
+        existing_flattened_rows=flattened_rows,
+        metadata={"eval_tile_ids": ["tile_a"], "seeds": [0], "variants": ["B0", "D4P8"]},
+    )
+    paths = write_phase63_set_policy_artifacts(
+        {
+            **analysis,
+            "oracle_trajectories": [],
+            "oracle_summary_rows": [],
+            "history_rows": [],
+            "rollout_rows": rollout_rows,
+        },
+        tmp_path / "outputs",
+    )
+
+    assert paths["oracle_json"].name == "phase63_oracle_trajectories.json"
+    assert paths["oracle_summary_csv"].name == "phase63_oracle_summary.csv"
+    assert paths["history_csv"].name == "phase63_bc_training_history.csv"
+    assert paths["rollout_csv"].name == "phase63_bc_rollout_summary.csv"
+    assert paths["comparison_json"].name == "phase63_set_policy_comparison.json"
+    assert paths["delta_csv"].name == "phase63_set_policy_delta_table.csv"
+    assert paths["readiness_md"].name == "phase63_set_policy_oracle_pretraining.md"
+    saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
+    assert saved["phase"] == "phase63_set_policy_analysis"
+    markdown = paths["readiness_md"].read_text(encoding="utf-8")
+    assert "Phase 63 Set-Policy Oracle Pretraining" in markdown
+    assert "does not enable suitability reward" in markdown
+
+
+def test_phase63_cli_analyze_only(tmp_path, capsys):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase63_set_policy_oracle_pretraining"
+        / "run_phase63_set_policy_oracle_pretraining.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase63_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    rollout_csv = _write_csv(tmp_path / "rollout.csv", [_rollout_row("B0", 1.0)])
+    flattened_csv = _write_csv(tmp_path / "flat.csv", [_flattened_row("B0", 0.8)])
+    exit_code = module.main(
+        [
+            "--mode",
+            "analyze-only",
+            "--existing-rollout-csv",
+            str(rollout_csv),
+            "--existing-flattened-summary-csvs",
+            str(flattened_csv),
+            "--output-dir",
+            str(tmp_path / "analysis"),
+            "--eval-tile-ids",
+            "tile_a",
+            "--seeds",
+            "0",
+            "--variants",
+            "B0",
+        ]
+    )
+
+    stdout = capsys.readouterr().out
+    assert exit_code == 0
+    assert "Phase 63 set-policy status:" in stdout
+    assert "phase63_set_policy_comparison.json" in stdout
+
+
+def test_phase63_cli_rollout_only_parser_accepts_core_inputs():
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase63_set_policy_oracle_pretraining"
+        / "run_phase63_set_policy_oracle_pretraining.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase63_runner_args", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    parser = module._build_parser()
+    args = parser.parse_args(
+        [
+            "--mode",
+            "rollout-only",
+            "--phase2-output-dir",
+            "phase2",
+            "--phase8-output-dir",
+            "phase8",
+            "--phase61-output-dir",
+            "phase61",
+            "--tile-index-csv",
+            "tiles.csv",
+            "--variants",
+            "B0,D4P8",
+            "--output-dir",
+            "outputs",
+        ]
+    )
+
+    assert args.mode == "rollout-only"
+    assert args.variants == "B0,D4P8"

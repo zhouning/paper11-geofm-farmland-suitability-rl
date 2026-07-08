@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
+import csv
+import json
+from os import PathLike
 from pathlib import Path
 import random
 import statistics
@@ -10,8 +13,13 @@ import torch
 from torch import nn
 from torch.nn import functional as F
 
-from .padded_heldout_policy import _normalize_seeds, _select_train_eval_tiles
+from .padded_heldout_policy import (
+    _dependency_metadata,
+    _normalize_seeds,
+    _select_train_eval_tiles,
+)
 from .planning_reward import compute_base_planning_reward_from_matrix_row
+from .tiled_inputs import load_tiled_variant_input
 
 
 PHASE63_CLAIM_BOUNDARY = (
@@ -26,6 +34,77 @@ PHASE63_CLAIM_BOUNDARY = (
 
 PHASE63_DEFAULT_VARIANTS = ("B0", "D4P8", "D4P16", "D6R8", "D6R16")
 PHASE63_ALLOWED_VARIANTS = PHASE63_DEFAULT_VARIANTS
+PHASE63_D4_D6_COMPARISONS = (("D4P8", "D6R8"), ("D4P16", "D6R16"))
+PHASE63_D4_B0_COMPARISONS = (("D4P8", "B0"), ("D4P16", "B0"))
+
+PHASE63_ORACLE_FIELDNAMES = [
+    "variant_id",
+    "tile_role",
+    "tile_id",
+    "seed",
+    "eval_max_steps",
+    "n_blocks",
+    "n_features",
+    "episode_steps",
+    "terminated",
+    "total_oracle_reward",
+    "top_k_reward_ceiling",
+    "selected_block_ids",
+    "action_indices",
+    "claim_boundary",
+]
+
+PHASE63_HISTORY_FIELDNAMES = [
+    "variant_id",
+    "train_tile_id",
+    "seed",
+    "epoch",
+    "loss",
+    "top1_accuracy",
+    "topk_hit_rate",
+    "learning_rate",
+    "hidden_dim",
+    "claim_boundary",
+]
+
+PHASE63_ROLLOUT_FIELDNAMES = [
+    "row_type",
+    "variant_id",
+    "train_tile_id",
+    "eval_tile_id",
+    "eval_tile_rank",
+    "seed",
+    "phase63_seed_rank",
+    "eval_max_steps",
+    "n_blocks",
+    "n_features",
+    "episode_steps",
+    "terminated",
+    "truncated",
+    "all_actions_valid",
+    "invalid_action_count",
+    "total_contract_reward",
+    "oracle_total_reward",
+    "oracle_gap",
+    "oracle_gap_fraction",
+    "selected_block_ids",
+    "selected_action_indices",
+    "claim_boundary",
+]
+
+PHASE63_DELTA_FIELDNAMES = [
+    "variant_id",
+    "eval_tile_id",
+    "seed",
+    "bc_reward",
+    "oracle_total_reward",
+    "oracle_gap",
+    "oracle_gap_fraction",
+    "flattened_reward",
+    "bc_minus_flattened_reward",
+    "bc_improves_flattened",
+    "claim_boundary",
+]
 
 
 def build_phase63_set_policy_contract(
@@ -492,3 +571,676 @@ def _round_float(value: object, digits: int = 10) -> float:
     if abs(rounded - compact) < 5.0e-8:
         return compact
     return rounded
+
+
+
+def build_phase63_set_policy_analysis(
+    rollout_rows_or_csv: Path | str | Sequence[Mapping[str, object]],
+    existing_flattened_rows: Sequence[Mapping[str, object]] | None = None,
+    existing_flattened_summary_csvs: Sequence[Path | str] | str | None = None,
+    metadata: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    rollout_rows = _load_mapping_rows(rollout_rows_or_csv, "Phase 63 rollout")
+    flattened_rows: list[dict[str, object]] = []
+    if existing_flattened_rows is not None:
+        flattened_rows.extend(dict(row) for row in existing_flattened_rows)
+    for csv_path in _normalize_optional_paths(existing_flattened_summary_csvs):
+        flattened_rows.extend(_load_mapping_rows(csv_path, "flattened PPO summary"))
+
+    metadata_map = {} if metadata is None else dict(metadata)
+    variants = _metadata_string_list(
+        metadata_map,
+        "variants",
+        fallback=_unique_strings(rollout_rows, "variant_id"),
+    )
+    eval_tile_ids = _metadata_string_list(
+        metadata_map,
+        "eval_tile_ids",
+        fallback=_unique_strings(rollout_rows, "eval_tile_id"),
+    )
+    seeds = _metadata_int_list(
+        metadata_map,
+        "seeds",
+        fallback=_unique_ints(rollout_rows, "seed"),
+    )
+    coverage = _phase63_coverage_issues(rollout_rows, variants, eval_tile_ids, seeds)
+    flattened_index = _flattened_reward_index(flattened_rows)
+    delta_rows = _phase63_delta_rows(rollout_rows, flattened_index)
+    architecture = _numeric_delta_summary(
+        [
+            float(row["bc_minus_flattened_reward"])
+            for row in delta_rows
+            if row["flattened_reward"] != ""
+        ]
+    )
+    d4_b0_rows = _paired_variant_delta_rows(
+        rollout_rows,
+        PHASE63_D4_B0_COMPARISONS,
+        value_field="total_contract_reward",
+        output_field="left_minus_right_reward",
+    )
+    d4_d6_rows = _paired_variant_delta_rows(
+        rollout_rows,
+        PHASE63_D4_D6_COMPARISONS,
+        value_field="total_contract_reward",
+        output_field="left_minus_right_reward",
+    )
+    oracle_gaps = [float(row.get("oracle_gap_fraction", 1.0)) for row in rollout_rows]
+    oracle_gap_summary = _numeric_delta_summary(oracle_gaps)
+    d4_b0_summary = _numeric_delta_summary(
+        [float(row["left_minus_right_reward"]) for row in d4_b0_rows]
+    )
+    d4_d6_summary = _numeric_delta_summary(
+        [float(row["left_minus_right_reward"]) for row in d4_d6_rows]
+    )
+    status = _phase63_status(
+        coverage,
+        architecture,
+        d4_b0_summary,
+        oracle_gap_summary,
+        has_flattened_baseline=bool(delta_rows),
+    )
+    return {
+        "phase": "phase63_set_policy_analysis",
+        "variants": variants,
+        "eval_tile_ids": eval_tile_ids,
+        "seeds": seeds,
+        "rollout_rows": rollout_rows,
+        "flattened_rows": flattened_rows,
+        "delta_rows": delta_rows,
+        "d4_b0_delta_rows": d4_b0_rows,
+        "d4_d6_delta_rows": d4_d6_rows,
+        "mean_bc_reward_by_variant": _mean_by_field(
+            rollout_rows,
+            "variant_id",
+            "total_contract_reward",
+        ),
+        "mean_oracle_reward_by_variant": _mean_by_field(
+            rollout_rows,
+            "variant_id",
+            "oracle_total_reward",
+        ),
+        "mean_flattened_reward_by_variant": _mean_by_field(
+            flattened_rows,
+            "variant_id",
+            "total_contract_reward",
+        ),
+        "architecture_delta_summary": architecture,
+        "d4_b0_delta_summary": d4_b0_summary,
+        "d4_d6_delta_summary": d4_d6_summary,
+        "oracle_gap_fraction_summary": oracle_gap_summary,
+        "coverage_issues": coverage,
+        "phase63_set_policy_status": status,
+        "conclusion": _phase63_conclusion(status),
+        "claim_boundary": PHASE63_CLAIM_BOUNDARY,
+    }
+
+
+def write_phase63_set_policy_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    oracle_json = output_path / "phase63_oracle_trajectories.json"
+    oracle_summary_csv = output_path / "phase63_oracle_summary.csv"
+    history_csv = output_path / "phase63_bc_training_history.csv"
+    rollout_csv = output_path / "phase63_bc_rollout_summary.csv"
+    comparison_json = output_path / "phase63_set_policy_comparison.json"
+    delta_csv = output_path / "phase63_set_policy_delta_table.csv"
+    readiness_md = output_path / "phase63_set_policy_oracle_pretraining.md"
+
+    oracle_json.write_text(
+        json.dumps(
+            _json_ready(analysis.get("oracle_trajectories", [])),
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    _write_csv_mapping_rows(
+        oracle_summary_csv,
+        PHASE63_ORACLE_FIELDNAMES,
+        analysis.get("oracle_summary_rows", []),
+        "oracle_summary_rows",
+    )
+    _write_csv_mapping_rows(
+        history_csv,
+        PHASE63_HISTORY_FIELDNAMES,
+        analysis.get("history_rows", []),
+        "history_rows",
+    )
+    _write_csv_mapping_rows(
+        rollout_csv,
+        PHASE63_ROLLOUT_FIELDNAMES,
+        analysis.get("rollout_rows", []),
+        "rollout_rows",
+    )
+    _write_csv_mapping_rows(
+        delta_csv,
+        PHASE63_DELTA_FIELDNAMES,
+        analysis.get("delta_rows", []),
+        "delta_rows",
+    )
+    comparison = {
+        key: value
+        for key, value in dict(analysis).items()
+        if key
+        not in {
+            "oracle_trajectories",
+            "oracle_summary_rows",
+            "history_rows",
+            "rollout_rows",
+            "flattened_rows",
+        }
+    }
+    comparison_json.write_text(
+        json.dumps(_json_ready(comparison), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    readiness_md.write_text(_phase63_readiness_markdown(analysis), encoding="utf-8")
+    return {
+        "oracle_json": oracle_json,
+        "oracle_summary_csv": oracle_summary_csv,
+        "history_csv": history_csv,
+        "rollout_csv": rollout_csv,
+        "comparison_json": comparison_json,
+        "delta_csv": delta_csv,
+        "readiness_md": readiness_md,
+    }
+
+
+def run_phase63_set_policy_oracle_pretraining(
+    phase2_output_dir: Path | str,
+    phase8_output_dir: Path | str,
+    phase61_output_dir: Path | str,
+    tile_index_csv: Path | str,
+    variants: Sequence[str] | str = PHASE63_DEFAULT_VARIANTS,
+    existing_flattened_summary_csvs: Sequence[Path | str] | str | None = None,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 5,
+    eval_max_steps: int = 8,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+    bc_epochs: int = 80,
+    learning_rate: float = 0.001,
+    hidden_dim: int = 64,
+    top_k: int = 3,
+) -> dict[str, object]:
+    contract = build_phase63_set_policy_contract(
+        phase2_output_dir=phase2_output_dir,
+        phase8_output_dir=phase8_output_dir,
+        phase61_output_dir=phase61_output_dir,
+        tile_index_csv=tile_index_csv,
+        variants=variants,
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+        eval_max_steps=eval_max_steps,
+        seeds=seeds,
+        bc_epochs=bc_epochs,
+        learning_rate=learning_rate,
+        hidden_dim=hidden_dim,
+        top_k=top_k,
+    )
+    oracle_trajectories = []
+    oracle_summary_rows = []
+    history_rows = []
+    rollout_rows = []
+    for variant_id in contract["variants"]:
+        train_tiled = _load_phase63_tiled_variant_input(
+            contract,
+            str(contract["train_tile_id"]),
+            str(variant_id),
+        )
+        for seed in contract["seeds"]:
+            model, history = train_phase63_behavior_cloner(
+                train_tiled,
+                seed=int(seed),
+                eval_max_steps=int(contract["eval_max_steps"]),
+                epochs=int(contract["bc_epochs"]),
+                learning_rate=float(contract["learning_rate"]),
+                hidden_dim=int(contract["hidden_dim"]),
+                top_k=int(contract["top_k"]),
+            )
+            history_rows.extend(history)
+            for eval_tile_id in contract["eval_tile_ids"]:
+                eval_tiled = _load_phase63_tiled_variant_input(
+                    contract,
+                    str(eval_tile_id),
+                    str(variant_id),
+                )
+                oracle = build_phase63_oracle_trajectory(
+                    eval_tiled,
+                    int(contract["eval_max_steps"]),
+                )
+                oracle_trajectories.append(oracle)
+                oracle_summary_rows.append(
+                    _phase63_oracle_summary_row(oracle, seed=int(seed), tile_role="eval")
+                )
+                rollout_rows.append(
+                    rollout_phase63_greedy_policy(
+                        model,
+                        eval_tiled,
+                        train_tile_id=str(contract["train_tile_id"]),
+                        eval_tile_rank=int(contract["eval_tile_ranks"][str(eval_tile_id)]),
+                        seed=int(seed),
+                        phase63_seed_rank=int(contract["seed_ranks"][str(int(seed))]),
+                        eval_max_steps=int(contract["eval_max_steps"]),
+                    )
+                )
+    analysis = build_phase63_set_policy_analysis(
+        rollout_rows,
+        existing_flattened_summary_csvs=existing_flattened_summary_csvs,
+        metadata={
+            "variants": contract["variants"],
+            "eval_tile_ids": contract["eval_tile_ids"],
+            "seeds": contract["seeds"],
+        },
+    )
+    analysis["contract"] = contract
+    analysis["oracle_trajectories"] = oracle_trajectories
+    analysis["oracle_summary_rows"] = oracle_summary_rows
+    analysis["history_rows"] = history_rows
+    analysis["rollout_rows"] = rollout_rows
+    analysis["dependencies"] = _dependency_metadata()
+    analysis["dependencies"]["torch"] = torch.__version__
+    return analysis
+
+
+def _load_mapping_rows(
+    rows_or_csv: Path | str | Sequence[Mapping[str, object]],
+    label: str,
+) -> list[dict[str, object]]:
+    if isinstance(rows_or_csv, (str, PathLike)):
+        path = Path(rows_or_csv)
+        if not path.exists():
+            raise FileNotFoundError(f"Missing {label} CSV: {path}")
+        with path.open("r", encoding="utf-8", newline="") as handle:
+            return [dict(row) for row in csv.DictReader(handle)]
+    return [dict(row) for row in rows_or_csv]
+
+
+def _normalize_optional_paths(paths: Sequence[Path | str] | str | None) -> list[Path | str]:
+    if paths is None:
+        return []
+    if isinstance(paths, str):
+        return [part.strip() for part in paths.split(",") if part.strip()]
+    return [path for path in paths if str(path).strip()]
+
+
+def _metadata_string_list(
+    metadata: Mapping[str, object],
+    key: str,
+    fallback: list[str],
+) -> list[str]:
+    value = metadata.get(key)
+    if isinstance(value, str):
+        return [part.strip() for part in value.split(",") if part.strip()]
+    if isinstance(value, Sequence):
+        return [str(item) for item in value if str(item).strip()]
+    return fallback
+
+
+def _metadata_int_list(
+    metadata: Mapping[str, object],
+    key: str,
+    fallback: list[int],
+) -> list[int]:
+    value = metadata.get(key)
+    if isinstance(value, str):
+        return [int(part.strip()) for part in value.split(",") if part.strip()]
+    if isinstance(value, Sequence):
+        return [int(item) for item in value if str(item).strip()]
+    return fallback
+
+
+def _unique_strings(rows: Sequence[Mapping[str, object]], field: str) -> list[str]:
+    seen: list[str] = []
+    for row in rows:
+        value = str(row.get(field, "")).strip()
+        if value and value not in seen:
+            seen.append(value)
+    return seen
+
+
+def _unique_ints(rows: Sequence[Mapping[str, object]], field: str) -> list[int]:
+    values = []
+    for row in rows:
+        text = str(row.get(field, "")).strip()
+        if not text:
+            continue
+        value = int(text)
+        if value not in values:
+            values.append(value)
+    return values
+
+
+def _phase63_coverage_issues(
+    rows: Sequence[Mapping[str, object]],
+    variants: Sequence[str],
+    eval_tile_ids: Sequence[str],
+    seeds: Sequence[int],
+) -> dict[str, list[dict[str, object]]]:
+    counts: dict[tuple[str, str, int], int] = {}
+    for row in rows:
+        if str(row.get("row_type", "")) != "bc_greedy_policy":
+            continue
+        key = (
+            str(row.get("variant_id", "")),
+            str(row.get("eval_tile_id", "")),
+            int(row.get("seed", 0)),
+        )
+        counts[key] = counts.get(key, 0) + 1
+    missing = []
+    duplicate = []
+    for variant_id in variants:
+        for tile_id in eval_tile_ids:
+            for seed in seeds:
+                key = (str(variant_id), str(tile_id), int(seed))
+                count = counts.get(key, 0)
+                if count == 0:
+                    missing.append(
+                        {"variant_id": variant_id, "eval_tile_id": tile_id, "seed": seed}
+                    )
+                elif count > 1:
+                    duplicate.append(
+                        {
+                            "variant_id": variant_id,
+                            "eval_tile_id": tile_id,
+                            "seed": seed,
+                            "count": count,
+                        }
+                    )
+    expected = {
+        (str(variant), str(tile_id), int(seed))
+        for variant in variants
+        for tile_id in eval_tile_ids
+        for seed in seeds
+    }
+    unexpected = [
+        {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2], "count": count}
+        for key, count in sorted(counts.items())
+        if key not in expected
+    ]
+    return {
+        "missing_rollout_rows": missing,
+        "duplicate_rollout_rows": duplicate,
+        "unexpected_rollout_rows": unexpected,
+    }
+
+
+def _flattened_reward_index(rows: Sequence[Mapping[str, object]]) -> dict[tuple[str, str, int], float]:
+    values: dict[tuple[str, str, int], list[float]] = {}
+    for row in rows:
+        if str(row.get("row_type", "")) != "trained_policy":
+            continue
+        key = (
+            str(row.get("variant_id", "")),
+            str(row.get("eval_tile_id", "")),
+            int(row.get("seed", 0)),
+        )
+        values.setdefault(key, []).append(float(row.get("total_contract_reward", 0.0)))
+    return {key: _round_float(statistics.mean(items)) for key, items in values.items()}
+
+
+def _phase63_delta_rows(
+    rollout_rows: Sequence[Mapping[str, object]],
+    flattened_index: Mapping[tuple[str, str, int], float],
+) -> list[dict[str, object]]:
+    rows = []
+    for row in rollout_rows:
+        if str(row.get("row_type", "")) != "bc_greedy_policy":
+            continue
+        key = (
+            str(row.get("variant_id", "")),
+            str(row.get("eval_tile_id", "")),
+            int(row.get("seed", 0)),
+        )
+        flattened = flattened_index.get(key)
+        bc_reward = float(row.get("total_contract_reward", 0.0))
+        delta = "" if flattened is None else _round_float(bc_reward - flattened)
+        rows.append(
+            {
+                "variant_id": key[0],
+                "eval_tile_id": key[1],
+                "seed": key[2],
+                "bc_reward": _round_float(bc_reward),
+                "oracle_total_reward": _round_float(row.get("oracle_total_reward", 0.0)),
+                "oracle_gap": _round_float(row.get("oracle_gap", 0.0)),
+                "oracle_gap_fraction": _round_float(row.get("oracle_gap_fraction", 0.0)),
+                "flattened_reward": "" if flattened is None else _round_float(flattened),
+                "bc_minus_flattened_reward": delta,
+                "bc_improves_flattened": "" if flattened is None else bool(float(delta) > 0.0),
+                "claim_boundary": PHASE63_CLAIM_BOUNDARY,
+            }
+        )
+    return rows
+
+
+def _paired_variant_delta_rows(
+    rows: Sequence[Mapping[str, object]],
+    comparisons: Sequence[tuple[str, str]],
+    value_field: str,
+    output_field: str,
+) -> list[dict[str, object]]:
+    index = {
+        (
+            str(row.get("variant_id", "")),
+            str(row.get("eval_tile_id", "")),
+            int(row.get("seed", 0)),
+        ): float(row.get(value_field, 0.0))
+        for row in rows
+        if str(row.get("row_type", "")) == "bc_greedy_policy"
+    }
+    output = []
+    tile_seed_keys = sorted({(key[1], key[2]) for key in index})
+    for left, right in comparisons:
+        for tile_id, seed in tile_seed_keys:
+            left_key = (left, tile_id, seed)
+            right_key = (right, tile_id, seed)
+            if left_key not in index or right_key not in index:
+                continue
+            delta = _round_float(index[left_key] - index[right_key])
+            output.append(
+                {
+                    "left_variant_id": left,
+                    "right_variant_id": right,
+                    "eval_tile_id": tile_id,
+                    "seed": seed,
+                    output_field: delta,
+                    "left_improves_right": bool(delta > 0.0),
+                    "claim_boundary": PHASE63_CLAIM_BOUNDARY,
+                }
+            )
+    return output
+
+
+def _numeric_delta_summary(values: Sequence[float]) -> dict[str, object]:
+    numbers = [float(value) for value in values]
+    if not numbers:
+        return {
+            "mean_delta": 0.0,
+            "positive_count": 0,
+            "total_count": 0,
+            "min_delta": 0.0,
+            "max_delta": 0.0,
+        }
+    return {
+        "mean_delta": _round_float(statistics.mean(numbers)),
+        "positive_count": sum(1 for value in numbers if value > 0.0),
+        "total_count": len(numbers),
+        "min_delta": _round_float(min(numbers)),
+        "max_delta": _round_float(max(numbers)),
+    }
+
+
+def _mean_by_field(
+    rows: Sequence[Mapping[str, object]],
+    group_field: str,
+    value_field: str,
+) -> dict[str, float]:
+    grouped: dict[str, list[float]] = {}
+    for row in rows:
+        key = str(row.get(group_field, ""))
+        if not key or str(row.get(value_field, "")).strip() == "":
+            continue
+        grouped.setdefault(key, []).append(float(row[value_field]))
+    return {key: _round_float(statistics.mean(values)) for key, values in sorted(grouped.items())}
+
+
+def _phase63_status(
+    coverage: Mapping[str, object],
+    architecture: Mapping[str, object],
+    d4_b0_summary: Mapping[str, object],
+    oracle_gap_summary: Mapping[str, object],
+    has_flattened_baseline: bool,
+) -> str:
+    if coverage["missing_rollout_rows"] or coverage["duplicate_rollout_rows"]:
+        return "insufficient"
+    if not has_flattened_baseline:
+        return (
+            "set_policy_route_supported"
+            if float(oracle_gap_summary["mean_delta"]) <= 0.2
+            else "insufficient"
+        )
+    architecture_supported = (
+        int(architecture["total_count"]) > 0
+        and float(architecture["mean_delta"]) > 0.0
+        and int(architecture["positive_count"]) * 2 >= int(architecture["total_count"])
+    )
+    geofm_supported = (
+        int(d4_b0_summary["total_count"]) > 0
+        and float(d4_b0_summary["mean_delta"]) > 0.0
+        and int(d4_b0_summary["positive_count"]) * 2 >= int(d4_b0_summary["total_count"])
+    )
+    oracle_gap_small = float(oracle_gap_summary["mean_delta"]) <= 0.2
+    if architecture_supported and geofm_supported and oracle_gap_small:
+        return "geofm_set_policy_advantage"
+    if architecture_supported and oracle_gap_small:
+        return "architecture_improves_but_geofm_not_distinguished"
+    return "set_policy_route_not_supported"
+
+
+def _phase63_conclusion(status: str) -> str:
+    conclusions = {
+        "geofm_set_policy_advantage": (
+            "Phase 63 supports the set-policy route and shows GeoFM-derived "
+            "variants exceeding B0 under the set-policy protocol."
+        ),
+        "architecture_improves_but_geofm_not_distinguished": (
+            "Phase 63 supports the set-policy architecture route, but does not "
+            "separate GeoFM-derived variants from B0."
+        ),
+        "set_policy_route_supported": (
+            "Phase 63 supports the set-policy route by closing the oracle gap, "
+            "but flattened PPO baseline comparison is incomplete."
+        ),
+        "set_policy_route_not_supported": (
+            "Phase 63 does not yet support the set-policy route under the current "
+            "behavior-cloning setup."
+        ),
+        "insufficient": "Phase 63 has insufficient coverage for a decision.",
+    }
+    return conclusions.get(status, conclusions["insufficient"])
+
+
+def _load_phase63_tiled_variant_input(
+    contract: Mapping[str, object],
+    tile_id: str,
+    variant_id: str,
+):
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 63 contract is missing variant source routing")
+    source_dir = variant_source_dirs.get(variant_id)
+    if source_dir is None:
+        raise ValueError(f"Phase 63 contract has no source for variant {variant_id}")
+    return load_tiled_variant_input(
+        source_dir,
+        str(contract["tile_index_csv"]),
+        tile_id,
+        variant_id=variant_id,
+    )
+
+
+def _phase63_oracle_summary_row(
+    oracle: Mapping[str, object],
+    seed: int,
+    tile_role: str,
+) -> dict[str, object]:
+    return {
+        "variant_id": oracle.get("variant_id", ""),
+        "tile_role": tile_role,
+        "tile_id": oracle.get("tile_id", ""),
+        "seed": int(seed),
+        "eval_max_steps": oracle.get("eval_max_steps", ""),
+        "n_blocks": oracle.get("n_blocks", ""),
+        "n_features": oracle.get("n_features", ""),
+        "episode_steps": oracle.get("episode_steps", ""),
+        "terminated": oracle.get("terminated", ""),
+        "total_oracle_reward": oracle.get("total_oracle_reward", ""),
+        "top_k_reward_ceiling": oracle.get("top_k_reward_ceiling", ""),
+        "selected_block_ids": ";".join(str(item) for item in oracle.get("selected_block_ids", [])),
+        "action_indices": ";".join(str(item) for item in oracle.get("action_indices", [])),
+        "claim_boundary": PHASE63_CLAIM_BOUNDARY,
+    }
+
+
+def _phase63_readiness_markdown(analysis: Mapping[str, object]) -> str:
+    lines = [
+        "# Phase 63 Set-Policy Oracle Pretraining",
+        "",
+        f"Status: {analysis.get('phase63_set_policy_status', '')}",
+        "",
+        "Conclusion:",
+        str(analysis.get("conclusion", "")),
+        "",
+        "Mean behavior-cloned reward by variant:",
+    ]
+    for variant_id, value in dict(analysis.get("mean_bc_reward_by_variant", {})).items():
+        lines.append(f"- {variant_id}: {value}")
+    lines.extend(["", "Mean oracle reward by variant:"])
+    for variant_id, value in dict(analysis.get("mean_oracle_reward_by_variant", {})).items():
+        lines.append(f"- {variant_id}: {value}")
+    lines.extend(
+        [
+            "",
+            f"Architecture delta summary: {analysis.get('architecture_delta_summary', {})}",
+            f"D4/B0 delta summary: {analysis.get('d4_b0_delta_summary', {})}",
+            f"D4/D6 delta summary: {analysis.get('d4_d6_delta_summary', {})}",
+            f"Oracle gap summary: {analysis.get('oracle_gap_fraction_summary', {})}",
+            "",
+            "Claim boundary:",
+            str(analysis.get("claim_boundary", PHASE63_CLAIM_BOUNDARY)),
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _write_csv_mapping_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: object,
+    row_key: str,
+) -> None:
+    if not isinstance(rows, list):
+        raise ValueError(f"Phase 63 analysis is missing {row_key}")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise ValueError(f"Phase 63 {row_key} rows must be objects")
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value
