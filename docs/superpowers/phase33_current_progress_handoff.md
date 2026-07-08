@@ -1484,3 +1484,59 @@ Claim boundary remains unchanged: Phase 59 does not enable suitability reward,
 B2/B3, cross-region transfer, PCA optimality, or independent agronomic
 suitability claims. The next Paper11 work should continue on algorithm/model
 and experiment design before revising the formal manuscript.
+
+## Phase 60 Information-vs-Optimization Attribution Audit - 2026-07-08 11:46 +08:00
+
+Phase 60 was run on the current `main` branch as a read-only attribution audit
+over the existing Phase 48/52, Phase 53, Phase 57, and Phase 59 artifacts. No
+formal manuscript files were changed.
+
+New implementation and evidence files:
+
+```text
+src/paper11_geofm/phase60_information_optimization_attribution.py
+experiments/phase60_information_optimization_attribution/run_phase60_information_optimization_attribution.py
+tests/test_phase60_information_optimization_attribution.py
+paper/phase28_results/26_phase60_information_optimization_attribution.md
+experiments/phase60_information_optimization_attribution/outputs/phase52_full5_seed3/phase60_information_optimization_attribution.json
+experiments/phase60_information_optimization_attribution/outputs/phase52_full5_seed3/phase60_attribution_axes.csv
+experiments/phase60_information_optimization_attribution/outputs/phase52_full5_seed3/phase60_information_optimization_attribution.md
+```
+
+Real Phase 60 command:
+
+```powershell
+python experiments\phase60_information_optimization_attribution\run_phase60_information_optimization_attribution.py --phase48-json experiments\phase52_expanded_cluster_replication\outputs\phase52_full5_seed3_phase48_compressed_rescue\phase48_compressed_geofm_rescue_comparison.json --phase53-json experiments\phase53_cluster_mean_support\outputs\phase52_full5_seed3\phase53_cluster_mean_support.json --phase57-json experiments\phase57_compressed_representation_mechanism\outputs\phase52_full5_seed3\phase57_compressed_representation_mechanism.json --phase59-json experiments\phase59_matched_dimension_controls\outputs\phase52_full5_seed3\phase59_matched_dimension_controls.json --output-dir experiments\phase60_information_optimization_attribution\outputs\phase52_full5_seed3
+```
+
+Real Phase 60 status:
+
+```text
+mechanism_claim_narrowed
+```
+
+Axis outcomes:
+
+```text
+compressed_route_performance: supported, pooled_mean_delta 0.2921767818
+cluster_level_robustness: supported, cluster_mean_delta 0.2921767818
+compressed_geometry_consistency: supported, max_compressed_effective_rank 7.3009059917
+geofm_specific_matched_dimension: not_supported, pooled_matched_control_mean_delta -0.0172307641
+```
+
+Interpretation update:
+
+```text
+Phase 60 reconciles the positive compressed-route evidence with the negative
+matched-dimension result. D4P8/D4P16 remain supported as low-dimensional
+compressed state routes against B0, raw B1, random D2, and shuffled D3 under
+the expanded Bishan base-reward protocol. Phase 59 prevents a stronger
+GeoFM-specific same-dimension claim. The recommended mechanism wording is now
+narrow_to_low_dimensional_route, with optional D6-style GeoFM projection
+controls before making a stronger information-specific attribution claim.
+```
+
+Claim boundary remains unchanged: Phase 60 does not enable suitability reward,
+B2/B3, cross-region transfer, PCA optimality, or independent agronomic
+suitability claims. The next Paper11 work should remain focused on
+algorithm/model and experiment design before revising the formal manuscript.

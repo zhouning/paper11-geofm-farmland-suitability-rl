@@ -74,6 +74,10 @@ base-reward protocol.
 - `25_phase59_matched_dimension_controls.md`: matched-dimension control audit
   showing that D4P8/D4P16 do not clearly outperform same-dimension random or
   shuffled controls under the expanded Bishan base-reward protocol.
+- `26_phase60_information_optimization_attribution.md`: read-only
+  information-vs-optimization attribution audit reconciling Phase 48/52,
+  Phase 53, Phase 57, and Phase 59 evidence and narrowing the mechanism claim
+  to a bounded low-dimensional compressed state route.
 
 ## Reproduction Link
 
@@ -439,6 +443,23 @@ and signed-rank p `0.6192321777`. This narrows the mechanism wording: the
 earlier compressed-route evidence remains valid against B0/B1/D2/D3, but the
 current run does not support a stronger GeoFM-specific advantage over matched
 low-dimensional controls.
+
+Phase 60 reconciles the Phase 48/52, Phase 53, Phase 57, and Phase 59 evidence
+as a read-only information-vs-optimization attribution audit:
+
+```powershell
+python experiments\phase60_information_optimization_attribution\run_phase60_information_optimization_attribution.py --phase48-json experiments\phase52_expanded_cluster_replication\outputs\phase52_full5_seed3_phase48_compressed_rescue\phase48_compressed_geofm_rescue_comparison.json --phase53-json experiments\phase53_cluster_mean_support\outputs\phase52_full5_seed3\phase53_cluster_mean_support.json --phase57-json experiments\phase57_compressed_representation_mechanism\outputs\phase52_full5_seed3\phase57_compressed_representation_mechanism.json --phase59-json experiments\phase59_matched_dimension_controls\outputs\phase52_full5_seed3\phase59_matched_dimension_controls.json --output-dir experiments\phase60_information_optimization_attribution\outputs\phase52_full5_seed3
+```
+
+The current Phase 60 status is `mechanism_claim_narrowed`. The compressed-route
+performance axis, cluster-level robustness axis, and compressed-geometry axis
+are supported, but the GeoFM-specific matched-dimension axis is not supported
+because Phase 59 reports pooled matched-control mean delta `-0.0172307641`.
+The resulting claim boundary is a bounded low-dimensional compressed state
+route under the Bishan base-reward protocol, not a proven unique advantage of
+the current PCA-compressed GeoFM coordinates over same-dimension controls.
+Before a stronger mechanism claim, the next optional experiment is a D6-style
+GeoFM projection-control audit.
 
 ## Claim Boundary
 
