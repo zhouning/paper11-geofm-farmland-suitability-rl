@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 import csv
+import json
 import math
 import random
 import statistics
@@ -9,7 +10,18 @@ from itertools import product
 from os import PathLike
 from pathlib import Path
 
-from .padded_heldout_policy import _normalize_seeds, _select_train_eval_tiles
+from .padded_heldout_policy import (
+    SUMMARY_FIELDNAMES,
+    Phase25PaddedTileEnv,
+    _dependency_metadata,
+    _evaluate_baseline_policy,
+    _evaluate_trained_policy,
+    _normalize_seeds,
+    _select_train_eval_tiles,
+    _store_trace,
+)
+from .phase28_representation_controls import _train_maskable_ppo_model
+from .tiled_inputs import load_tiled_variant_input
 
 
 PHASE62_CLAIM_BOUNDARY = (
@@ -737,3 +749,306 @@ def _phase62_variant_source_dirs(
         else:
             source_dirs[str(variant_id)] = str(Path(phase61_output_dir))
     return source_dirs
+
+def write_phase62_d4_d6_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    summary_path = output_path / "phase62_d4_d6_matched_ppo_summary.csv"
+    traces_path = output_path / "phase62_d4_d6_matched_ppo_traces.json"
+    delta_path = output_path / "phase62_d4_d6_delta_table.csv"
+    cluster_path = output_path / "phase62_d4_d6_cluster_summary.csv"
+    comparison_path = output_path / "phase62_d4_d6_matched_ppo.json"
+    readiness_path = output_path / "phase62_d4_d6_matched_ppo.md"
+
+    _write_summary_csv(
+        summary_path,
+        analysis.get("summaries", analysis.get("source_rows", [])),
+    )
+    traces_path.write_text(
+        json.dumps(_json_ready(analysis.get("traces", {})), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    _write_csv_mapping_rows(
+        delta_path,
+        PHASE62_DELTA_FIELDNAMES,
+        analysis.get("delta_rows"),
+        "delta_rows",
+    )
+    _write_csv_mapping_rows(
+        cluster_path,
+        PHASE62_CLUSTER_FIELDNAMES,
+        analysis.get("cluster_rows"),
+        "cluster_rows",
+    )
+    comparison = {
+        key: value
+        for key, value in dict(analysis).items()
+        if key not in {"source_rows", "summaries", "traces"}
+    }
+    comparison_path.write_text(
+        json.dumps(_json_ready(comparison), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    readiness_path.write_text(_phase62_readiness_markdown(analysis), encoding="utf-8")
+    return {
+        "summary_csv": summary_path,
+        "traces_json": traces_path,
+        "delta_csv": delta_path,
+        "cluster_csv": cluster_path,
+        "comparison_json": comparison_path,
+        "readiness_md": readiness_path,
+    }
+
+
+def run_phase62_d4_d6_evaluation(
+    phase8_output_dir: Path | str,
+    phase61_output_dir: Path | str,
+    tile_index_csv: Path | str,
+    variants: Sequence[str] | str = PHASE62_PRIMARY_VARIANTS,
+    existing_summary_csv: Path | str | None = None,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 5,
+    total_timesteps: int = 4096,
+    eval_max_steps: int = 8,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+    bootstrap_iterations: int = 5000,
+    random_seed: int = 62,
+) -> dict[str, object]:
+    contract = build_phase62_d4_d6_contract(
+        phase8_output_dir=phase8_output_dir,
+        phase61_output_dir=phase61_output_dir,
+        tile_index_csv=tile_index_csv,
+        variants=variants,
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+        total_timesteps=total_timesteps,
+        eval_max_steps=eval_max_steps,
+        seeds=seeds,
+    )
+    summaries: list[dict[str, object]] = []
+    traces: dict[str, dict[str, dict[str, dict[str, list[dict[str, object]]]]]] = {
+        "trained_policy": {},
+        "first_valid": {},
+        "seeded_random": {},
+    }
+    train_n_blocks = int(
+        contract["selected_tile_block_counts"][str(contract["train_tile_id"])]
+    )
+    for variant_id in contract["variants"]:
+        for seed in contract["seeds"]:
+            train_tiled = _load_phase62_tiled_variant_input(
+                contract,
+                str(contract["train_tile_id"]),
+                str(variant_id),
+            )
+            train_env = Phase25PaddedTileEnv(
+                train_tiled,
+                max_blocks=int(contract["max_blocks"]),
+                max_steps=int(contract["total_timesteps"]),
+            )
+            train_env.reset(seed=int(seed))
+            model = _train_maskable_ppo_model(
+                train_env,
+                seed=int(seed),
+                total_timesteps=int(contract["total_timesteps"]),
+            )
+            for eval_tile_id in contract["eval_tile_ids"]:
+                eval_tiled = _load_phase62_tiled_variant_input(
+                    contract,
+                    str(eval_tile_id),
+                    str(variant_id),
+                )
+                eval_tile_rank = int(contract["eval_tile_ranks"][str(eval_tile_id)])
+                seed_rank = int(contract["seed_ranks"][str(int(seed))])
+                trained_summary, trained_steps = _evaluate_trained_policy(
+                    model,
+                    eval_tiled,
+                    train_tile_id=str(contract["train_tile_id"]),
+                    train_n_blocks=train_n_blocks,
+                    max_blocks=int(contract["max_blocks"]),
+                    eval_tile_rank=eval_tile_rank,
+                    phase25_seed_rank=seed_rank,
+                    eval_max_steps=int(contract["eval_max_steps"]),
+                    train_timesteps=int(contract["total_timesteps"]),
+                    seed=int(seed),
+                )
+                trained_summary["claim_boundary"] = PHASE62_CLAIM_BOUNDARY
+                summaries.append(trained_summary)
+                _store_trace(
+                    traces,
+                    "trained_policy",
+                    str(variant_id),
+                    str(eval_tile_id),
+                    int(seed),
+                    trained_steps,
+                )
+                for policy_id in ("first_valid", "seeded_random"):
+                    baseline_summary, baseline_steps = _evaluate_baseline_policy(
+                        eval_tiled,
+                        policy_id=policy_id,
+                        train_tile_id=str(contract["train_tile_id"]),
+                        train_n_blocks=train_n_blocks,
+                        max_blocks=int(contract["max_blocks"]),
+                        eval_tile_rank=eval_tile_rank,
+                        phase25_seed_rank=seed_rank,
+                        eval_max_steps=int(contract["eval_max_steps"]),
+                        train_timesteps=int(contract["total_timesteps"]),
+                        seed=int(seed),
+                    )
+                    baseline_summary["claim_boundary"] = PHASE62_CLAIM_BOUNDARY
+                    summaries.append(baseline_summary)
+                    _store_trace(
+                        traces,
+                        policy_id,
+                        str(variant_id),
+                        str(eval_tile_id),
+                        int(seed),
+                        baseline_steps,
+                    )
+    analysis_rows = list(summaries)
+    if existing_summary_csv is not None:
+        analysis_rows = _load_summary_rows(existing_summary_csv) + analysis_rows
+    analysis = build_phase62_d4_d6_analysis(
+        analysis_rows,
+        metadata={
+            "eval_tile_ids": contract["eval_tile_ids"],
+            "seeds": contract["seeds"],
+        },
+        bootstrap_iterations=int(bootstrap_iterations),
+        random_seed=int(random_seed),
+    )
+    analysis["contract"] = contract
+    analysis["summaries"] = analysis_rows
+    analysis["new_summaries"] = summaries
+    analysis["traces"] = traces
+    analysis["dependencies"] = _dependency_metadata()
+    return analysis
+
+
+def _load_phase62_tiled_variant_input(
+    contract: Mapping[str, object],
+    tile_id: str,
+    variant_id: str,
+):
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 62 contract is missing variant source routing")
+    source_dir = variant_source_dirs.get(variant_id)
+    if source_dir is None:
+        raise ValueError(f"Phase 62 contract has no source for variant {variant_id}")
+    return load_tiled_variant_input(
+        source_dir,
+        str(contract["tile_index_csv"]),
+        tile_id,
+        variant_id=variant_id,
+    )
+
+
+def _phase62_readiness_markdown(analysis: Mapping[str, object]) -> str:
+    matched_deltas = analysis.get("matched_deltas")
+    if not isinstance(matched_deltas, Mapping):
+        matched_deltas = {}
+    pooled = analysis.get("pooled_primary_delta")
+    if not isinstance(pooled, Mapping):
+        pooled = {}
+    cluster = analysis.get("cluster_summary")
+    if not isinstance(cluster, Mapping):
+        cluster = {}
+    signed_rank = analysis.get("signed_rank_summary")
+    if not isinstance(signed_rank, Mapping):
+        signed_rank = {}
+
+    lines = [
+        "# Phase 62 D4/D6 Matched PPO Evaluation",
+        "",
+        f"Status: {analysis.get('phase62_d4_d6_status', '')}",
+        "",
+        "D4/D6 matched PPO evaluation conclusion:",
+        str(analysis.get("conclusion", "")),
+        "",
+        "Matched comparison deltas:",
+    ]
+    for key in sorted(matched_deltas):
+        value = matched_deltas[key]
+        if not isinstance(value, Mapping):
+            continue
+        lines.append(
+            "- "
+            f"{key}: role={value.get('comparison_role')}, "
+            f"mean={value.get('mean_delta')}, "
+            f"positive={value.get('positive_count')} / {value.get('total_count')}"
+        )
+    lines.extend(
+        [
+            "",
+            "Pooled primary D4-D6R delta:",
+            "- "
+            f"mean={pooled.get('mean_delta')}, "
+            f"positive={pooled.get('positive_count')} / {pooled.get('total_count')}, "
+            f"bootstrap CI95=[{pooled.get('bootstrap_ci95_low')}, "
+            f"{pooled.get('bootstrap_ci95_high')}], "
+            f"sign-test p={pooled.get('one_sided_sign_test_p')}",
+            "",
+            "Cluster summary:",
+            "- "
+            f"mean={cluster.get('mean_cluster_delta')}, "
+            f"positive={cluster.get('positive_cluster_count')} / "
+            f"{cluster.get('cluster_count')}, "
+            f"sign-test p={cluster.get('one_sided_sign_test_p')}",
+            "",
+            "Signed-rank summary:",
+            "- "
+            f"positive rank sum={signed_rank.get('positive_rank_sum')}, "
+            f"total rank sum={signed_rank.get('total_rank_sum')}, "
+            f"p={signed_rank.get('one_sided_signed_rank_p')}",
+            "",
+            "Claim boundary:",
+            str(analysis.get("claim_boundary", PHASE62_CLAIM_BOUNDARY)),
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def _write_summary_csv(path: Path, rows: object) -> None:
+    if not isinstance(rows, list):
+        raise ValueError("Phase 62 analysis is missing summary rows")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=SUMMARY_FIELDNAMES)
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise ValueError("Phase 62 summary rows must be objects")
+            writer.writerow({field: row.get(field, "") for field in SUMMARY_FIELDNAMES})
+
+
+def _write_csv_mapping_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: object,
+    row_key: str,
+) -> None:
+    if not isinstance(rows, list):
+        raise ValueError(f"Phase 62 analysis is missing {row_key}")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise ValueError(f"Phase 62 {row_key} rows must be objects")
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    return value

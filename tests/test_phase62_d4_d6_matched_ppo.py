@@ -1,4 +1,6 @@
 import csv
+import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -162,3 +164,110 @@ def test_phase62_reports_insufficient_for_missing_primary_rows():
         row["variant_id"] for row in analysis["coverage_issues"]["missing_variant_rows"]
     }
     assert missing == {"D6R16"}
+
+
+def test_phase62_writer_outputs_summary_traces_delta_cluster_json_and_markdown(tmp_path):
+    from paper11_geofm.phase62_d4_d6_matched_ppo import (
+        build_phase62_d4_d6_analysis,
+        write_phase62_d4_d6_artifacts,
+    )
+
+    rows = _phase62_summary_rows("supported")
+    analysis = build_phase62_d4_d6_analysis(
+        rows,
+        metadata={"eval_tile_ids": ["tile_a", "tile_b"], "seeds": [0, 1]},
+        bootstrap_iterations=100,
+    )
+    paths = write_phase62_d4_d6_artifacts(
+        {**analysis, "summaries": rows, "traces": {}},
+        tmp_path / "outputs",
+    )
+
+    assert paths["summary_csv"].name == "phase62_d4_d6_matched_ppo_summary.csv"
+    assert paths["traces_json"].name == "phase62_d4_d6_matched_ppo_traces.json"
+    assert paths["delta_csv"].name == "phase62_d4_d6_delta_table.csv"
+    assert paths["cluster_csv"].name == "phase62_d4_d6_cluster_summary.csv"
+    assert paths["comparison_json"].name == "phase62_d4_d6_matched_ppo.json"
+    assert paths["readiness_md"].name == "phase62_d4_d6_matched_ppo.md"
+    saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
+    assert saved["phase62_d4_d6_status"] == "d4_pca_advantage_over_d6_supported"
+    with paths["delta_csv"].open("r", encoding="utf-8", newline="") as handle:
+        delta_rows = list(csv.DictReader(handle))
+    assert any(
+        row["d4_variant_id"] == "D4P16" and row["d6_variant_id"] == "D6R16"
+        for row in delta_rows
+    )
+    markdown = paths["readiness_md"].read_text(encoding="utf-8")
+    assert "D4/D6 matched PPO evaluation" in markdown
+    assert "does not enable suitability reward" in markdown
+
+
+def test_phase62_cli_analyze_only(tmp_path, capsys):
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase62_d4_d6_matched_ppo"
+        / "run_phase62_d4_d6_matched_ppo.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase62_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+
+    summary_csv = _write_csv(tmp_path / "summary.csv", _phase62_summary_rows("supported"))
+    analyze_exit = module.main(
+        [
+            "--mode",
+            "analyze-only",
+            "--existing-summary-csv",
+            str(summary_csv),
+            "--output-dir",
+            str(tmp_path / "analysis"),
+            "--eval-tile-ids",
+            "tile_a,tile_b",
+            "--seeds",
+            "0,1",
+            "--bootstrap-iterations",
+            "100",
+        ]
+    )
+
+    stdout = capsys.readouterr().out
+    assert analyze_exit == 0
+    assert "Phase 62 D4/D6 status: d4_pca_advantage_over_d6_supported" in stdout
+    assert "phase62_d4_d6_matched_ppo.json" in stdout
+
+
+def test_phase62_cli_run_and_analyze_accepts_existing_summary_arg():
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase62_d4_d6_matched_ppo"
+        / "run_phase62_d4_d6_matched_ppo.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase62_runner_args", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    parser = module._build_parser()
+    args = parser.parse_args(
+        [
+            "--mode",
+            "run-and-analyze",
+            "--phase8-output-dir",
+            "phase8",
+            "--phase61-output-dir",
+            "phase61",
+            "--tile-index-csv",
+            "tiles.csv",
+            "--existing-summary-csv",
+            "existing.csv",
+            "--variants",
+            "D4P8,D6R8",
+            "--output-dir",
+            "outputs",
+        ]
+    )
+
+    assert args.existing_summary_csv == Path("existing.csv")
+    assert args.variants == "D4P8,D6R8"
