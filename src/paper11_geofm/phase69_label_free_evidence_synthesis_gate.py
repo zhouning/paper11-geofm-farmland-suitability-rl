@@ -52,6 +52,14 @@ def build_phase69_label_free_evidence_synthesis_gate(
     phase67 = _read_json_object(phase67_json, "Phase 67 JSON")
     phase68 = _read_json_object(phase68_json, "Phase 68 JSON")
 
+    _require_status(phase60, "phase60_attribution_status", "Phase 60 JSON")
+    _require_status(phase57, "phase57_mechanism_status", "Phase 57 JSON")
+    _require_status(phase59, "phase59_matched_dimension_status", "Phase 59 JSON")
+    _require_status(phase62, "phase62_d4_d6_status", "Phase 62 JSON")
+    _require_status(phase66, "phase66_status", "Phase 66 JSON")
+    _require_status(phase67, "phase67_status", "Phase 67 JSON")
+    _require_status(phase68, "phase68_status", "Phase 68 JSON")
+
     evidence_axis_rows = [
         _route_support_axis(phase60),
         _mechanism_support_axis(phase57),
@@ -133,6 +141,13 @@ def _read_json_object(path: Path | str, label: str) -> dict[str, object]:
     if not isinstance(payload, dict):
         raise ValueError(f"{label} must be a JSON object: {json_path}")
     return dict(payload)
+
+
+def _require_status(payload: Mapping[str, object], field: str, label: str) -> str:
+    value = payload.get(field)
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} is missing required status field: {field}")
+    return value
 
 
 def _route_support_axis(phase60: Mapping[str, object]) -> dict[str, object]:
