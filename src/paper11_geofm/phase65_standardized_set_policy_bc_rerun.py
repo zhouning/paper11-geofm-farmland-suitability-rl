@@ -328,3 +328,269 @@ def rollout_phase65_greedy_policy(
         "selected_action_indices": ";".join(str(index) for index in selected),
         "claim_boundary": PHASE65_CLAIM_BOUNDARY,
     }
+
+
+PHASE65_PAIRWISE_FIELDNAMES = [
+    "variant_id",
+    "eval_tile_id",
+    "seed",
+    "standardized_bc_reward",
+    "unstandardized_bc_reward",
+    "standardized_minus_unstandardized_reward",
+    "standardized_oracle_gap_fraction",
+    "unstandardized_oracle_gap_fraction",
+    "standardized_minus_unstandardized_oracle_gap_fraction",
+    "self_improves_unstandardized",
+    "claim_boundary",
+]
+
+
+def _safe_float(value: object, default: float = 0.0) -> float:
+    if value is None or str(value).strip() == "":
+        return float(default)
+    return float(value)
+
+
+def _safe_int(value: object, default: int = 0) -> int:
+    if value is None or str(value).strip() == "":
+        return int(default)
+    return int(float(value))
+
+
+def _rollout_key(row: Mapping[str, object]) -> tuple[str, str, int]:
+    return (
+        str(row.get("variant_id", "")),
+        str(row.get("eval_tile_id", "")),
+        _safe_int(row.get("seed")),
+    )
+
+
+def _index_rollout_rows(
+    rows: Sequence[Mapping[str, object]],
+) -> tuple[dict[tuple[str, str, int], Mapping[str, object]], list[dict[str, object]]]:
+    index: dict[tuple[str, str, int], Mapping[str, object]] = {}
+    duplicates: list[dict[str, object]] = []
+    for row in rows:
+        if str(row.get("row_type", "")) != "bc_greedy_policy":
+            continue
+        key = _rollout_key(row)
+        if key in index:
+            duplicates.append(
+                {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2]}
+            )
+        index[key] = row
+    return index, duplicates
+
+
+def build_phase65_standardization_pairwise_rows(
+    standardized_rows: Sequence[Mapping[str, object]],
+    unstandardized_rows: Sequence[Mapping[str, object]],
+    variants: Sequence[str],
+    eval_tile_ids: Sequence[str],
+    seeds: Sequence[int],
+) -> tuple[list[dict[str, object]], dict[str, list[dict[str, object]]]]:
+    standardized_index, standardized_duplicates = _index_rollout_rows(standardized_rows)
+    unstandardized_index, unstandardized_duplicates = _index_rollout_rows(unstandardized_rows)
+    rows: list[dict[str, object]] = []
+    missing_standardized = []
+    missing_unstandardized = []
+    expected = {
+        (str(variant), str(tile_id), int(seed))
+        for variant in variants
+        for tile_id in eval_tile_ids
+        for seed in seeds
+    }
+    for key in sorted(expected):
+        standardized = standardized_index.get(key)
+        unstandardized = unstandardized_index.get(key)
+        if standardized is None:
+            missing_standardized.append(
+                {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2]}
+            )
+            continue
+        if unstandardized is None:
+            missing_unstandardized.append(
+                {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2]}
+            )
+            continue
+        standardized_reward = _safe_float(standardized.get("total_contract_reward"))
+        unstandardized_reward = _safe_float(unstandardized.get("total_contract_reward"))
+        standardized_gap = _safe_float(standardized.get("oracle_gap_fraction"))
+        unstandardized_gap = _safe_float(unstandardized.get("oracle_gap_fraction"))
+        reward_delta = _round_float(standardized_reward - unstandardized_reward)
+        rows.append(
+            {
+                "variant_id": key[0],
+                "eval_tile_id": key[1],
+                "seed": key[2],
+                "standardized_bc_reward": _round_float(standardized_reward),
+                "unstandardized_bc_reward": _round_float(unstandardized_reward),
+                "standardized_minus_unstandardized_reward": reward_delta,
+                "standardized_oracle_gap_fraction": _round_float(standardized_gap),
+                "unstandardized_oracle_gap_fraction": _round_float(unstandardized_gap),
+                "standardized_minus_unstandardized_oracle_gap_fraction": _round_float(
+                    standardized_gap - unstandardized_gap
+                ),
+                "self_improves_unstandardized": bool(reward_delta > 0.0),
+                "claim_boundary": PHASE65_CLAIM_BOUNDARY,
+            }
+        )
+    unexpected_standardized = [
+        {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2]}
+        for key in sorted(standardized_index)
+        if key not in expected
+    ]
+    unexpected_unstandardized = [
+        {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2]}
+        for key in sorted(unstandardized_index)
+        if key not in expected
+    ]
+    return rows, {
+        "missing_standardized_rows": missing_standardized,
+        "missing_unstandardized_rows": missing_unstandardized,
+        "duplicate_standardized_rows": standardized_duplicates,
+        "duplicate_unstandardized_rows": unstandardized_duplicates,
+        "unexpected_standardized_rows": unexpected_standardized,
+        "unexpected_unstandardized_rows": unexpected_unstandardized,
+    }
+
+
+def _numeric_delta_summary(values: Sequence[float]) -> dict[str, object]:
+    numbers = [float(value) for value in values]
+    if not numbers:
+        return {
+            "mean_delta": 0.0,
+            "positive_count": 0,
+            "total_count": 0,
+            "min_delta": 0.0,
+            "max_delta": 0.0,
+        }
+    return {
+        "mean_delta": _round_float(statistics.mean(numbers)),
+        "positive_count": sum(1 for value in numbers if value > 0.0),
+        "total_count": len(numbers),
+        "min_delta": _round_float(min(numbers)),
+        "max_delta": _round_float(max(numbers)),
+    }
+
+
+def _paired_variant_delta_rows(
+    rows: Sequence[Mapping[str, object]],
+    comparisons: Sequence[tuple[str, str]],
+    value_field: str,
+    output_field: str,
+) -> list[dict[str, object]]:
+    index = {
+        (
+            str(row.get("variant_id", "")),
+            str(row.get("eval_tile_id", "")),
+            _safe_int(row.get("seed")),
+        ): _safe_float(row.get(value_field))
+        for row in rows
+        if str(row.get("row_type", "")) == "bc_greedy_policy"
+    }
+    output = []
+    tile_seed_keys = sorted({(key[1], key[2]) for key in index})
+    for left, right in comparisons:
+        for tile_id, seed in tile_seed_keys:
+            left_key = (left, tile_id, seed)
+            right_key = (right, tile_id, seed)
+            if left_key not in index or right_key not in index:
+                continue
+            delta = _round_float(index[left_key] - index[right_key])
+            output.append(
+                {
+                    "left_variant_id": left,
+                    "right_variant_id": right,
+                    "eval_tile_id": tile_id,
+                    "seed": seed,
+                    output_field: delta,
+                    "left_improves_right": bool(delta > 0.0),
+                    "claim_boundary": PHASE65_CLAIM_BOUNDARY,
+                }
+            )
+    return output
+
+
+def _coverage_has_issues(coverage: Mapping[str, object]) -> bool:
+    return any(bool(value) for value in coverage.values())
+
+
+def _phase65_status(
+    coverage: Mapping[str, object],
+    overall_summary: Mapping[str, object],
+    d4_self_summary: Mapping[str, object],
+    d4_b0_summary: Mapping[str, object],
+    d4_d6_summary: Mapping[str, object],
+) -> str:
+    if _coverage_has_issues(coverage):
+        return PHASE65_STATUS_INSUFFICIENT
+    overall_positive = float(overall_summary["mean_delta"]) > 0.0
+    d4_self_positive = float(d4_self_summary["mean_delta"]) > 0.0
+    d4_b0_positive = float(d4_b0_summary["mean_delta"]) > 0.0
+    d4_d6_positive = float(d4_d6_summary["mean_delta"]) > 0.0
+    if d4_self_positive and d4_b0_positive and d4_d6_positive:
+        return PHASE65_STATUS_GEOFM
+    if overall_positive:
+        return PHASE65_STATUS_ALL_VARIANTS
+    if not overall_positive and (not d4_b0_positive or not d4_d6_positive):
+        return PHASE65_STATUS_NOT_HELPFUL
+    return PHASE65_STATUS_INCONCLUSIVE
+
+
+def build_phase65_standardization_comparison(
+    standardized_rows: Sequence[Mapping[str, object]],
+    unstandardized_rows: Sequence[Mapping[str, object]],
+    variants: Sequence[str],
+    eval_tile_ids: Sequence[str],
+    seeds: Sequence[int],
+) -> dict[str, object]:
+    pairwise_rows, coverage = build_phase65_standardization_pairwise_rows(
+        standardized_rows,
+        unstandardized_rows,
+        variants=variants,
+        eval_tile_ids=eval_tile_ids,
+        seeds=seeds,
+    )
+    overall = _numeric_delta_summary(
+        [float(row["standardized_minus_unstandardized_reward"]) for row in pairwise_rows]
+    )
+    d4_self = _numeric_delta_summary(
+        [
+            float(row["standardized_minus_unstandardized_reward"])
+            for row in pairwise_rows
+            if str(row["variant_id"]).startswith("D4")
+        ]
+    )
+    d4_b0_rows = _paired_variant_delta_rows(
+        standardized_rows,
+        PHASE63_D4_B0_COMPARISONS,
+        value_field="total_contract_reward",
+        output_field="left_minus_right_reward",
+    )
+    d4_d6_rows = _paired_variant_delta_rows(
+        standardized_rows,
+        PHASE63_D4_D6_COMPARISONS,
+        value_field="total_contract_reward",
+        output_field="left_minus_right_reward",
+    )
+    d4_b0 = _numeric_delta_summary(
+        [float(row["left_minus_right_reward"]) for row in d4_b0_rows]
+    )
+    d4_d6 = _numeric_delta_summary(
+        [float(row["left_minus_right_reward"]) for row in d4_d6_rows]
+    )
+    status = _phase65_status(coverage, overall, d4_self, d4_b0, d4_d6)
+    return {
+        "phase": "phase65_standardization_comparison",
+        "phase65_status": status,
+        "pairwise_delta_rows": pairwise_rows,
+        "coverage_issues": coverage,
+        "overall_standardized_minus_unstandardized_summary": overall,
+        "d4_standardized_minus_unstandardized_summary": d4_self,
+        "d4_b0_delta_rows": d4_b0_rows,
+        "d4_d6_delta_rows": d4_d6_rows,
+        "d4_b0_delta_summary": d4_b0,
+        "d4_d6_delta_summary": d4_d6,
+        "claim_boundary": PHASE65_CLAIM_BOUNDARY,
+    }

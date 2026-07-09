@@ -269,3 +269,111 @@ def test_phase65_rollout_uses_standardized_logits_and_raw_rewards():
     assert rollout["oracle_total_reward"] == oracle["total_oracle_reward"]
     assert float(rollout["total_contract_reward"]) > 0.0
     assert rollout["claim_boundary"].startswith("Phase 65")
+
+
+def _rollout_row(variant_id, reward, tile_id="tile_a", seed=0, gap_fraction=0.1):
+    return {
+        "row_type": "bc_greedy_policy",
+        "variant_id": variant_id,
+        "train_tile_id": "tile_train",
+        "eval_tile_id": tile_id,
+        "eval_tile_rank": 1,
+        "seed": seed,
+        "phase63_seed_rank": seed + 1,
+        "eval_max_steps": 8,
+        "n_blocks": 4,
+        "n_features": 9,
+        "episode_steps": 3,
+        "terminated": False,
+        "truncated": True,
+        "all_actions_valid": True,
+        "invalid_action_count": 0,
+        "total_contract_reward": reward,
+        "oracle_total_reward": 1.5,
+        "oracle_gap": 1.5 - reward,
+        "oracle_gap_fraction": gap_fraction,
+        "selected_block_ids": "b1;b2;b3",
+        "selected_action_indices": "0;1;2",
+        "claim_boundary": "fixture",
+    }
+
+
+def test_phase65_pairwise_delta_reports_standardized_minus_unstandardized():
+    from paper11_geofm.phase65_standardized_set_policy_bc_rerun import (
+        build_phase65_standardization_pairwise_rows,
+    )
+
+    standardized = [_rollout_row("D4P8", 1.30), _rollout_row("B0", 1.10)]
+    unstandardized = [_rollout_row("D4P8", 1.00), _rollout_row("B0", 1.20)]
+
+    rows, coverage = build_phase65_standardization_pairwise_rows(
+        standardized,
+        unstandardized,
+        variants=["B0", "D4P8"],
+        eval_tile_ids=["tile_a"],
+        seeds=[0],
+    )
+
+    assert coverage["missing_standardized_rows"] == []
+    assert coverage["missing_unstandardized_rows"] == []
+    d4 = [row for row in rows if row["variant_id"] == "D4P8"][0]
+    assert d4["standardized_minus_unstandardized_reward"] == 0.3
+    assert d4["self_improves_unstandardized"] is True
+
+
+def test_phase65_status_gate_covers_supported_all_variant_not_helpful_and_insufficient():
+    from paper11_geofm.phase65_standardized_set_policy_bc_rerun import (
+        build_phase65_standardization_comparison,
+    )
+
+    variants = ["B0", "D4P8", "D4P16", "D6R8", "D6R16"]
+    old_rows = [_rollout_row(variant, 1.0) for variant in variants]
+    geofm_rows = [
+        _rollout_row("B0", 1.05),
+        _rollout_row("D4P8", 1.40),
+        _rollout_row("D4P16", 1.35),
+        _rollout_row("D6R8", 1.20),
+        _rollout_row("D6R16", 1.25),
+    ]
+    all_variant_rows = [
+        _rollout_row("B0", 1.30),
+        _rollout_row("D4P8", 1.10),
+        _rollout_row("D4P16", 1.12),
+        _rollout_row("D6R8", 1.18),
+        _rollout_row("D6R16", 1.19),
+    ]
+    not_helpful_rows = [_rollout_row(variant, 0.90) for variant in variants]
+
+    geofm = build_phase65_standardization_comparison(
+        geofm_rows,
+        old_rows,
+        variants=variants,
+        eval_tile_ids=["tile_a"],
+        seeds=[0],
+    )
+    all_variant = build_phase65_standardization_comparison(
+        all_variant_rows,
+        old_rows,
+        variants=variants,
+        eval_tile_ids=["tile_a"],
+        seeds=[0],
+    )
+    not_helpful = build_phase65_standardization_comparison(
+        not_helpful_rows,
+        old_rows,
+        variants=variants,
+        eval_tile_ids=["tile_a"],
+        seeds=[0],
+    )
+    insufficient = build_phase65_standardization_comparison(
+        geofm_rows[:-1],
+        old_rows,
+        variants=variants,
+        eval_tile_ids=["tile_a"],
+        seeds=[0],
+    )
+
+    assert geofm["phase65_status"] == "standardization_improves_geofm_set_policy"
+    assert all_variant["phase65_status"] == "standardization_improves_all_variants_no_geofm_advantage"
+    assert not_helpful["phase65_status"] == "standardization_not_helpful"
+    assert insufficient["phase65_status"] == "insufficient"
