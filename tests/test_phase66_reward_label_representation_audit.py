@@ -303,3 +303,86 @@ def test_phase66_representation_alignment_rejects_geofm_variant_without_extra_co
         assert "representation columns" in str(exc)
     else:
         raise AssertionError("Expected D4/D6 without representation columns to fail")
+
+
+def test_phase66_failure_modes_cover_reward_equivalent_component_miss_and_standardization_hurt():
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        build_phase66_failure_mode_summary,
+    )
+
+    atlas_rows = [
+        {
+            "variant_id": "D4P8",
+            "eval_tile_id": "tile_a",
+            "seed": 0,
+            "phase63_oracle_jaccard": 0.2,
+            "phase65_oracle_jaccard": 0.9,
+            "phase63_reward_equivalent_substitution": True,
+            "phase65_reward_equivalent_substitution": True,
+            "phase63_missed_oracle_block_ids": "b2",
+            "phase63_extra_selected_block_ids": "b3",
+        },
+        {
+            "variant_id": "D4P16",
+            "eval_tile_id": "tile_b",
+            "seed": 1,
+            "phase63_oracle_jaccard": 0.1,
+            "phase65_oracle_jaccard": 0.1,
+            "phase63_reward_equivalent_substitution": False,
+            "phase65_reward_equivalent_substitution": False,
+            "phase63_missed_oracle_block_ids": "b2",
+            "phase63_extra_selected_block_ids": "b4",
+        },
+    ]
+    alignment_rows = [
+        {"variant_id": "D4P8", "feature_group": "representation_extra", "proxy_r2": 0.10, "max_abs_spearman": 0.20},
+        {"variant_id": "D4P8", "feature_group": "reward_explicit", "proxy_r2": 0.90, "max_abs_spearman": 0.95},
+        {"variant_id": "D4P16", "feature_group": "representation_extra", "proxy_r2": 0.10, "max_abs_spearman": 0.20},
+        {"variant_id": "D4P16", "feature_group": "reward_explicit", "proxy_r2": 0.90, "max_abs_spearman": 0.95},
+    ]
+    phase65_pairwise_rows = [
+        {
+            "variant_id": "D4P16",
+            "eval_tile_id": "tile_b",
+            "seed": 1,
+            "standardized_minus_unstandardized_reward": -0.5,
+        }
+    ]
+
+    rows = build_phase66_failure_mode_summary(
+        atlas_rows,
+        alignment_rows,
+        phase65_pairwise_rows,
+    )
+    modes = {row["failure_mode"]: row for row in rows}
+
+    assert modes["near_oracle_reward_equivalent"]["case_count"] == 1
+    assert modes["misses_explicit_reward_components"]["case_count"] == 1
+    assert modes["representation_not_aligned_with_base_reward"]["case_count"] == 2
+    assert modes["standardization_hurts_rank_geometry"]["case_count"] == 1
+
+
+def test_phase66_diagnostic_gate_covers_all_statuses():
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        build_phase66_diagnostic_gate,
+    )
+
+    strong_alignment = [
+        {"variant_id": "B0", "feature_group": "reward_explicit", "proxy_r2": 0.60, "max_abs_spearman": 0.60, "best_topk_enrichment": 0.50},
+        {"variant_id": "D4P8", "feature_group": "reward_explicit", "proxy_r2": 0.60, "max_abs_spearman": 0.60, "best_topk_enrichment": 0.50},
+        {"variant_id": "D4P8", "feature_group": "representation_extra", "proxy_r2": 0.80, "max_abs_spearman": 0.80, "best_topk_enrichment": 0.75},
+    ]
+    redundant_alignment = [
+        {"variant_id": "B0", "feature_group": "reward_explicit", "proxy_r2": 0.85, "max_abs_spearman": 0.90, "best_topk_enrichment": 1.00},
+        {"variant_id": "D4P8", "feature_group": "reward_explicit", "proxy_r2": 0.86, "max_abs_spearman": 0.91, "best_topk_enrichment": 1.00},
+        {"variant_id": "D4P8", "feature_group": "representation_extra", "proxy_r2": 0.84, "max_abs_spearman": 0.89, "best_topk_enrichment": 1.00},
+    ]
+    failure_summary = [
+        {"failure_mode": "misses_explicit_reward_components", "case_count": 5},
+        {"failure_mode": "representation_not_aligned_with_base_reward", "case_count": 5},
+    ]
+
+    assert build_phase66_diagnostic_gate([], strong_alignment, [], {})["phase66_status"] == "representation_adds_reward_ranking_signal"
+    assert build_phase66_diagnostic_gate([], redundant_alignment, [], {})["phase66_status"] == "representation_signal_redundant_with_explicit_reward"
+    assert build_phase66_diagnostic_gate([], redundant_alignment, failure_summary, {"phase10_status": "not_ready_for_suitability_reward"})["phase66_status"] == "base_reward_target_masks_geofm_signal"
+    assert build_phase66_diagnostic_gate(["missing row"], redundant_alignment, failure_summary, {})["phase66_status"] == "insufficient"

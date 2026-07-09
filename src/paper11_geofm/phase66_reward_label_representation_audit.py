@@ -558,3 +558,183 @@ def build_phase66_representation_rank_alignment(
                 )
             )
     return rows
+
+
+PHASE66_FAILURE_FIELDNAMES = [
+    "failure_mode",
+    "case_count",
+    "representative_cases",
+    "claim_boundary",
+]
+
+
+def _alignment_advantage_summary(
+    alignment_rows: Sequence[Mapping[str, object]],
+) -> dict[str, float]:
+    b0_explicit = [
+        row
+        for row in alignment_rows
+        if str(row.get("variant_id")) == "B0"
+        and str(row.get("feature_group")) == "reward_explicit"
+    ]
+    geofm_rep = [
+        row
+        for row in alignment_rows
+        if str(row.get("variant_id", "")).startswith(("D4", "D6"))
+        and str(row.get("feature_group")) == "representation_extra"
+    ]
+    geofm_explicit = [
+        row
+        for row in alignment_rows
+        if str(row.get("variant_id", "")).startswith(("D4", "D6"))
+        and str(row.get("feature_group")) == "reward_explicit"
+    ]
+    b0_r2 = (
+        statistics.mean([_safe_float(row.get("proxy_r2")) for row in b0_explicit])
+        if b0_explicit
+        else 0.0
+    )
+    rep_r2 = (
+        statistics.mean([_safe_float(row.get("proxy_r2")) for row in geofm_rep])
+        if geofm_rep
+        else 0.0
+    )
+    explicit_r2 = (
+        statistics.mean([_safe_float(row.get("proxy_r2")) for row in geofm_explicit])
+        if geofm_explicit
+        else 0.0
+    )
+    rep_topk = (
+        statistics.mean([_safe_float(row.get("best_topk_enrichment")) for row in geofm_rep])
+        if geofm_rep
+        else 0.0
+    )
+    explicit_topk = (
+        statistics.mean([_safe_float(row.get("best_topk_enrichment")) for row in geofm_explicit])
+        if geofm_explicit
+        else 0.0
+    )
+    return {
+        "b0_explicit_proxy_r2_mean": _round_float(b0_r2),
+        "geofm_explicit_proxy_r2_mean": _round_float(explicit_r2),
+        "geofm_representation_proxy_r2_mean": _round_float(rep_r2),
+        "representation_minus_b0_proxy_r2": _round_float(rep_r2 - b0_r2),
+        "representation_minus_explicit_proxy_r2": _round_float(rep_r2 - explicit_r2),
+        "representation_minus_explicit_topk": _round_float(rep_topk - explicit_topk),
+    }
+
+
+def _case_id(row: Mapping[str, object]) -> str:
+    return f"{row.get('variant_id')}:{row.get('eval_tile_id')}:{row.get('seed')}"
+
+
+def build_phase66_failure_mode_summary(
+    atlas_rows: Sequence[Mapping[str, object]],
+    alignment_rows: Sequence[Mapping[str, object]],
+    phase65_pairwise_rows: Sequence[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    modes: dict[str, set[str]] = {
+        "near_oracle_reward_equivalent": set(),
+        "misses_explicit_reward_components": set(),
+        "representation_not_aligned_with_base_reward": set(),
+        "standardization_hurts_rank_geometry": set(),
+        "tile_specific_instability": set(),
+        "seed_instability": set(),
+    }
+    for row in atlas_rows:
+        case = _case_id(row)
+        if _safe_float(row.get("phase63_oracle_jaccard")) < 0.5 and bool(
+            row.get("phase63_reward_equivalent_substitution")
+        ):
+            modes["near_oracle_reward_equivalent"].add(case)
+        if not bool(row.get("phase63_reward_equivalent_substitution")) and str(
+            row.get("phase63_missed_oracle_block_ids", "")
+        ):
+            modes["misses_explicit_reward_components"].add(case)
+    by_variant: dict[str, dict[str, Mapping[str, object]]] = {}
+    for row in alignment_rows:
+        by_variant.setdefault(str(row.get("variant_id")), {})[
+            str(row.get("feature_group"))
+        ] = row
+    for variant_id, groups in by_variant.items():
+        if not variant_id.startswith(("D4", "D6")):
+            continue
+        rep = groups.get("representation_extra")
+        explicit = groups.get("reward_explicit")
+        if rep is None or explicit is None:
+            continue
+        if _safe_float(rep.get("proxy_r2")) + PHASE66_ALIGNMENT_ADVANTAGE_THRESHOLD < _safe_float(
+            explicit.get("proxy_r2")
+        ):
+            for row in atlas_rows:
+                if str(row.get("variant_id")) == variant_id:
+                    modes["representation_not_aligned_with_base_reward"].add(_case_id(row))
+    for row in phase65_pairwise_rows:
+        if _safe_float(row.get("standardized_minus_unstandardized_reward")) < 0.0:
+            modes["standardization_hurts_rank_geometry"].add(_case_id(row))
+    tile_counts: dict[str, int] = {}
+    seed_counts: dict[str, int] = {}
+    for row in atlas_rows:
+        if _safe_float(row.get("phase63_oracle_jaccard")) < 0.5:
+            tile_id = str(row.get("eval_tile_id"))
+            seed = str(row.get("seed"))
+            tile_counts[tile_id] = tile_counts.get(tile_id, 0) + 1
+            seed_counts[seed] = seed_counts.get(seed, 0) + 1
+    for tile_id, count in tile_counts.items():
+        if count >= 2:
+            modes["tile_specific_instability"].add(tile_id)
+    for seed, count in seed_counts.items():
+        if count >= 2:
+            modes["seed_instability"].add(seed)
+    return [
+        {
+            "failure_mode": mode,
+            "case_count": len(cases),
+            "representative_cases": ";".join(sorted(cases)[:5]),
+            "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+        }
+        for mode, cases in modes.items()
+    ]
+
+
+def build_phase66_diagnostic_gate(
+    coverage_issues: Sequence[object],
+    alignment_rows: Sequence[Mapping[str, object]],
+    failure_summary_rows: Sequence[Mapping[str, object]],
+    suitability_context: Mapping[str, object],
+) -> dict[str, object]:
+    if coverage_issues:
+        return {
+            "phase66_status": PHASE66_STATUS_INSUFFICIENT,
+            "coverage_issues": list(coverage_issues),
+            "alignment_advantage": {},
+            "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+        }
+    advantage = _alignment_advantage_summary(alignment_rows)
+    rep_minus_b0 = float(advantage["representation_minus_b0_proxy_r2"])
+    rep_minus_explicit = float(advantage["representation_minus_explicit_proxy_r2"])
+    failure_counts = {
+        str(row.get("failure_mode")): _safe_int(row.get("case_count"))
+        for row in failure_summary_rows
+    }
+    if (
+        rep_minus_b0 >= PHASE66_ALIGNMENT_ADVANTAGE_THRESHOLD
+        and rep_minus_explicit >= PHASE66_ALIGNMENT_ADVANTAGE_THRESHOLD
+    ):
+        status = PHASE66_STATUS_REPRESENTATION_ADDS_SIGNAL
+    elif (
+        failure_counts.get("misses_explicit_reward_components", 0) > 0
+        and failure_counts.get("representation_not_aligned_with_base_reward", 0) > 0
+        and str(suitability_context.get("phase10_status", "")).startswith("not_ready")
+    ):
+        status = PHASE66_STATUS_BASE_REWARD_MASKS
+    else:
+        status = PHASE66_STATUS_REPRESENTATION_REDUNDANT
+    return {
+        "phase66_status": status,
+        "coverage_issues": [],
+        "alignment_advantage": advantage,
+        "failure_mode_counts": failure_counts,
+        "suitability_context": dict(suitability_context),
+        "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+    }
