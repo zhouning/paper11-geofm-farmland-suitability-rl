@@ -98,6 +98,8 @@ base-reward protocol.
 - `35_phase69_label_free_evidence_synthesis_gate.md`: read-only label-free
   synthesis gate showing that the strongest current algorithm claim must remain
   narrowed to a bounded low-dimensional compressed state route.
+- `36_phase70_standardized_set_policy_rerun.md`: standardized set-policy rerun testing whether train-tile-fitted model-input standardization strengthens the bounded low-dimensional set-policy route.
+
 ## Reproduction Link
 
 Run the diagnostic from the repository root after the Phase 11/13 real Bishan
