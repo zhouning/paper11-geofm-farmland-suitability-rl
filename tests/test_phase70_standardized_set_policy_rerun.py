@@ -262,3 +262,159 @@ def test_phase70_comparison_statuses_distinguish_geofm_architecture_and_incomple
     assert paths["comparison_json"].name == "phase70_standardized_set_policy_comparison.json"
     assert paths["delta_csv"].name == "phase70_standardized_delta_table.csv"
     assert "standardization_improves_geofm_set_policy_route" in paths["readiness_md"].read_text(encoding="utf-8")
+
+def _write_csv(path: Path, rows: list[dict[str, object]]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0].keys())
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        import csv
+
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def _write_variant_fixture(
+    output_dir: Path,
+    variant_id: str,
+    rows: list[dict[str, object]],
+    columns: tuple[str, ...],
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    table = output_dir / f"variant_{variant_id}_features.csv"
+    with table.open("w", encoding="utf-8", newline="") as handle:
+        import csv
+
+        writer = csv.DictWriter(handle, fieldnames=["block_id", *columns])
+        writer.writeheader()
+        writer.writerows(rows)
+    manifest = {
+        "variants": {
+            variant_id: {
+                "ready": True,
+                "feature_table": table.name,
+                "required_columns": list(columns),
+                "reward": "base_planning_reward",
+                "state_groups": ["synthetic"],
+            }
+        }
+    }
+    (output_dir / "experiment_variants.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+def _phase70_fixture_roots(tmp_path: Path):
+    columns = _required_feature_columns()
+    blocks = ("b1", "b2", "b3", "b4")
+    base_rows = [
+        {**{"block_id": block_id}, **{column: 0.0 for column in columns}}
+        for block_id in blocks
+    ]
+    for row, value in zip(base_rows, (0.90, 0.70, 0.20, 0.10)):
+        row["explicit_feature_16"] = value
+
+    phase2 = tmp_path / "phase2"
+    phase8 = tmp_path / "phase8"
+    phase61 = tmp_path / "phase61"
+    _write_variant_fixture(phase2, "B0", base_rows, columns)
+    _write_variant_fixture(phase8, "D4P8", base_rows, columns)
+    _write_variant_fixture(phase61, "D6R8", base_rows, columns)
+    tile_index = _write_csv(
+        tmp_path / "tiles.csv",
+        [
+            {"tile_id": "tile_train", "block_ids": ";".join(blocks)},
+            {"tile_id": "tile_eval", "block_ids": ";".join(blocks)},
+        ],
+    )
+    baseline = [
+        _rollout_row("B0", 0.50, tile_id="tile_eval", seed=0),
+        _rollout_row("D4P8", 0.45, tile_id="tile_eval", seed=0),
+        _rollout_row("D6R8", 0.48, tile_id="tile_eval", seed=0),
+    ]
+    baseline_csv = _write_csv(tmp_path / "phase63_rollout.csv", baseline)
+    return phase2, phase8, phase61, tile_index, baseline_csv
+
+
+def test_phase70_run_wrapper_and_cli_succeed_on_fixture(tmp_path):
+    from paper11_geofm.phase70_standardized_set_policy_rerun import (
+        run_phase70_standardized_set_policy_rerun,
+    )
+
+    phase2, phase8, phase61, tile_index, baseline_csv = _phase70_fixture_roots(tmp_path)
+    analysis = run_phase70_standardized_set_policy_rerun(
+        phase2_output_dir=phase2,
+        phase8_output_dir=phase8,
+        phase61_output_dir=phase61,
+        tile_index_csv=tile_index,
+        phase63_rollout_csv=baseline_csv,
+        variants="B0,D4P8,D6R8",
+        train_tile_id="tile_train",
+        eval_tile_ids="tile_eval",
+        seeds="0",
+        eval_max_steps=3,
+        bc_epochs=8,
+        learning_rate=0.01,
+        hidden_dim=12,
+        top_k=2,
+    )
+
+    assert analysis["phase"] == "phase70_standardized_set_policy_rerun"
+    assert len(analysis["rollout_rows"]) == 3
+    assert len(analysis["history_rows"]) == 24
+    assert len(analysis["standardization_parameter_rows"]) == 27
+    assert analysis["phase70_status"] in {
+        "standardization_improves_geofm_set_policy_route",
+        "standardization_improves_architecture_not_geofm",
+        "standardization_not_sufficient",
+    }
+
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase70_standardized_set_policy_rerun"
+        / "run_phase70_standardized_set_policy_rerun.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase70_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    exit_code = module.main(
+        [
+            "--phase2-output-dir",
+            str(phase2),
+            "--phase8-output-dir",
+            str(phase8),
+            "--phase61-output-dir",
+            str(phase61),
+            "--tile-index-csv",
+            str(tile_index),
+            "--phase63-rollout-csv",
+            str(baseline_csv),
+            "--variants",
+            "B0,D4P8,D6R8",
+            "--train-tile-id",
+            "tile_train",
+            "--eval-tile-ids",
+            "tile_eval",
+            "--seeds",
+            "0",
+            "--eval-max-steps",
+            "3",
+            "--bc-epochs",
+            "8",
+            "--learning-rate",
+            "0.01",
+            "--hidden-dim",
+            "12",
+            "--top-k",
+            "2",
+            "--output-dir",
+            str(tmp_path / "outputs"),
+        ]
+    )
+
+    assert exit_code == 0
+    assert (tmp_path / "outputs" / "phase70_standardized_set_policy_comparison.json").exists()

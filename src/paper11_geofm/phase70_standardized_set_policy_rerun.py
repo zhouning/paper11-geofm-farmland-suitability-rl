@@ -11,13 +11,16 @@ import statistics
 import numpy as np
 
 from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+    PHASE63_DEFAULT_VARIANTS,
     Phase63SetPolicyScorer,
+    _phase63_oracle_summary_row,
     _round_float,
     build_phase63_model_inputs,
     build_phase63_oracle_trajectory,
+    build_phase63_set_policy_contract,
 )
 from paper11_geofm.planning_reward import compute_base_planning_reward_from_matrix_row
-from paper11_geofm.tiled_inputs import TiledVariantInput
+from paper11_geofm.tiled_inputs import TiledVariantInput, load_tiled_variant_input
 
 
 PHASE70_CLAIM_BOUNDARY = (
@@ -710,3 +713,133 @@ def _phase70_markdown(analysis: Mapping[str, object]) -> str:
         ]
     )
     return "\n".join(lines)
+
+def _load_phase70_tiled_variant_input(
+    contract: Mapping[str, object],
+    tile_id: str,
+    variant_id: str,
+) -> TiledVariantInput:
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 70 contract is missing variant source routing")
+    source_dir = variant_source_dirs.get(variant_id)
+    if source_dir is None:
+        raise ValueError(f"Phase 70 contract has no source for variant {variant_id}")
+    return load_tiled_variant_input(
+        source_dir,
+        str(contract["tile_index_csv"]),
+        tile_id,
+        variant_id=variant_id,
+    )
+
+
+def run_phase70_standardized_set_policy_rerun(
+    phase2_output_dir: Path | str,
+    phase8_output_dir: Path | str,
+    phase61_output_dir: Path | str,
+    tile_index_csv: Path | str,
+    phase63_rollout_csv: Path | str,
+    variants: Sequence[str] | str = PHASE63_DEFAULT_VARIANTS,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 5,
+    eval_max_steps: int = 8,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+    bc_epochs: int = 80,
+    learning_rate: float = 0.001,
+    hidden_dim: int = 64,
+    top_k: int = 3,
+) -> dict[str, object]:
+    contract = build_phase63_set_policy_contract(
+        phase2_output_dir=phase2_output_dir,
+        phase8_output_dir=phase8_output_dir,
+        phase61_output_dir=phase61_output_dir,
+        tile_index_csv=tile_index_csv,
+        variants=variants,
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+        eval_max_steps=eval_max_steps,
+        seeds=seeds,
+        bc_epochs=bc_epochs,
+        learning_rate=learning_rate,
+        hidden_dim=hidden_dim,
+        top_k=top_k,
+    )
+    params_by_variant: dict[str, Mapping[str, object]] = {}
+    oracle_summary_rows: list[dict[str, object]] = []
+    history_rows: list[dict[str, object]] = []
+    rollout_rows: list[dict[str, object]] = []
+    for variant_id in contract["variants"]:
+        variant = str(variant_id)
+        train_tiled = _load_phase70_tiled_variant_input(
+            contract,
+            str(contract["train_tile_id"]),
+            variant,
+        )
+        params = fit_phase70_standardization(train_tiled)
+        params_by_variant[variant] = params
+        standardized_train = apply_phase70_standardization(train_tiled, params)
+        for seed in contract["seeds"]:
+            model, history = train_phase70_standardized_behavior_cloner(
+                standardized_train,
+                seed=int(seed),
+                eval_max_steps=int(contract["eval_max_steps"]),
+                epochs=int(contract["bc_epochs"]),
+                learning_rate=float(contract["learning_rate"]),
+                hidden_dim=int(contract["hidden_dim"]),
+                top_k=int(contract["top_k"]),
+            )
+            history_rows.extend(history)
+            for eval_tile_id in contract["eval_tile_ids"]:
+                eval_id = str(eval_tile_id)
+                eval_tiled = _load_phase70_tiled_variant_input(contract, eval_id, variant)
+                standardized_eval = apply_phase70_standardization(eval_tiled, params)
+                oracle = build_phase70_oracle_trajectory(
+                    standardized_eval,
+                    int(contract["eval_max_steps"]),
+                )
+                oracle_row = _phase63_oracle_summary_row(
+                    oracle,
+                    seed=int(seed),
+                    tile_role="eval",
+                )
+                oracle_row["claim_boundary"] = PHASE70_CLAIM_BOUNDARY
+                oracle_summary_rows.append(oracle_row)
+                rollout_rows.append(
+                    rollout_phase70_standardized_greedy_policy(
+                        model,
+                        standardized_eval,
+                        train_tile_id=str(contract["train_tile_id"]),
+                        eval_tile_rank=int(contract["eval_tile_ranks"][eval_id]),
+                        seed=int(seed),
+                        phase70_seed_rank=int(contract["seed_ranks"][str(int(seed))]),
+                        eval_max_steps=int(contract["eval_max_steps"]),
+                    )
+                )
+    phase63_rows = _load_csv_rows(phase63_rollout_csv, "Phase 63 rollout CSV")
+    analysis = build_phase70_standardized_set_policy_comparison(
+        rollout_rows,
+        phase63_rows,
+        metadata={
+            "variants": contract["variants"],
+            "eval_tile_ids": contract["eval_tile_ids"],
+            "seeds": contract["seeds"],
+        },
+    )
+    analysis["contract"] = contract
+    analysis["standardization_parameter_rows"] = build_phase70_standardization_parameter_rows(
+        params_by_variant
+    )
+    analysis["history_rows"] = history_rows
+    analysis["rollout_rows"] = rollout_rows
+    analysis["oracle_summary_rows"] = oracle_summary_rows
+    return analysis
+
+
+def _load_csv_rows(path: Path | str, label: str) -> list[dict[str, object]]:
+    csv_path = Path(path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {label}: {csv_path}")
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle)]
