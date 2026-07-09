@@ -370,3 +370,191 @@ def build_phase66_selected_block_atlas(
             }
         )
     return rows
+
+
+PHASE66_ALIGNMENT_FIELDNAMES = [
+    "variant_id",
+    "tile_id",
+    "feature_group",
+    "n_columns",
+    "mean_abs_spearman",
+    "max_abs_spearman",
+    "best_topk_enrichment",
+    "proxy_r2",
+    "best_feature_name",
+    "claim_boundary",
+]
+
+
+def _rank_average(values: Sequence[float]) -> np.ndarray:
+    array = np.asarray(values, dtype=np.float64)
+    order = np.argsort(array, kind="mergesort")
+    ranks = np.empty(len(array), dtype=np.float64)
+    start = 0
+    while start < len(array):
+        end = start + 1
+        while end < len(array) and array[order[end]] == array[order[start]]:
+            end += 1
+        average_rank = (start + 1 + end) / 2.0
+        ranks[order[start:end]] = average_rank
+        start = end
+    return ranks
+
+
+def phase66_spearman_abs(
+    feature_values: Sequence[float],
+    reward_values: Sequence[float],
+) -> float:
+    x = np.asarray(feature_values, dtype=np.float64)
+    y = np.asarray(reward_values, dtype=np.float64)
+    if x.size != y.size:
+        raise ValueError("Phase 66 Spearman inputs must have equal length")
+    if x.size < 2 or float(np.std(x)) == 0.0 or float(np.std(y)) == 0.0:
+        return 0.0
+    rx = _rank_average(x)
+    ry = _rank_average(y)
+    if float(np.std(rx)) == 0.0 or float(np.std(ry)) == 0.0:
+        return 0.0
+    corr = float(np.corrcoef(rx, ry)[0, 1])
+    if np.isnan(corr):
+        return 0.0
+    return _round_float(abs(corr))
+
+
+def phase66_topk_enrichment(
+    feature_values: Sequence[float],
+    reward_values: Sequence[float],
+    top_k: int,
+) -> float:
+    x = np.asarray(feature_values, dtype=np.float64)
+    y = np.asarray(reward_values, dtype=np.float64)
+    if x.size != y.size:
+        raise ValueError("Phase 66 top-k enrichment inputs must have equal length")
+    k = min(int(top_k), int(x.size))
+    if k <= 0:
+        return 0.0
+    reward_top = set(np.argsort(-y, kind="mergesort")[:k].tolist())
+    high_top = set(np.argsort(-x, kind="mergesort")[:k].tolist())
+    low_top = set(np.argsort(x, kind="mergesort")[:k].tolist())
+    return _round_float(max(len(reward_top & high_top), len(reward_top & low_top)) / k)
+
+
+def _proxy_r2(matrix: np.ndarray, reward_values: np.ndarray) -> float:
+    x = np.asarray(matrix, dtype=np.float64)
+    y = np.asarray(reward_values, dtype=np.float64)
+    if x.ndim != 2 or x.shape[0] != y.shape[0] or x.shape[1] == 0:
+        return 0.0
+    keep = np.std(x, axis=0) > 1.0e-12
+    if not bool(np.any(keep)) or float(np.std(y)) == 0.0:
+        return 0.0
+    z = x[:, keep]
+    z = (z - np.mean(z, axis=0)) / np.std(z, axis=0)
+    design = np.column_stack([np.ones(z.shape[0]), z])
+    coeffs, *_ = np.linalg.lstsq(design, y, rcond=None)
+    predicted = design @ coeffs
+    total = float(np.sum((y - np.mean(y)) ** 2))
+    if total <= 1.0e-12:
+        return 0.0
+    residual = float(np.sum((y - predicted) ** 2))
+    return _round_float(max(0.0, min(1.0, 1.0 - residual / total)))
+
+
+def _phase66_feature_groups(feature_columns: Sequence[str]) -> dict[str, list[int]]:
+    reward_required = set(BASE_PLANNING_REWARD_REQUIRED_COLUMNS)
+    reward_explicit = [
+        index for index, column in enumerate(feature_columns) if str(column) in reward_required
+    ]
+    nonreward_explicit = [
+        index
+        for index, column in enumerate(feature_columns)
+        if str(column).startswith("explicit_feature_") and str(column) not in reward_required
+    ]
+    representation_extra = [
+        index
+        for index, column in enumerate(feature_columns)
+        if not str(column).startswith("explicit_feature_")
+    ]
+    return {
+        "reward_explicit": reward_explicit,
+        "nonreward_explicit": nonreward_explicit,
+        "representation_extra": representation_extra,
+    }
+
+
+def _alignment_row(
+    tiled_input,
+    group_name: str,
+    indexes: Sequence[int],
+    reward_values: np.ndarray,
+    eval_max_steps: int,
+) -> dict[str, object]:
+    if not indexes:
+        return {
+            "variant_id": str(tiled_input.variant_id),
+            "tile_id": str(tiled_input.tile_id),
+            "feature_group": group_name,
+            "n_columns": 0,
+            "mean_abs_spearman": 0.0,
+            "max_abs_spearman": 0.0,
+            "best_topk_enrichment": 0.0,
+            "proxy_r2": 0.0,
+            "best_feature_name": "",
+            "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+        }
+    matrix = np.asarray(tiled_input.state_matrix[:, list(indexes)], dtype=np.float64)
+    spearman_values = [
+        phase66_spearman_abs(matrix[:, col], reward_values)
+        for col in range(matrix.shape[1])
+    ]
+    enrichment_values = [
+        phase66_topk_enrichment(matrix[:, col], reward_values, top_k=eval_max_steps)
+        for col in range(matrix.shape[1])
+    ]
+    best_index = int(np.argmax(spearman_values)) if spearman_values else 0
+    return {
+        "variant_id": str(tiled_input.variant_id),
+        "tile_id": str(tiled_input.tile_id),
+        "feature_group": group_name,
+        "n_columns": int(len(indexes)),
+        "mean_abs_spearman": _round_float(statistics.mean(spearman_values)),
+        "max_abs_spearman": _round_float(max(spearman_values)),
+        "best_topk_enrichment": _round_float(max(enrichment_values)),
+        "proxy_r2": _proxy_r2(matrix, reward_values),
+        "best_feature_name": str(tiled_input.feature_columns[int(indexes[best_index])]),
+        "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+    }
+
+
+def build_phase66_representation_rank_alignment(
+    tiled_inputs: Mapping[tuple[str, str], object],
+    eval_max_steps: int,
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for key in sorted(tiled_inputs):
+        tiled = tiled_inputs[key]
+        reward_values = np.asarray(
+            [
+                compute_base_planning_reward_from_matrix_row(
+                    tiled.feature_columns,
+                    tiled.state_matrix[row_index],
+                )
+                for row_index in range(len(tiled.block_ids))
+            ],
+            dtype=np.float64,
+        )
+        groups = _phase66_feature_groups(tiled.feature_columns)
+        if str(tiled.variant_id) != "B0" and not groups["representation_extra"]:
+            raise ValueError(
+                f"Phase 66 cannot separate representation columns for {tiled.variant_id}"
+            )
+        for group_name, indexes in groups.items():
+            rows.append(
+                _alignment_row(
+                    tiled,
+                    group_name,
+                    indexes,
+                    reward_values,
+                    eval_max_steps=eval_max_steps,
+                )
+            )
+    return rows

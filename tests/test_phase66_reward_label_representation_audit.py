@@ -233,3 +233,73 @@ def test_phase66_selected_block_atlas_rejects_missing_rollout_rows():
         assert "missing Phase 63 rollout row" in str(exc)
     else:
         raise AssertionError("Expected missing Phase 63 row to fail")
+
+
+def test_phase66_rank_metric_handles_ties_and_constant_columns():
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        phase66_spearman_abs,
+        phase66_topk_enrichment,
+    )
+
+    assert phase66_spearman_abs([1.0, 2.0, 2.0, 4.0], [0.1, 0.2, 0.2, 0.4]) == 1.0
+    assert phase66_spearman_abs([1.0, 1.0, 1.0], [0.1, 0.2, 0.3]) == 0.0
+    assert phase66_topk_enrichment([0.9, 0.8, 0.1, 0.0], [1.0, 0.7, 0.2, 0.1], top_k=2) == 1.0
+    assert phase66_topk_enrichment([0.0, 0.1, 0.8, 0.9], [1.0, 0.7, 0.2, 0.1], top_k=2) == 1.0
+
+
+def test_phase66_representation_rank_alignment_separates_explicit_and_extra_columns():
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        build_phase66_representation_rank_alignment,
+    )
+
+    columns = (
+        "explicit_feature_00",
+        "explicit_feature_01",
+        "explicit_feature_02",
+        "explicit_feature_04",
+        "explicit_feature_07",
+        "explicit_feature_09",
+        "explicit_feature_10",
+        "explicit_feature_13",
+        "explicit_feature_16",
+        "embedding_pca_00",
+        "embedding_pca_01",
+    )
+    matrix = np.asarray(
+        [
+            [5.0, 0.0, 0.0, 0.4, 0.1, 0.0, 0.0, 0.8, 0.9, 0.9, 0.0],
+            [4.0, 0.0, 0.0, 0.4, 0.1, 0.0, 0.0, 0.7, 0.8, 0.8, 0.0],
+            [3.0, 0.0, 0.0, 0.4, 0.1, 0.0, 0.0, 0.2, 0.3, 0.3, 0.0],
+            [1.0, 0.0, 0.0, 0.0, 0.0, 0.5, 0.4, 0.1, 0.1, 0.1, 0.0],
+        ],
+        dtype=np.float32,
+    )
+    tiled = _tiled_input(columns=columns, matrix=matrix, variant_id="D4P8")
+
+    rows = build_phase66_representation_rank_alignment(
+        tiled_inputs={("D4P8", "tile_eval"): tiled},
+        eval_max_steps=2,
+    )
+    by_group = {row["feature_group"]: row for row in rows}
+
+    assert by_group["reward_explicit"]["n_columns"] == 9
+    assert by_group["representation_extra"]["n_columns"] == 2
+    assert by_group["representation_extra"]["max_abs_spearman"] == 1.0
+    assert by_group["representation_extra"]["best_topk_enrichment"] == 1.0
+    assert by_group["representation_extra"]["proxy_r2"] > 0.9
+
+
+def test_phase66_representation_alignment_rejects_geofm_variant_without_extra_columns():
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        build_phase66_representation_rank_alignment,
+    )
+
+    try:
+        build_phase66_representation_rank_alignment(
+            tiled_inputs={("D4P8", "tile_eval"): _tiled_input(variant_id="D4P8")},
+            eval_max_steps=2,
+        )
+    except ValueError as exc:
+        assert "representation columns" in str(exc)
+    else:
+        raise AssertionError("Expected D4/D6 without representation columns to fail")
