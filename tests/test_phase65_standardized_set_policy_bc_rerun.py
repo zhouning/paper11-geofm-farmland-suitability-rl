@@ -463,3 +463,118 @@ def test_phase65_cli_parser_accepts_required_inputs():
     assert args.phase63_comparison_json == Path("phase63_set_policy_comparison.json")
     assert args.phase63_rollout_csv == Path("phase63_bc_rollout_summary.csv")
     assert args.output_dir == Path("outputs")
+
+
+def _write_csv(path: Path, rows: list[dict[str, object]]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0].keys())
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        import csv
+
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def _write_variant_fixture(
+    output_dir: Path,
+    variant_id: str,
+    rows: list[dict[str, float]],
+    columns: tuple[str, ...],
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    table = output_dir / f"variant_{variant_id}_features.csv"
+    with table.open("w", encoding="utf-8", newline="") as handle:
+        import csv
+
+        writer = csv.DictWriter(handle, fieldnames=["block_id", *columns])
+        writer.writeheader()
+        writer.writerows(rows)
+    manifest = {
+        "variants": {
+            variant_id: {
+                "ready": True,
+                "feature_table": table.name,
+                "required_columns": list(columns),
+                "reward": "base_planning_reward",
+                "state_groups": ["synthetic"],
+            }
+        }
+    }
+    (output_dir / "experiment_variants.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+def test_phase65_run_wrapper_loads_phase63_contract_and_writes_comparable_rows(tmp_path):
+    from paper11_geofm.phase65_standardized_set_policy_bc_rerun import (
+        run_phase65_standardized_set_policy_bc_rerun,
+    )
+
+    columns = (
+        "explicit_feature_00",
+        "explicit_feature_01",
+        "explicit_feature_02",
+        "explicit_feature_04",
+        "explicit_feature_07",
+        "explicit_feature_09",
+        "explicit_feature_10",
+        "explicit_feature_13",
+        "explicit_feature_16",
+    )
+    feature_rows = [
+        {**{"block_id": "b1"}, **{column: 0.0 for column in columns}},
+        {**{"block_id": "b2"}, **{column: 0.0 for column in columns}},
+        {**{"block_id": "b3"}, **{column: 0.0 for column in columns}},
+    ]
+    feature_rows[0]["explicit_feature_16"] = 0.9
+    feature_rows[1]["explicit_feature_16"] = 0.8
+    feature_rows[2]["explicit_feature_16"] = 0.2
+    phase2 = tmp_path / "phase2"
+    _write_variant_fixture(phase2, "B0", feature_rows, columns)
+    tile_index = _write_csv(
+        tmp_path / "tiles.csv",
+        [
+            {"tile_id": "tile_train", "block_ids": "b1;b2;b3"},
+            {"tile_id": "tile_eval", "block_ids": "b1;b2;b3"},
+        ],
+    )
+    comparison = {
+        "contract": {
+            "phase2_output_dir": str(phase2),
+            "phase8_output_dir": str(tmp_path / "phase8"),
+            "phase61_output_dir": str(tmp_path / "phase61"),
+            "tile_index_csv": str(tile_index),
+            "variant_source_dirs": {"B0": str(phase2)},
+            "variants": ["B0"],
+            "train_tile_id": "tile_train",
+            "eval_tile_ids": ["tile_eval"],
+            "eval_tile_ranks": {"tile_eval": 1},
+            "seeds": [0],
+            "seed_ranks": {"0": 1},
+            "eval_max_steps": 2,
+            "bc_epochs": 8,
+            "learning_rate": 0.01,
+            "hidden_dim": 12,
+            "top_k": 2,
+        }
+    }
+    comparison_path = tmp_path / "phase63_set_policy_comparison.json"
+    comparison_path.write_text(json.dumps(comparison), encoding="utf-8")
+    old_rollout = _write_csv(
+        tmp_path / "phase63_rollout.csv",
+        [_rollout_row("B0", 0.1, tile_id="tile_eval", seed=0)],
+    )
+
+    analysis = run_phase65_standardized_set_policy_bc_rerun(
+        phase63_comparison_json=comparison_path,
+        phase63_rollout_csv=old_rollout,
+    )
+
+    assert analysis["phase"] == "phase65_standardized_set_policy_bc_rerun"
+    assert len(analysis["standardization_stats"]) == 1
+    assert len(analysis["history_rows"]) == 8
+    assert len(analysis["rollout_rows"]) == 1
+    assert analysis["standardization_comparison"]["coverage_issues"]["missing_standardized_rows"] == []

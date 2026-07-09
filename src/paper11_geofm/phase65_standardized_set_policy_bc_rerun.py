@@ -696,11 +696,163 @@ def write_phase65_artifacts(
     return paths
 
 
+def _load_json_object(path: Path | str, label: str) -> dict[str, object]:
+    json_path = Path(path)
+    if not json_path.exists():
+        raise FileNotFoundError(f"Missing {label}: {json_path}")
+    loaded = json.loads(json_path.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{label} must contain a JSON object")
+    return loaded
+
+
+def _load_csv_rows(path: Path | str, label: str) -> list[dict[str, object]]:
+    csv_path = Path(path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {label}: {csv_path}")
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle)]
+
+
+def _normalize_optional_paths(paths: Sequence[Path | str] | str | None) -> list[Path | str]:
+    if paths is None:
+        return []
+    if isinstance(paths, str):
+        return [part.strip() for part in paths.split(",") if part.strip()]
+    return [path for path in paths if str(path).strip()]
+
+
+def _contract_string_list(contract: Mapping[str, object], key: str) -> list[str]:
+    value = contract.get(key)
+    if isinstance(value, str):
+        return [part.strip() for part in value.split(",") if part.strip()]
+    if isinstance(value, Sequence):
+        return [str(item) for item in value if str(item).strip()]
+    return []
+
+
+def _contract_int_list(contract: Mapping[str, object], key: str) -> list[int]:
+    value = contract.get(key)
+    if isinstance(value, str):
+        return [int(part.strip()) for part in value.split(",") if part.strip()]
+    if isinstance(value, Sequence):
+        return [int(item) for item in value if str(item).strip()]
+    return []
+
+
+def _load_phase65_tiled_variant_input(
+    contract: Mapping[str, object],
+    tile_id: str,
+    variant_id: str,
+):
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 65 contract is missing variant_source_dirs")
+    source_dir = variant_source_dirs.get(variant_id)
+    if source_dir is None:
+        raise ValueError(f"Phase 65 contract has no source for variant {variant_id}")
+    return load_tiled_variant_input(
+        source_dir,
+        str(contract["tile_index_csv"]),
+        tile_id,
+        variant_id=variant_id,
+    )
+
+
 def run_phase65_standardized_set_policy_bc_rerun(
     phase63_comparison_json: Path | str,
     phase63_rollout_csv: Path | str,
     existing_flattened_summary_csvs: Sequence[Path | str] | str | None = None,
 ) -> dict[str, object]:
-    raise ValueError(
-        "Phase 65 run orchestration requires a Phase 63 comparison JSON with contract metadata"
+    phase63_comparison = _load_json_object(
+        phase63_comparison_json,
+        "Phase 63 comparison JSON",
     )
+    contract = phase63_comparison.get("contract")
+    if not isinstance(contract, Mapping):
+        raise ValueError("Phase 63 comparison JSON is missing contract metadata")
+    unstandardized_rows = _load_csv_rows(phase63_rollout_csv, "Phase 63 rollout CSV")
+    variants = _contract_string_list(contract, "variants")
+    eval_tile_ids = _contract_string_list(contract, "eval_tile_ids")
+    seeds = _contract_int_list(contract, "seeds")
+    train_tile_id = str(contract.get("train_tile_id", ""))
+    if not variants:
+        raise ValueError("Phase 65 contract has no variants")
+    if not eval_tile_ids:
+        raise ValueError("Phase 65 contract has no eval_tile_ids")
+    if not seeds:
+        raise ValueError("Phase 65 contract has no seeds")
+    if not train_tile_id:
+        raise ValueError("Phase 65 contract has no train_tile_id")
+    eval_tile_ranks = {
+        str(tile_id): int(rank)
+        for tile_id, rank in dict(contract.get("eval_tile_ranks", {})).items()
+    }
+    seed_ranks = {
+        str(seed): int(rank)
+        for seed, rank in dict(contract.get("seed_ranks", {})).items()
+    }
+    history_rows: list[dict[str, object]] = []
+    rollout_rows: list[dict[str, object]] = []
+    standardization_stats: list[dict[str, object]] = []
+    for variant_id in variants:
+        raw_train = _load_phase65_tiled_variant_input(contract, train_tile_id, variant_id)
+        standardizer = fit_phase65_train_tile_standardizer(raw_train)
+        standardization_stats.append(standardizer.to_json_row())
+        for seed in seeds:
+            model, history = train_phase65_behavior_cloner(
+                raw_train,
+                standardizer,
+                seed=int(seed),
+                eval_max_steps=int(contract["eval_max_steps"]),
+                epochs=int(contract["bc_epochs"]),
+                learning_rate=float(contract["learning_rate"]),
+                hidden_dim=int(contract["hidden_dim"]),
+                top_k=int(contract["top_k"]),
+            )
+            history_rows.extend(history)
+            for eval_tile_id in eval_tile_ids:
+                raw_eval = _load_phase65_tiled_variant_input(
+                    contract,
+                    eval_tile_id,
+                    variant_id,
+                )
+                rollout_rows.append(
+                    rollout_phase65_greedy_policy(
+                        model,
+                        raw_tiled_input=raw_eval,
+                        standardizer=standardizer,
+                        train_tile_id=train_tile_id,
+                        eval_tile_rank=eval_tile_ranks.get(str(eval_tile_id), 0),
+                        seed=int(seed),
+                        phase65_seed_rank=seed_ranks.get(str(int(seed)), 0),
+                        eval_max_steps=int(contract["eval_max_steps"]),
+                    )
+                )
+    phase63_style_analysis = build_phase63_set_policy_analysis(
+        rollout_rows,
+        existing_flattened_summary_csvs=existing_flattened_summary_csvs,
+        metadata={"variants": variants, "eval_tile_ids": eval_tile_ids, "seeds": seeds},
+    )
+    standardization_comparison = build_phase65_standardization_comparison(
+        rollout_rows,
+        unstandardized_rows,
+        variants=variants,
+        eval_tile_ids=eval_tile_ids,
+        seeds=seeds,
+    )
+    return {
+        "phase": "phase65_standardized_set_policy_bc_rerun",
+        "phase63_comparison_json": str(Path(phase63_comparison_json)),
+        "phase63_rollout_csv": str(Path(phase63_rollout_csv)),
+        "existing_flattened_summary_csvs": [
+            str(Path(path)) for path in _normalize_optional_paths(existing_flattened_summary_csvs)
+        ],
+        "contract": dict(contract),
+        "standardization_stats": standardization_stats,
+        "history_rows": history_rows,
+        "rollout_rows": rollout_rows,
+        "phase63_style_analysis": phase63_style_analysis,
+        "standardization_comparison": standardization_comparison,
+        "claim_boundary": PHASE65_CLAIM_BOUNDARY,
+    }
