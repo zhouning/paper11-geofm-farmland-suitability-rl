@@ -654,3 +654,259 @@ def build_phase67_candidate_target_gate(
         "best_candidate_target_ids": sorted({str(row.get("target_id")) for row in candidate_rows}),
         "claim_boundary": PHASE67_CLAIM_BOUNDARY,
     }
+
+
+PHASE67_SUMMARY_FIELDNAMES = [
+    "target_id",
+    "summary",
+    "claim_boundary",
+]
+
+
+def _load_json_object(path: Path | str | None, label: str) -> dict[str, object]:
+    if path is None:
+        return {}
+    json_path = Path(path)
+    if not json_path.exists():
+        raise FileNotFoundError(f"Missing {label}: {json_path}")
+    loaded = json.loads(json_path.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{label} must contain a JSON object")
+    return loaded
+
+
+def _read_csv_dict_rows(path: Path) -> list[dict[str, object]]:
+    if not path.exists():
+        raise FileNotFoundError(f"Missing Phase 67 CSV input: {path}")
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle)]
+
+
+def _variant_input_rows(source_dir: Path, variant_id: str) -> list[dict[str, object]]:
+    loaded = load_variant_input(source_dir, variant_id)
+    rows: list[dict[str, object]] = []
+    for row_index, block_id in enumerate(loaded.block_ids):
+        row: dict[str, object] = {"block_id": str(block_id)}
+        for column_index, column in enumerate(loaded.feature_columns):
+            row[str(column)] = float(loaded.state_matrix[row_index, column_index])
+        rows.append(row)
+    return rows
+
+
+def _load_phase2_candidate_rows(
+    phase2_output_dir: Path | str,
+    base_rows: Sequence[Mapping[str, object]],
+    label_columns: Sequence[str],
+) -> list[dict[str, object]]:
+    phase2_dir = Path(phase2_output_dir)
+    block_rows = _read_csv_dict_rows(phase2_dir / "block_geofm_features.csv")
+    by_block = {str(row.get("block_id", "")): row for row in block_rows}
+    rows: list[dict[str, object]] = []
+    for base_row in base_rows:
+        block_id = str(base_row.get("block_id", ""))
+        merged = dict(base_row)
+        extra = by_block.get(block_id, {})
+        for column, value in extra.items():
+            column_name = str(column)
+            if column_name in merged:
+                continue
+            if column_name in label_columns or column_name.startswith(
+                ("embedding_mean_", "embedding_pca_", "projection_")
+            ):
+                merged[column_name] = value
+        rows.append(merged)
+    return rows
+
+
+def _write_csv_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: Sequence[Mapping[str, object]],
+) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return [_json_ready(item) for item in value.tolist()]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _phase67_markdown(analysis: Mapping[str, object]) -> str:
+    gate = dict(analysis.get("candidate_target_gate", {}))
+    lines = [
+        "# Phase 67 Candidate Reward/Label Target Audit",
+        "",
+        f"Status: {gate.get('phase67_status', '')}",
+        "",
+        f"Candidate count: {gate.get('candidate_count', 0)}",
+        f"Best candidate target IDs: {gate.get('best_candidate_target_ids', [])}",
+        "",
+        "Claim boundary:",
+        str(analysis.get("claim_boundary", PHASE67_CLAIM_BOUNDARY)),
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_phase67_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    paths = {
+        "inventory_csv": output_path / "phase67_candidate_target_inventory.csv",
+        "gate_audit_csv": output_path / "phase67_candidate_target_gate_audit.csv",
+        "information_gain_csv": output_path / "phase67_candidate_target_information_gain.csv",
+        "summary_csv": output_path / "phase67_candidate_target_summary.csv",
+        "audit_json": output_path / "phase67_candidate_reward_label_target_audit.json",
+        "audit_md": output_path / "phase67_candidate_reward_label_target_audit.md",
+    }
+    _write_csv_rows(
+        paths["inventory_csv"],
+        PHASE67_INVENTORY_FIELDNAMES,
+        analysis.get("candidate_target_inventory_rows", []),
+    )
+    _write_csv_rows(
+        paths["gate_audit_csv"],
+        PHASE67_GATE_AUDIT_FIELDNAMES,
+        analysis.get("candidate_target_gate_audit_rows", []),
+    )
+    _write_csv_rows(
+        paths["information_gain_csv"],
+        PHASE67_INFORMATION_GAIN_FIELDNAMES,
+        analysis.get("candidate_target_information_gain_rows", []),
+    )
+    _write_csv_rows(
+        paths["summary_csv"],
+        PHASE67_SUMMARY_FIELDNAMES,
+        analysis.get("candidate_target_summary_rows", []),
+    )
+    saved = dict(analysis)
+    saved["phase67_status"] = dict(analysis.get("candidate_target_gate", {})).get(
+        "phase67_status",
+        PHASE67_STATUS_INSUFFICIENT,
+    )
+    paths["audit_json"].write_text(
+        json.dumps(_json_ready(saved), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    paths["audit_md"].write_text(_phase67_markdown(analysis), encoding="utf-8")
+    return paths
+
+
+def _csvish(value: Sequence[object] | str) -> list[str]:
+    if isinstance(value, str):
+        return [part.strip() for part in value.split(",") if part.strip()]
+    return [str(item) for item in value if str(item).strip()]
+
+
+def run_phase67_candidate_reward_label_target_audit(
+    phase2_output_dir: Path | str,
+    phase8_output_dir: Path | str | None,
+    phase61_output_dir: Path | str | None,
+    tile_index_csv: Path | str | None,
+    phase10_json: Path | str,
+    phase18_json: Path | str,
+    phase66_json: Path | str,
+    phase39_json: Path | str | None = None,
+    phase40_json: Path | str | None = None,
+    variants: Sequence[str] | str = ("B0", "D4P8", "D4P16", "D6R8", "D6R16"),
+    label_columns: Sequence[str] | str = DEFAULT_PHASE67_LABEL_COLUMNS,
+    top_k_values: Sequence[int] | str = DEFAULT_PHASE67_TOP_K_VALUES,
+) -> dict[str, object]:
+    variant_ids = _csvish(variants)
+    labels = _csvish(label_columns)
+    top_k = [int(value) for value in _csvish(top_k_values)]
+    phase10 = _load_json_object(phase10_json, "Phase 10 JSON")
+    phase18 = _load_json_object(phase18_json, "Phase 18 JSON")
+    phase66 = _load_json_object(phase66_json, "Phase 66 JSON")
+    phase39 = _load_json_object(phase39_json, "Phase 39 JSON")
+    phase40 = _load_json_object(phase40_json, "Phase 40 JSON")
+    source_dirs = {
+        "B0": Path(phase2_output_dir),
+        "B1": Path(phase2_output_dir),
+        "D4P8": None if phase8_output_dir is None else Path(phase8_output_dir),
+        "D4P16": None if phase8_output_dir is None else Path(phase8_output_dir),
+        "D6R8": None if phase61_output_dir is None else Path(phase61_output_dir),
+        "D6R16": None if phase61_output_dir is None else Path(phase61_output_dir),
+    }
+    feature_rows_by_variant: dict[str, list[dict[str, object]]] = {}
+    coverage_issues: list[object] = []
+    for variant_id in variant_ids:
+        source_dir = source_dirs.get(str(variant_id))
+        if source_dir is None:
+            coverage_issues.append(f"missing source dir for {variant_id}")
+            continue
+        feature_rows_by_variant[str(variant_id)] = _variant_input_rows(source_dir, str(variant_id))
+    if "B0" not in feature_rows_by_variant:
+        raise ValueError("Phase 67 requires B0 feature rows")
+    candidate_rows = _load_phase2_candidate_rows(
+        phase2_output_dir,
+        feature_rows_by_variant["B0"],
+        labels,
+    )
+    targets = build_phase67_candidate_targets(candidate_rows, label_columns=labels)
+    inventory_rows = build_phase67_candidate_target_inventory(
+        targets,
+        expected_block_ids=[str(row["block_id"]) for row in candidate_rows],
+    )
+    gate_context = build_phase67_gate_context(phase10, phase18, phase39, phase40)
+    gate_audit_rows = build_phase67_candidate_target_gate_audit(inventory_rows, gate_context)
+    info_rows = build_phase67_candidate_target_information_gain(
+        feature_rows_by_variant,
+        targets,
+        top_k_values=top_k,
+    )
+    candidate_gate = build_phase67_candidate_target_gate(
+        coverage_issues,
+        info_rows,
+        gate_audit_rows,
+    )
+    summary_rows = [
+        {
+            "target_id": row["target_id"],
+            "summary": f"{row['gate_risk']} usable={row['usable']}",
+            "claim_boundary": PHASE67_CLAIM_BOUNDARY,
+        }
+        for row in gate_audit_rows
+    ]
+    return {
+        "phase": "phase67_candidate_reward_label_target_audit",
+        "phase2_output_dir": str(Path(phase2_output_dir)),
+        "phase8_output_dir": "" if phase8_output_dir is None else str(Path(phase8_output_dir)),
+        "phase61_output_dir": "" if phase61_output_dir is None else str(Path(phase61_output_dir)),
+        "tile_index_csv": "" if tile_index_csv is None else str(Path(tile_index_csv)),
+        "phase10_json": str(Path(phase10_json)),
+        "phase18_json": str(Path(phase18_json)),
+        "phase66_json": str(Path(phase66_json)),
+        "phase39_json": "" if phase39_json is None else str(Path(phase39_json)),
+        "phase40_json": "" if phase40_json is None else str(Path(phase40_json)),
+        "phase66_status": phase66.get(
+            "phase66_status",
+            phase66.get("diagnostic_gate", {}).get("phase66_status", "")
+            if isinstance(phase66.get("diagnostic_gate", {}), Mapping)
+            else "",
+        ),
+        "variants": variant_ids,
+        "label_columns": labels,
+        "top_k_values": top_k,
+        "gate_context": gate_context,
+        "candidate_target_inventory_rows": inventory_rows,
+        "candidate_target_gate_audit_rows": gate_audit_rows,
+        "candidate_target_information_gain_rows": info_rows,
+        "candidate_target_summary_rows": summary_rows,
+        "candidate_target_gate": candidate_gate,
+        "claim_boundary": PHASE67_CLAIM_BOUNDARY,
+    }

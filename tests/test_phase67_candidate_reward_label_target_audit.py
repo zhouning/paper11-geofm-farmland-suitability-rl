@@ -311,3 +311,178 @@ def test_phase67_candidate_gate_covers_all_statuses():
     assert build_phase67_candidate_target_gate([], explicit_info, explicit_gate)["phase67_status"] == "only_leakage_or_explicit_targets_found"
     assert build_phase67_candidate_target_gate([], [], [])["phase67_status"] == "independent_label_required_before_reward_redesign"
     assert build_phase67_candidate_target_gate(["missing artifact"], explicit_info, explicit_gate)["phase67_status"] == "insufficient"
+
+
+def _write_csv(path: Path, rows: list[dict[str, object]]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0].keys())
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def _write_variant_fixture(output_dir: Path, variant_id: str, rows: list[dict[str, object]]) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    explicit_columns = sorted(column for column in rows[0] if str(column).startswith("explicit_feature_"))
+    representation_columns = sorted(
+        column
+        for column in rows[0]
+        if str(column).startswith(("embedding_pca_", "projection_"))
+    )
+    required_columns = explicit_columns if variant_id == "B0" else explicit_columns + representation_columns
+    table = output_dir / f"variant_{variant_id}_features.csv"
+    with table.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["block_id", *required_columns])
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({"block_id": row["block_id"], **{column: row[column] for column in required_columns}})
+    manifest = {
+        "variants": {
+            variant_id: {
+                "ready": True,
+                "feature_table": table.name,
+                "required_columns": required_columns,
+                "reward": "base_planning_reward",
+                "state_groups": ["synthetic"],
+            }
+        }
+    }
+    (output_dir / "experiment_variants.json").write_text(json.dumps(manifest), encoding="utf-8")
+
+
+def test_phase67_writer_outputs_json_csv_and_markdown(tmp_path):
+    from paper11_geofm.phase67_candidate_reward_label_target_audit import (
+        write_phase67_artifacts,
+    )
+
+    analysis = {
+        "phase": "phase67_candidate_reward_label_target_audit",
+        "candidate_target_inventory_rows": [
+            {"target_id": "base_planning_reward", "claim_boundary": "phase67"}
+        ],
+        "candidate_target_gate_audit_rows": [
+            {
+                "target_id": "base_planning_reward",
+                "gate_risk": "explicit_reward_defined",
+                "claim_boundary": "phase67",
+            }
+        ],
+        "candidate_target_information_gain_rows": [
+            {"target_id": "base_planning_reward", "variant_id": "B0", "claim_boundary": "phase67"}
+        ],
+        "candidate_target_summary_rows": [
+            {"target_id": "base_planning_reward", "summary": "control", "claim_boundary": "phase67"}
+        ],
+        "candidate_target_gate": {"phase67_status": "only_leakage_or_explicit_targets_found"},
+        "claim_boundary": "phase67",
+    }
+
+    paths = write_phase67_artifacts(analysis, tmp_path / "outputs")
+
+    assert paths["inventory_csv"].name == "phase67_candidate_target_inventory.csv"
+    assert paths["gate_audit_csv"].name == "phase67_candidate_target_gate_audit.csv"
+    assert paths["information_gain_csv"].name == "phase67_candidate_target_information_gain.csv"
+    assert paths["summary_csv"].name == "phase67_candidate_target_summary.csv"
+    assert paths["audit_json"].name == "phase67_candidate_reward_label_target_audit.json"
+    assert paths["audit_md"].name == "phase67_candidate_reward_label_target_audit.md"
+    saved = json.loads(paths["audit_json"].read_text(encoding="utf-8"))
+    assert saved["phase67_status"] == "only_leakage_or_explicit_targets_found"
+    assert "Phase 67 Candidate Reward/Label Target Audit" in paths["audit_md"].read_text(encoding="utf-8")
+
+
+def test_phase67_cli_parser_accepts_required_and_optional_inputs():
+    runner_path = ROOT / "experiments" / "phase67_candidate_reward_label_target_audit" / "run_phase67_candidate_reward_label_target_audit.py"
+    spec = importlib.util.spec_from_file_location("phase67_runner_args", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    parser = module._build_parser()
+    args = parser.parse_args(
+        [
+            "--phase2-output-dir", "phase2",
+            "--phase8-output-dir", "phase8",
+            "--phase61-output-dir", "phase61",
+            "--tile-index-csv", "tiles.csv",
+            "--phase10-json", "phase10.json",
+            "--phase18-json", "phase18.json",
+            "--phase66-json", "phase66.json",
+            "--phase39-json", "phase39.json",
+            "--phase40-json", "phase40.json",
+            "--variants", "B0,D4P8,D6R8",
+            "--label-columns", "current_farmland_label,farmland_or_orchard_label",
+            "--top-k-values", "8,16",
+            "--output-dir", "outputs",
+        ]
+    )
+
+    assert args.phase2_output_dir == Path("phase2")
+    assert args.phase39_json == Path("phase39.json")
+    assert args.output_dir == Path("outputs")
+
+
+def test_phase67_run_wrapper_loads_fixture_and_returns_gate(tmp_path):
+    from paper11_geofm.phase67_candidate_reward_label_target_audit import (
+        run_phase67_candidate_reward_label_target_audit,
+    )
+
+    phase2 = tmp_path / "phase2"
+    _write_variant_fixture(phase2, "B0", _feature_rows())
+    _write_csv(phase2 / "block_geofm_features.csv", _feature_rows())
+    phase10 = tmp_path / "phase10.json"
+    phase10.write_text(
+        json.dumps(
+            {
+                "status": "not_ready_for_suitability_reward",
+                "recommendation": "do_not_enable_suitability_reward",
+            }
+        ),
+        encoding="utf-8",
+    )
+    phase18 = tmp_path / "phase18.json"
+    phase18.write_text(
+        json.dumps(
+            {
+                "suitability_reward_allowed": False,
+                "phase10_status": "not_ready_for_suitability_reward",
+            }
+        ),
+        encoding="utf-8",
+    )
+    phase66 = tmp_path / "phase66.json"
+    phase66.write_text(
+        json.dumps({"phase66_status": "base_reward_target_masks_geofm_signal"}),
+        encoding="utf-8",
+    )
+
+    analysis = run_phase67_candidate_reward_label_target_audit(
+        phase2_output_dir=phase2,
+        phase8_output_dir=None,
+        phase61_output_dir=None,
+        tile_index_csv=None,
+        phase10_json=phase10,
+        phase18_json=phase18,
+        phase66_json=phase66,
+        phase39_json=None,
+        phase40_json=None,
+        variants=["B0"],
+        label_columns=[
+            "current_farmland_label",
+            "farmland_or_orchard_label",
+            "low_slope_farmland_label",
+        ],
+        top_k_values=[2],
+    )
+
+    assert analysis["phase"] == "phase67_candidate_reward_label_target_audit"
+    target_ids = {row["target_id"] for row in analysis["candidate_target_inventory_rows"]}
+    assert "weak_label_current_farmland_label" in target_ids
+    assert "geofm_norm_embedding_pca" in target_ids
+    assert len(analysis["candidate_target_inventory_rows"]) >= 4
+    assert analysis["candidate_target_gate"]["phase67_status"] in {
+        "candidate_target_found_for_diagnostic_training",
+        "only_leakage_or_explicit_targets_found",
+        "independent_label_required_before_reward_redesign",
+        "insufficient",
+    }
