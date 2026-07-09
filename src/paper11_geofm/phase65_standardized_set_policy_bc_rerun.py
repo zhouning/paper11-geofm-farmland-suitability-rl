@@ -594,3 +594,113 @@ def build_phase65_standardization_comparison(
         "d4_d6_delta_summary": d4_d6,
         "claim_boundary": PHASE65_CLAIM_BOUNDARY,
     }
+
+
+def _write_csv_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: Sequence[Mapping[str, object]],
+) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return [_json_ready(item) for item in value.tolist()]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _phase65_markdown(analysis: Mapping[str, object]) -> str:
+    comparison = dict(analysis.get("standardization_comparison", {}))
+    phase63_style = dict(analysis.get("phase63_style_analysis", {}))
+    lines = [
+        "# Phase 65 Standardized Set-Policy BC Rerun",
+        "",
+        f"Status: {comparison.get('phase65_status', '')}",
+        "",
+        "Mean standardized BC reward by variant:",
+    ]
+    for variant_id, value in dict(phase63_style.get("mean_bc_reward_by_variant", {})).items():
+        lines.append(f"- {variant_id}: {value}")
+    lines.extend(
+        [
+            "",
+            f"Overall standardized-minus-unstandardized summary: {comparison.get('overall_standardized_minus_unstandardized_summary', {})}",
+            f"D4 standardized-minus-unstandardized summary: {comparison.get('d4_standardized_minus_unstandardized_summary', {})}",
+            f"D4/B0 delta summary after standardization: {comparison.get('d4_b0_delta_summary', {})}",
+            f"D4/D6 delta summary after standardization: {comparison.get('d4_d6_delta_summary', {})}",
+            f"Oracle gap summary after standardization: {phase63_style.get('oracle_gap_fraction_summary', {})}",
+            "",
+            "Claim boundary:",
+            str(analysis.get("claim_boundary", PHASE65_CLAIM_BOUNDARY)),
+            "",
+        ]
+    )
+    return "\n".join(lines)
+
+
+def write_phase65_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    paths = {
+        "standardization_stats_json": output_path / "phase65_standardization_stats.json",
+        "history_csv": output_path / "phase65_bc_training_history.csv",
+        "rollout_csv": output_path / "phase65_bc_rollout_summary.csv",
+        "comparison_json": output_path / "phase65_set_policy_comparison.json",
+        "pairwise_delta_csv": output_path / "phase65_standardization_pairwise_delta.csv",
+        "readiness_md": output_path / "phase65_standardized_set_policy_bc_rerun.md",
+    }
+    paths["standardization_stats_json"].write_text(
+        json.dumps(
+            _json_ready(analysis.get("standardization_stats", [])),
+            indent=2,
+            sort_keys=True,
+        ),
+        encoding="utf-8",
+    )
+    _write_csv_rows(paths["history_csv"], PHASE63_HISTORY_FIELDNAMES, analysis.get("history_rows", []))
+    _write_csv_rows(paths["rollout_csv"], PHASE63_ROLLOUT_FIELDNAMES, analysis.get("rollout_rows", []))
+    pairwise_rows = dict(analysis.get("standardization_comparison", {})).get(
+        "pairwise_delta_rows",
+        [],
+    )
+    _write_csv_rows(paths["pairwise_delta_csv"], PHASE65_PAIRWISE_FIELDNAMES, pairwise_rows)
+    comparison = {
+        key: value
+        for key, value in dict(analysis).items()
+        if key not in {"history_rows", "rollout_rows"}
+    }
+    status = dict(analysis.get("standardization_comparison", {})).get(
+        "phase65_status",
+        PHASE65_STATUS_INSUFFICIENT,
+    )
+    comparison["phase65_status"] = status
+    paths["comparison_json"].write_text(
+        json.dumps(_json_ready(comparison), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    paths["readiness_md"].write_text(_phase65_markdown(analysis), encoding="utf-8")
+    return paths
+
+
+def run_phase65_standardized_set_policy_bc_rerun(
+    phase63_comparison_json: Path | str,
+    phase63_rollout_csv: Path | str,
+    existing_flattened_summary_csvs: Sequence[Path | str] | str | None = None,
+) -> dict[str, object]:
+    raise ValueError(
+        "Phase 65 run orchestration requires a Phase 63 comparison JSON with contract metadata"
+    )

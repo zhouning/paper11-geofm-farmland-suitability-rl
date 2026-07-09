@@ -377,3 +377,89 @@ def test_phase65_status_gate_covers_supported_all_variant_not_helpful_and_insuff
     assert all_variant["phase65_status"] == "standardization_improves_all_variants_no_geofm_advantage"
     assert not_helpful["phase65_status"] == "standardization_not_helpful"
     assert insufficient["phase65_status"] == "insufficient"
+
+
+def test_phase65_writer_outputs_json_csv_and_markdown(tmp_path):
+    from paper11_geofm.phase65_standardized_set_policy_bc_rerun import (
+        build_phase65_standardization_comparison,
+        write_phase65_artifacts,
+    )
+
+    variants = ["B0", "D4P8"]
+    standardized_rows = [_rollout_row("B0", 1.1), _rollout_row("D4P8", 1.3)]
+    unstandardized_rows = [_rollout_row("B0", 1.0), _rollout_row("D4P8", 1.0)]
+    comparison = build_phase65_standardization_comparison(
+        standardized_rows,
+        unstandardized_rows,
+        variants=variants,
+        eval_tile_ids=["tile_a"],
+        seeds=[0],
+    )
+    analysis = {
+        "phase": "phase65_standardized_set_policy_bc_rerun",
+        "standardization_stats": [
+            {
+                "variant_id": "D4P8",
+                "train_tile_id": "tile_train",
+                "zero_variance_feature_count": 0,
+                "claim_boundary": "Phase 65",
+            }
+        ],
+        "history_rows": [],
+        "rollout_rows": standardized_rows,
+        "phase63_style_analysis": {
+            "mean_bc_reward_by_variant": {"B0": 1.1, "D4P8": 1.3},
+            "oracle_gap_fraction_summary": {"mean_delta": 0.1},
+        },
+        "standardization_comparison": comparison,
+        "claim_boundary": "Phase 65",
+    }
+
+    paths = write_phase65_artifacts(analysis, tmp_path / "outputs")
+
+    assert paths["standardization_stats_json"].name == "phase65_standardization_stats.json"
+    assert paths["history_csv"].name == "phase65_bc_training_history.csv"
+    assert paths["rollout_csv"].name == "phase65_bc_rollout_summary.csv"
+    assert paths["comparison_json"].name == "phase65_set_policy_comparison.json"
+    assert paths["pairwise_delta_csv"].name == "phase65_standardization_pairwise_delta.csv"
+    assert paths["readiness_md"].name == "phase65_standardized_set_policy_bc_rerun.md"
+    saved = json.loads(paths["comparison_json"].read_text(encoding="utf-8"))
+    assert saved["phase65_status"] in {
+        "standardization_improves_geofm_set_policy",
+        "standardization_improves_all_variants_no_geofm_advantage",
+        "standardization_not_helpful",
+        "standardization_hurts_or_inconclusive",
+        "insufficient",
+    }
+    markdown = paths["readiness_md"].read_text(encoding="utf-8")
+    assert "Phase 65 Standardized Set-Policy BC Rerun" in markdown
+
+
+def test_phase65_cli_parser_accepts_required_inputs():
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase65_standardized_set_policy_bc_rerun"
+        / "run_phase65_standardized_set_policy_bc_rerun.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase65_runner_args", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    parser = module._build_parser()
+    args = parser.parse_args(
+        [
+            "--phase63-comparison-json",
+            "phase63_set_policy_comparison.json",
+            "--phase63-rollout-csv",
+            "phase63_bc_rollout_summary.csv",
+            "--existing-flattened-summary-csvs",
+            "phase52.csv,phase62.csv",
+            "--output-dir",
+            "outputs",
+        ]
+    )
+
+    assert args.phase63_comparison_json == Path("phase63_set_policy_comparison.json")
+    assert args.phase63_rollout_csv == Path("phase63_bc_rollout_summary.csv")
+    assert args.output_dir == Path("outputs")
