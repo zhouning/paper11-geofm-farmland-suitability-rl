@@ -273,3 +273,29 @@ def test_phase68_valid_independent_label_is_ready_for_phase40(tmp_path):
     assert row["negative_count"] == 6
     assert row["train_positive_count"] == 4
     assert row["eval_positive_count"] == 2
+
+def test_phase68_runner_template_only_cli(tmp_path):
+    script = (
+        ROOT
+        / "experiments"
+        / "phase68_external_independent_label_package"
+        / "run_phase68_external_independent_label_package.py"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--phase2-output-dir",
+            str(_phase2_dir(tmp_path)),
+            "--output-dir",
+            str(tmp_path / "outputs"),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Phase 68 external-label package status: external_label_package_ready" in result.stdout
+    assert (tmp_path / "outputs" / "phase68_external_independent_label_package.json").exists()
