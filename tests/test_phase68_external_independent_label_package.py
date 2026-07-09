@@ -213,3 +213,63 @@ def test_phase68_external_csv_rejects_duplicate_block_id(tmp_path):
         assert "duplicate block_id b000" in str(exc)
     else:
         raise AssertionError("Expected duplicate block_id to raise ValueError")
+
+def test_phase68_diagnostic_label_is_blocked_from_phase40_ready_status(tmp_path):
+    from paper11_geofm.phase68_external_independent_label_package import (
+        build_phase68_external_independent_label_package,
+    )
+
+    labels = _external_labels(
+        tmp_path / "labels.csv",
+        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    )
+    registry = _registry(
+        tmp_path / "registry.csv",
+        source_type="dltb_derived",
+        independence_level="leakage_risk",
+    )
+
+    analysis = build_phase68_external_independent_label_package(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        external_label_csvs=labels,
+        label_registry=registry,
+        validation_mode=True,
+        min_valid_count=10,
+        min_split_valid_count=2,
+    )
+
+    assert analysis["phase68_status"] == "independent_label_route_blocked"
+    row = analysis["label_preflight_rows"][0]
+    assert row["label_preflight_status"] == "label_diagnostic_only"
+    assert "not independent enough" in row["decision_reason"]
+
+
+def test_phase68_valid_independent_label_is_ready_for_phase40(tmp_path):
+    from paper11_geofm.phase68_external_independent_label_package import (
+        build_phase68_external_independent_label_package,
+    )
+
+    labels = _external_labels(
+        tmp_path / "labels.csv",
+        [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+    )
+    registry = _registry(tmp_path / "registry.csv")
+
+    analysis = build_phase68_external_independent_label_package(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        external_label_csvs=labels,
+        label_registry=registry,
+        validation_mode=True,
+        min_valid_count=10,
+        min_split_valid_count=2,
+    )
+
+    assert analysis["phase68_status"] == "phase40_ready_to_rerun_with_external_label"
+    row = analysis["label_preflight_rows"][0]
+    assert row["label_preflight_status"] == "label_ready_for_phase40"
+    assert row["valid_label_count"] == 12
+    assert row["missing_count"] == 0
+    assert row["positive_count"] == 6
+    assert row["negative_count"] == 6
+    assert row["train_positive_count"] == 4
+    assert row["eval_positive_count"] == 2

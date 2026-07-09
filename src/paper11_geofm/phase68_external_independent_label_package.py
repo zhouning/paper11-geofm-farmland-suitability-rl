@@ -6,7 +6,12 @@ import json
 import math
 from pathlib import Path
 
-from paper11_geofm.phase40_independent_label_gate import Phase40Thresholds
+from paper11_geofm.phase40_independent_label_gate import (
+    DIAGNOSTIC_SOURCE_TYPES,
+    INDEPENDENT_SOURCE_TYPES,
+    PASSING_INDEPENDENCE_LEVELS,
+    Phase40Thresholds,
+)
 
 
 PHASE68_EXTERNAL_LABEL_PACKAGE_CLAIM_BOUNDARY = (
@@ -124,15 +129,22 @@ def build_phase68_external_independent_label_package(
         label_preflight_rows = []
         registry_rows = []
     else:
-        _external_values_by_label, _sources_by_label, _unjoined_by_label = (
+        external_values_by_label, sources_by_label, unjoined_by_label = (
             _load_external_label_csvs(
                 phase2_rows,
                 external_paths,
             )
         )
         registry_rows = _load_phase68_registry(label_registry)
-        label_preflight_rows = []
-        status = "external_label_inputs_invalid"
+        label_preflight_rows = _build_label_preflight_rows(
+            phase2_rows=phase2_rows,
+            registry_rows=registry_rows,
+            external_values_by_label=external_values_by_label,
+            sources_by_label=sources_by_label,
+            unjoined_by_label=unjoined_by_label,
+            thresholds=thresholds,
+        )
+        status = _phase68_status(label_preflight_rows)
 
     summary_rows = [
         _package_summary_row(
@@ -350,6 +362,238 @@ def _read_json_registry_rows(registry_path: Path) -> list[dict[str, object]]:
     raise ValueError(
         f"Phase 68 label registry JSON must be a list or object: {registry_path}"
     )
+
+
+PHASE68_TRAIN_SPLIT_VALUES = {"train", "training"}
+PHASE68_EVAL_SPLIT_VALUES = {"test", "eval", "evaluation", "validation", "val"}
+
+
+def _build_label_preflight_rows(
+    phase2_rows: Sequence[Mapping[str, str]],
+    registry_rows: Sequence[Mapping[str, str]],
+    external_values_by_label: Mapping[str, Mapping[str, str]],
+    sources_by_label: Mapping[str, Sequence[str]],
+    unjoined_by_label: Mapping[str, int],
+    thresholds: Phase40Thresholds,
+) -> list[dict[str, object]]:
+    return [
+        _label_preflight_row(
+            phase2_rows=phase2_rows,
+            registry_row=registry_row,
+            external_values_by_label=external_values_by_label,
+            sources_by_label=sources_by_label,
+            unjoined_by_label=unjoined_by_label,
+            thresholds=thresholds,
+        )
+        for registry_row in registry_rows
+    ]
+
+
+def _label_preflight_row(
+    phase2_rows: Sequence[Mapping[str, str]],
+    registry_row: Mapping[str, str],
+    external_values_by_label: Mapping[str, Mapping[str, str]],
+    sources_by_label: Mapping[str, Sequence[str]],
+    unjoined_by_label: Mapping[str, int],
+    thresholds: Phase40Thresholds,
+) -> dict[str, object]:
+    label_column = str(registry_row.get("label_column", "")).strip()
+    values_by_block = external_values_by_label.get(label_column, {})
+    positive_definition = (
+        str(registry_row.get("expected_positive_definition", "1")).strip() or "1"
+    )
+    labels: list[int] = []
+    train_labels: list[int] = []
+    eval_labels: list[int] = []
+    missing_count = 0
+    for phase2_row in phase2_rows:
+        block_id = str(phase2_row.get("block_id", "")).strip()
+        parsed = _parse_label(values_by_block.get(block_id), positive_definition)
+        if parsed is None:
+            missing_count += 1
+            continue
+        labels.append(parsed)
+        split_role = _split_role(phase2_row.get("split"))
+        if split_role == "train":
+            train_labels.append(parsed)
+        elif split_role == "eval":
+            eval_labels.append(parsed)
+
+    valid_count = len(labels)
+    positive_count = sum(1 for label in labels if label == 1)
+    negative_count = sum(1 for label in labels if label == 0)
+    train_positive = sum(1 for label in train_labels if label == 1)
+    train_negative = sum(1 for label in train_labels if label == 0)
+    eval_positive = sum(1 for label in eval_labels if label == 1)
+    eval_negative = sum(1 for label in eval_labels if label == 0)
+    missing_rate = missing_count / len(phase2_rows) if phase2_rows else 1.0
+    positive_rate = positive_count / valid_count if valid_count else 0.0
+    source_type = str(registry_row.get("source_type", "")).strip()
+    independence_level = str(registry_row.get("independence_level", "")).strip()
+    failure_reasons = _preflight_failure_reasons(
+        label_column=label_column,
+        valid_count=valid_count,
+        missing_rate=missing_rate,
+        positive_rate=positive_rate,
+        train_count=len(train_labels),
+        eval_count=len(eval_labels),
+        train_positive=train_positive,
+        train_negative=train_negative,
+        eval_positive=eval_positive,
+        eval_negative=eval_negative,
+        source_type=source_type,
+        independence_level=independence_level,
+        thresholds=thresholds,
+        sources_by_label=sources_by_label,
+        unjoined_external_count=int(unjoined_by_label.get(label_column, 0)),
+    )
+    if not failure_reasons:
+        status = "label_ready_for_phase40"
+        reason = "label passed Phase 68 preflight and is ready for Phase 40 rerun"
+    elif (
+        source_type in DIAGNOSTIC_SOURCE_TYPES
+        or independence_level not in PASSING_INDEPENDENCE_LEVELS
+    ):
+        status = "label_diagnostic_only"
+        reason = "label is not independent enough for Phase 40: " + "; ".join(
+            failure_reasons
+        )
+    else:
+        status = "label_inputs_invalid"
+        reason = "; ".join(failure_reasons)
+    return {
+        "label_column": label_column,
+        "label_preflight_status": status,
+        "label_source": registry_row.get("label_source", ""),
+        "source_type": source_type,
+        "independence_level": independence_level,
+        "valid_label_count": valid_count,
+        "missing_count": missing_count,
+        "missing_rate": _round_float(missing_rate),
+        "positive_count": positive_count,
+        "negative_count": negative_count,
+        "positive_rate": _round_float(positive_rate),
+        "train_valid_count": len(train_labels),
+        "eval_valid_count": len(eval_labels),
+        "train_positive_count": train_positive,
+        "train_negative_count": train_negative,
+        "eval_positive_count": eval_positive,
+        "eval_negative_count": eval_negative,
+        "unjoined_external_count": int(unjoined_by_label.get(label_column, 0)),
+        "decision_reason": reason,
+        "claim_boundary": PHASE68_EXTERNAL_LABEL_PACKAGE_CLAIM_BOUNDARY,
+    }
+
+
+def _preflight_failure_reasons(
+    label_column: str,
+    valid_count: int,
+    missing_rate: float,
+    positive_rate: float,
+    train_count: int,
+    eval_count: int,
+    train_positive: int,
+    train_negative: int,
+    eval_positive: int,
+    eval_negative: int,
+    source_type: str,
+    independence_level: str,
+    thresholds: Phase40Thresholds,
+    sources_by_label: Mapping[str, Sequence[str]],
+    unjoined_external_count: int,
+) -> list[str]:
+    reasons: list[str] = []
+    if label_column not in sources_by_label:
+        reasons.append(f"label column {label_column!r} is missing from external label CSVs")
+    if unjoined_external_count > 0:
+        reasons.append(
+            f"{unjoined_external_count} external rows did not join to Phase 2 block_id values"
+        )
+    if valid_count < thresholds.min_valid_count:
+        reasons.append(
+            f"valid_label_count {valid_count} is below min_valid_count "
+            f"{thresholds.min_valid_count}"
+        )
+    if missing_rate > thresholds.max_missing_rate:
+        reasons.append(
+            f"missing_rate {missing_rate:.10f} exceeds max_missing_rate "
+            f"{thresholds.max_missing_rate:.10f}"
+        )
+    if (
+        positive_rate < thresholds.min_positive_rate
+        or positive_rate > thresholds.max_positive_rate
+    ):
+        reasons.append(
+            f"positive_rate {positive_rate:.10f} is outside "
+            f"[{thresholds.min_positive_rate:.10f}, "
+            f"{thresholds.max_positive_rate:.10f}]"
+        )
+    if train_count < thresholds.min_split_valid_count:
+        reasons.append(
+            f"train_valid_count {train_count} is below min_split_valid_count "
+            f"{thresholds.min_split_valid_count}"
+        )
+    if eval_count < thresholds.min_split_valid_count:
+        reasons.append(
+            f"eval_valid_count {eval_count} is below min_split_valid_count "
+            f"{thresholds.min_split_valid_count}"
+        )
+    if train_positive == 0 or train_negative == 0:
+        reasons.append("train split does not contain both positive and negative labels")
+    if eval_positive == 0 or eval_negative == 0:
+        reasons.append(
+            "evaluation split does not contain both positive and negative labels"
+        )
+    if source_type not in INDEPENDENT_SOURCE_TYPES:
+        reasons.append(f"source_type {source_type!r} is not independent enough")
+    if independence_level not in PASSING_INDEPENDENCE_LEVELS:
+        reasons.append(
+            f"independence_level {independence_level!r} is not independent enough"
+        )
+    return reasons
+
+
+def _phase68_status(label_preflight_rows: Sequence[Mapping[str, object]]) -> str:
+    if any(
+        row.get("label_preflight_status") == "label_ready_for_phase40"
+        for row in label_preflight_rows
+    ):
+        return "phase40_ready_to_rerun_with_external_label"
+    if label_preflight_rows and all(
+        row.get("label_preflight_status") == "label_diagnostic_only"
+        for row in label_preflight_rows
+    ):
+        return "independent_label_route_blocked"
+    if label_preflight_rows:
+        return "external_label_inputs_invalid"
+    return "external_label_inputs_invalid"
+
+
+def _split_role(value: object) -> str | None:
+    split_text = str(value or "").strip().lower()
+    if split_text in PHASE68_TRAIN_SPLIT_VALUES:
+        return "train"
+    if split_text in PHASE68_EVAL_SPLIT_VALUES:
+        return "eval"
+    return None
+
+
+def _parse_label(value: object, positive_definition: str) -> int | None:
+    if value is None:
+        return None
+    text = str(value).strip().lower()
+    positive = str(positive_definition).strip().lower()
+    if text == "":
+        return None
+    if text == positive or text in {"1", "1.0", "true", "yes", "y"}:
+        return 1
+    if text in {"0", "0.0", "false", "no", "n"}:
+        return 0
+    return None
+
+
+def _round_float(value: float | int) -> float:
+    return round(float(value), 10)
 
 
 def _external_label_template_rows(
