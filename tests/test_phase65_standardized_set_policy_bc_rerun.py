@@ -162,3 +162,110 @@ def test_phase65_standardized_inputs_do_not_change_raw_reward_or_oracle_targets(
 
     assert not np.allclose(standardized.state_matrix, raw.state_matrix)
     assert [example["target_action"] for example in examples] == raw_oracle["action_indices"]
+
+
+def _reward_tiled_input(
+    block_ids=("b3", "b1", "b2", "b4"),
+    scores=(0.2, 0.9, 0.7, 0.1),
+    scale_feature=(100.0, 200.0, 300.0, 400.0),
+    variant_id="D4P8",
+    tile_id="tile_eval",
+):
+    columns = (
+        "explicit_feature_00",
+        "explicit_feature_01",
+        "explicit_feature_02",
+        "explicit_feature_04",
+        "explicit_feature_07",
+        "explicit_feature_09",
+        "explicit_feature_10",
+        "explicit_feature_13",
+        "explicit_feature_16",
+    )
+    matrix = np.zeros((len(block_ids), len(columns)), dtype=np.float32)
+    score_index = columns.index("explicit_feature_16")
+    scale_index = columns.index("explicit_feature_00")
+    for row_index, score in enumerate(scores):
+        matrix[row_index, score_index] = float(score)
+        matrix[row_index, scale_index] = float(scale_feature[row_index])
+    from paper11_geofm.tiled_inputs import TiledVariantInput
+
+    return TiledVariantInput(
+        tile_id=tile_id,
+        variant_id=variant_id,
+        block_ids=tuple(block_ids),
+        feature_columns=columns,
+        state_matrix=matrix,
+        reward_mode="base_planning_reward",
+        state_groups=("synthetic",),
+        source_table=Path(f"variant_{variant_id}_features.csv"),
+        tile_index_csv=Path("tiles.csv"),
+    )
+
+
+def test_phase65_behavior_cloning_loss_decreases_with_standardized_inputs():
+    from paper11_geofm.phase65_standardized_set_policy_bc_rerun import (
+        fit_phase65_train_tile_standardizer,
+        train_phase65_behavior_cloner,
+    )
+
+    raw = _reward_tiled_input()
+    transform = fit_phase65_train_tile_standardizer(raw)
+    model, history = train_phase65_behavior_cloner(
+        raw,
+        transform,
+        seed=65,
+        eval_max_steps=3,
+        epochs=30,
+        learning_rate=0.01,
+        hidden_dim=16,
+        top_k=2,
+    )
+
+    assert model.n_features == len(raw.feature_columns)
+    assert len(history) == 30
+    assert history[-1]["loss"] < history[0]["loss"]
+    assert history[-1]["topk_hit_rate"] >= history[0]["topk_hit_rate"]
+    assert history[-1]["claim_boundary"].startswith("Phase 65")
+
+
+def test_phase65_rollout_uses_standardized_logits_and_raw_rewards():
+    from paper11_geofm.phase63_set_policy_oracle_pretraining import (
+        build_phase63_oracle_trajectory,
+    )
+    from paper11_geofm.phase65_standardized_set_policy_bc_rerun import (
+        fit_phase65_train_tile_standardizer,
+        rollout_phase65_greedy_policy,
+        train_phase65_behavior_cloner,
+    )
+
+    raw = _reward_tiled_input()
+    transform = fit_phase65_train_tile_standardizer(raw)
+    model, _history = train_phase65_behavior_cloner(
+        raw,
+        transform,
+        seed=65,
+        eval_max_steps=3,
+        epochs=35,
+        learning_rate=0.01,
+        hidden_dim=16,
+        top_k=2,
+    )
+    rollout = rollout_phase65_greedy_policy(
+        model,
+        raw_tiled_input=raw,
+        standardizer=transform,
+        train_tile_id="tile_train",
+        eval_tile_rank=1,
+        seed=65,
+        phase65_seed_rank=1,
+        eval_max_steps=3,
+    )
+    oracle = build_phase63_oracle_trajectory(raw, eval_max_steps=3)
+
+    assert rollout["row_type"] == "bc_greedy_policy"
+    assert rollout["all_actions_valid"] is True
+    assert rollout["invalid_action_count"] == 0
+    assert rollout["oracle_total_reward"] == oracle["total_oracle_reward"]
+    assert float(rollout["total_contract_reward"]) > 0.0
+    assert rollout["claim_boundary"].startswith("Phase 65")

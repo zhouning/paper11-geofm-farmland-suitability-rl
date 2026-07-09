@@ -164,3 +164,167 @@ def _round_float(value: object, digits: int = 10) -> float:
     if abs(rounded - compact) < 5.0e-8:
         return compact
     return rounded
+
+
+def train_phase65_behavior_cloner(
+    raw_tiled_input,
+    standardizer: Phase65Standardizer,
+    seed: int,
+    eval_max_steps: int,
+    epochs: int,
+    learning_rate: float,
+    hidden_dim: int,
+    top_k: int = 3,
+    device: str = "cpu",
+) -> tuple[Phase63SetPolicyScorer, list[dict[str, object]]]:
+    torch.manual_seed(int(seed))
+    np.random.seed(int(seed))
+    random.seed(int(seed))
+    examples = build_phase65_bc_examples(raw_tiled_input, standardizer, eval_max_steps)
+    if not examples:
+        raise ValueError("Phase 65 behavior cloning requires at least one example")
+    model = Phase63SetPolicyScorer(
+        n_features=len(raw_tiled_input.feature_columns),
+        hidden_dim=int(hidden_dim),
+    ).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(learning_rate))
+    history: list[dict[str, object]] = []
+    for epoch in range(1, int(epochs) + 1):
+        losses = []
+        correct = 0
+        topk_hits = 0
+        for example in examples:
+            block_features = torch.tensor(
+                example["block_features"],
+                dtype=torch.float32,
+                device=device,
+            ).unsqueeze(0)
+            valid_mask = torch.tensor(
+                example["valid_mask"],
+                dtype=torch.bool,
+                device=device,
+            ).unsqueeze(0)
+            selected_mask = torch.tensor(
+                example["selected_mask"],
+                dtype=torch.bool,
+                device=device,
+            ).unsqueeze(0)
+            target = torch.tensor(
+                [int(example["target_action"])],
+                dtype=torch.long,
+                device=device,
+            )
+            logits = model(block_features, valid_mask, selected_mask)
+            loss = F.cross_entropy(logits, target)
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            losses.append(float(loss.detach().cpu()))
+            predicted = int(torch.argmax(logits.detach(), dim=1).item())
+            correct += int(predicted == int(example["target_action"]))
+            k = min(int(top_k), logits.shape[1])
+            topk = torch.topk(logits.detach(), k=k, dim=1).indices[0].cpu().tolist()
+            topk_hits += int(int(example["target_action"]) in topk)
+        history.append(
+            {
+                "variant_id": str(raw_tiled_input.variant_id),
+                "train_tile_id": str(raw_tiled_input.tile_id),
+                "seed": int(seed),
+                "epoch": int(epoch),
+                "loss": _round_float(statistics.mean(losses)),
+                "top1_accuracy": _round_float(correct / len(examples)),
+                "topk_hit_rate": _round_float(topk_hits / len(examples)),
+                "learning_rate": float(learning_rate),
+                "hidden_dim": int(hidden_dim),
+                "claim_boundary": PHASE65_CLAIM_BOUNDARY,
+            }
+        )
+    model.eval()
+    return model, history
+
+
+def rollout_phase65_greedy_policy(
+    model: Phase63SetPolicyScorer,
+    raw_tiled_input,
+    standardizer: Phase65Standardizer,
+    train_tile_id: str,
+    eval_tile_rank: int,
+    seed: int,
+    phase65_seed_rank: int,
+    eval_max_steps: int,
+    device: str = "cpu",
+) -> dict[str, object]:
+    standardized_tiled = apply_phase65_standardizer(raw_tiled_input, standardizer)
+    _validate_aligned_tiled_inputs(raw_tiled_input, standardized_tiled)
+    selected: list[int] = []
+    selected_block_ids: list[str] = []
+    rewards: list[float] = []
+    invalid_action_count = 0
+    for _step_index in range(min(int(eval_max_steps), len(raw_tiled_input.block_ids))):
+        inputs = build_phase63_model_inputs(standardized_tiled, selected)
+        available = inputs["available_mask"]
+        if not bool(available.any()):
+            break
+        with torch.no_grad():
+            logits = model(
+                torch.tensor(
+                    inputs["block_features"],
+                    dtype=torch.float32,
+                    device=device,
+                ).unsqueeze(0),
+                torch.tensor(
+                    inputs["valid_mask"],
+                    dtype=torch.bool,
+                    device=device,
+                ).unsqueeze(0),
+                torch.tensor(
+                    inputs["selected_mask"],
+                    dtype=torch.bool,
+                    device=device,
+                ).unsqueeze(0),
+            )
+        action = int(torch.argmax(logits, dim=1).item())
+        if action in selected or not bool(available[action]):
+            invalid_action_count += 1
+            valid_indices = [
+                int(index) for index, flag in enumerate(available.tolist()) if flag
+            ]
+            action = valid_indices[0]
+        selected.append(action)
+        selected_block_ids.append(str(raw_tiled_input.block_ids[action]))
+        rewards.append(
+            compute_base_planning_reward_from_matrix_row(
+                raw_tiled_input.feature_columns,
+                raw_tiled_input.state_matrix[action],
+            )
+        )
+    oracle = build_phase63_oracle_trajectory(raw_tiled_input, eval_max_steps)
+    total_reward = _round_float(sum(rewards))
+    oracle_total = float(oracle["total_oracle_reward"])
+    oracle_gap = _round_float(oracle_total - total_reward)
+    oracle_gap_fraction = _round_float(oracle_gap / max(abs(oracle_total), 1.0e-9))
+    terminated = len(selected) == len(raw_tiled_input.block_ids)
+    return {
+        "row_type": "bc_greedy_policy",
+        "variant_id": str(raw_tiled_input.variant_id),
+        "train_tile_id": str(train_tile_id),
+        "eval_tile_id": str(raw_tiled_input.tile_id),
+        "eval_tile_rank": int(eval_tile_rank),
+        "seed": int(seed),
+        "phase63_seed_rank": int(phase65_seed_rank),
+        "eval_max_steps": int(eval_max_steps),
+        "n_blocks": len(raw_tiled_input.block_ids),
+        "n_features": len(raw_tiled_input.feature_columns),
+        "episode_steps": len(selected),
+        "terminated": bool(terminated),
+        "truncated": bool(not terminated and len(selected) >= int(eval_max_steps)),
+        "all_actions_valid": bool(invalid_action_count == 0),
+        "invalid_action_count": int(invalid_action_count),
+        "total_contract_reward": total_reward,
+        "oracle_total_reward": _round_float(oracle_total),
+        "oracle_gap": oracle_gap,
+        "oracle_gap_fraction": oracle_gap_fraction,
+        "selected_block_ids": ";".join(selected_block_ids),
+        "selected_action_indices": ";".join(str(index) for index in selected),
+        "claim_boundary": PHASE65_CLAIM_BOUNDARY,
+    }
