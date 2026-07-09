@@ -119,6 +119,19 @@ def _feature_matrix(
     return block_ids, np.asarray(matrix_rows, dtype=np.float64)
 
 
+def _linear_predictions(z: np.ndarray, y: np.ndarray) -> np.ndarray:
+    design = np.column_stack([np.ones(z.shape[0]), z])
+    xtx = design.T @ design
+    ridge = np.eye(xtx.shape[0], dtype=np.float64) * 1.0e-9
+    ridge[0, 0] = 0.0
+    xty = design.T @ y
+    try:
+        coeffs = np.linalg.solve(xtx + ridge, xty)
+    except np.linalg.LinAlgError:
+        coeffs = np.linalg.pinv(xtx + ridge) @ xty
+    return design @ coeffs
+
+
 def _ols_residual_values(
     y: np.ndarray,
     x: np.ndarray,
@@ -130,9 +143,7 @@ def _ols_residual_values(
         return y - np.mean(y)
     z = x[:, keep]
     z = (z - np.mean(z, axis=0)) / np.std(z, axis=0)
-    design = np.column_stack([np.ones(z.shape[0]), z])
-    coeffs, *_ = np.linalg.lstsq(design, y, rcond=None)
-    return y - (design @ coeffs)
+    return y - _linear_predictions(z, y)
 
 
 def _infer_kind(values: Sequence[float]) -> str:
@@ -233,24 +244,24 @@ def build_phase67_candidate_targets(
     explicit_columns = [
         column for column in sorted(fieldnames) if str(column).startswith("explicit_feature_")
     ]
+    all_block_ids, explicit_matrix = _feature_matrix(rows, explicit_columns)
     source_targets_for_residuals = list(targets)
     for source_target in source_targets_for_residuals:
         values_by_block = dict(source_target.get("values_by_block", {}))
-        aligned_rows = []
+        aligned_indexes = []
         aligned_blocks = []
         y_values = []
-        for row in rows:
-            block_id = str(row["block_id"])
+        for row_index, block_id in enumerate(all_block_ids):
             value = _safe_float(values_by_block.get(block_id))
             if value is None:
                 continue
-            aligned_rows.append(row)
+            aligned_indexes.append(row_index)
             aligned_blocks.append(block_id)
             y_values.append(value)
         if len(y_values) < 2:
             continue
-        _, explicit_matrix = _feature_matrix(aligned_rows, explicit_columns)
-        residual = _ols_residual_values(np.asarray(y_values, dtype=np.float64), explicit_matrix)
+        aligned_explicit = explicit_matrix[np.asarray(aligned_indexes, dtype=np.int64), :]
+        residual = _ols_residual_values(np.asarray(y_values, dtype=np.float64), aligned_explicit)
         source_target_id = str(source_target.get("target_id", ""))
         targets.append(
             {
@@ -497,9 +508,7 @@ def _proxy_r2(x: np.ndarray, y: np.ndarray) -> float:
         return _univariate_proxy_r2(x[:, keep], y)
     z = x[:, keep]
     z = (z - np.mean(z, axis=0)) / np.std(z, axis=0)
-    design = np.column_stack([np.ones(z.shape[0]), z])
-    coeffs, *_ = np.linalg.lstsq(design, y, rcond=None)
-    predicted = design @ coeffs
+    predicted = _linear_predictions(z, y)
     total = float(np.sum((y - np.mean(y)) ** 2))
     if total <= 1.0e-12:
         return 0.0
@@ -562,13 +571,35 @@ def build_phase67_candidate_target_information_gain(
     for variant_id, feature_rows in feature_rows_by_variant.items():
         if not feature_rows:
             continue
-        groups = _feature_group_indexes(feature_rows[0].keys())
+        fieldnames = list(feature_rows[0].keys())
+        groups = _feature_group_indexes(fieldnames)
+        block_ids = [str(row.get("block_id", "")) for row in feature_rows]
+        reward_matrix = _matrix_from_rows(feature_rows, groups["reward_explicit"])
+        explicit_matrix = _matrix_from_rows(feature_rows, groups["all_explicit"])
+        geofm_matrix = _matrix_from_rows(feature_rows, groups["geofm"])
+        combined_matrix = (
+            np.column_stack([explicit_matrix, geofm_matrix])
+            if geofm_matrix.shape[1]
+            else explicit_matrix
+        )
         for target in targets:
-            aligned_rows, y = _aligned_target_vector(feature_rows, target)
-            reward_x = _matrix_from_rows(aligned_rows, groups["reward_explicit"])
-            explicit_x = _matrix_from_rows(aligned_rows, groups["all_explicit"])
-            geofm_x = _matrix_from_rows(aligned_rows, groups["geofm"])
-            combined_x = np.column_stack([explicit_x, geofm_x]) if geofm_x.shape[1] else explicit_x
+            values_by_block = dict(target.get("values_by_block", {}))
+            aligned_indexes = []
+            values = []
+            for row_index, block_id in enumerate(block_ids):
+                value = _safe_float(values_by_block.get(block_id))
+                if value is None:
+                    continue
+                aligned_indexes.append(row_index)
+                values.append(value)
+            if not values:
+                raise ValueError(f"Phase 67 target has no aligned values: {target.get('target_id')}")
+            indexes = np.asarray(aligned_indexes, dtype=np.int64)
+            y = np.asarray(values, dtype=np.float64)
+            reward_x = reward_matrix[indexes, :]
+            explicit_x = explicit_matrix[indexes, :]
+            geofm_x = geofm_matrix[indexes, :]
+            combined_x = combined_matrix[indexes, :]
             explicit_r2 = _proxy_r2(reward_x, y)
             all_explicit_r2 = _proxy_r2(explicit_x, y)
             geofm_r2 = _proxy_r2(geofm_x, y)
@@ -608,7 +639,6 @@ def build_phase67_candidate_target_information_gain(
             float(row["geofm_proxy_r2"]) - d6_r2_by_target.get(str(row["target_id"]), 0.0)
         )
     return rows
-
 
 def build_phase67_candidate_target_gate(
     coverage_issues: Sequence[object],
