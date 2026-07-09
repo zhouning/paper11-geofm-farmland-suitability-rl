@@ -738,3 +738,445 @@ def build_phase66_diagnostic_gate(
         "suitability_context": dict(suitability_context),
         "claim_boundary": PHASE66_CLAIM_BOUNDARY,
     }
+
+
+def _component_rows_for_blocks(
+    tiled_input,
+    reward_index: Mapping[str, Mapping[str, object]],
+    block_ids: Sequence[str],
+    source: str,
+    seed: int,
+    action_group: str,
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for block_id in block_ids:
+        if str(block_id) not in reward_index:
+            raise ValueError(f"Phase 66 block ID missing from reward index: {block_id}")
+        base_row = dict(reward_index[str(block_id)])
+        rows.append(
+            {
+                **base_row,
+                "source": str(source),
+                "seed": int(seed),
+                "action_group": str(action_group),
+                "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+            }
+        )
+    return rows
+
+
+def build_phase66_reward_component_attribution(
+    phase63_rollout_rows: Sequence[Mapping[str, object]],
+    phase65_rollout_rows: Sequence[Mapping[str, object]],
+    oracle_rows: Sequence[Mapping[str, object]],
+    tiled_inputs: Mapping[tuple[str, str], object],
+) -> list[dict[str, object]]:
+    phase63_index = _index_unique_rows(
+        [
+            row
+            for row in phase63_rollout_rows
+            if str(row.get("row_type", "")) == "bc_greedy_policy"
+        ],
+        "Phase 63 rollout",
+    )
+    phase65_index = _index_unique_rows(
+        [
+            row
+            for row in phase65_rollout_rows
+            if str(row.get("row_type", "")) == "bc_greedy_policy"
+        ],
+        "Phase 65 rollout",
+    )
+    oracle_index = _index_unique_rows(oracle_rows, "Phase 63 oracle")
+    rows: list[dict[str, object]] = []
+    for key in sorted(oracle_index):
+        variant_id, tile_id, seed = key
+        if key not in phase63_index:
+            raise ValueError(f"Phase 66 missing Phase 63 rollout row for {key}")
+        if key not in phase65_index:
+            raise ValueError(f"Phase 66 missing Phase 65 rollout row for {key}")
+        tiled = tiled_inputs.get((variant_id, tile_id))
+        if tiled is None:
+            raise ValueError(f"Phase 66 missing tiled input for {(variant_id, tile_id)}")
+        reward_index = _block_rank_and_reward(tiled)
+        oracle_ids = _split_semicolon_values(oracle_index[key].get("selected_block_ids"))
+        phase63_ids = _split_semicolon_values(phase63_index[key].get("selected_block_ids"))
+        phase65_ids = _split_semicolon_values(phase65_index[key].get("selected_block_ids"))
+        phase63_missed = [block_id for block_id in oracle_ids if block_id not in set(phase63_ids)]
+        phase63_extra = [block_id for block_id in phase63_ids if block_id not in set(oracle_ids)]
+        phase65_missed = [block_id for block_id in oracle_ids if block_id not in set(phase65_ids)]
+        phase65_extra = [block_id for block_id in phase65_ids if block_id not in set(oracle_ids)]
+        rows.extend(
+            _component_rows_for_blocks(
+                tiled,
+                reward_index,
+                oracle_ids,
+                source="oracle",
+                seed=seed,
+                action_group="oracle",
+            )
+        )
+        rows.extend(
+            _component_rows_for_blocks(
+                tiled,
+                reward_index,
+                phase63_ids,
+                source="phase63",
+                seed=seed,
+                action_group="selected",
+            )
+        )
+        rows.extend(
+            _component_rows_for_blocks(
+                tiled,
+                reward_index,
+                phase63_missed,
+                source="phase63",
+                seed=seed,
+                action_group="missed_oracle",
+            )
+        )
+        rows.extend(
+            _component_rows_for_blocks(
+                tiled,
+                reward_index,
+                phase63_extra,
+                source="phase63",
+                seed=seed,
+                action_group="extra_selected",
+            )
+        )
+        rows.extend(
+            _component_rows_for_blocks(
+                tiled,
+                reward_index,
+                phase65_ids,
+                source="phase65",
+                seed=seed,
+                action_group="selected",
+            )
+        )
+        rows.extend(
+            _component_rows_for_blocks(
+                tiled,
+                reward_index,
+                phase65_missed,
+                source="phase65",
+                seed=seed,
+                action_group="missed_oracle",
+            )
+        )
+        rows.extend(
+            _component_rows_for_blocks(
+                tiled,
+                reward_index,
+                phase65_extra,
+                source="phase65",
+                seed=seed,
+                action_group="extra_selected",
+            )
+        )
+    return rows
+
+
+def _load_json_object(path: Path | str | None, label: str) -> dict[str, object]:
+    if path is None:
+        return {}
+    json_path = Path(path)
+    if not json_path.exists():
+        raise FileNotFoundError(f"Missing {label}: {json_path}")
+    loaded = json.loads(json_path.read_text(encoding="utf-8"))
+    if not isinstance(loaded, dict):
+        raise ValueError(f"{label} must contain a JSON object")
+    return loaded
+
+
+def _load_csv_rows(path: Path | str | None, label: str) -> list[dict[str, object]]:
+    if path is None:
+        return []
+    csv_path = Path(path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {label}: {csv_path}")
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle)]
+
+
+def _contract_string_list(contract: Mapping[str, object], key: str) -> list[str]:
+    value = contract.get(key)
+    if isinstance(value, str):
+        return [part.strip() for part in value.split(",") if part.strip()]
+    if isinstance(value, Sequence):
+        return [str(item) for item in value if str(item).strip()]
+    return []
+
+
+def _contract_int_list(contract: Mapping[str, object], key: str) -> list[int]:
+    value = contract.get(key)
+    if isinstance(value, str):
+        return [int(part.strip()) for part in value.split(",") if part.strip()]
+    if isinstance(value, Sequence):
+        return [int(item) for item in value if str(item).strip()]
+    return []
+
+
+def _load_phase66_tiled_inputs(contract: Mapping[str, object]) -> dict[tuple[str, str], object]:
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 66 contract is missing variant_source_dirs")
+    tile_index_csv = contract.get("tile_index_csv")
+    if not tile_index_csv:
+        raise ValueError("Phase 66 contract is missing tile_index_csv")
+    variants = _contract_string_list(contract, "variants")
+    eval_tile_ids = _contract_string_list(contract, "eval_tile_ids")
+    train_tile_id = str(contract.get("train_tile_id", ""))
+    tile_ids = [train_tile_id, *eval_tile_ids] if train_tile_id else eval_tile_ids
+    if not variants:
+        raise ValueError("Phase 66 contract has no variants")
+    if not tile_ids:
+        raise ValueError("Phase 66 contract has no train/eval tile IDs")
+    tiled_inputs: dict[tuple[str, str], object] = {}
+    for variant_id in variants:
+        source_dir = variant_source_dirs.get(variant_id)
+        if source_dir is None:
+            raise ValueError(f"Phase 66 contract has no source for variant {variant_id}")
+        for tile_id in tile_ids:
+            tiled_inputs[(str(variant_id), str(tile_id))] = load_tiled_variant_input(
+                source_dir,
+                str(tile_index_csv),
+                str(tile_id),
+                variant_id=str(variant_id),
+            )
+    return tiled_inputs
+
+
+def _write_csv_rows(
+    path: Path,
+    fieldnames: Sequence[str],
+    rows: Sequence[Mapping[str, object]],
+) -> None:
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, np.ndarray):
+        return [_json_ready(item) for item in value.tolist()]
+    if isinstance(value, Path):
+        return str(value)
+    return value
+
+
+def _phase66_markdown(analysis: Mapping[str, object]) -> str:
+    gate = dict(analysis.get("diagnostic_gate", {}))
+    lines = [
+        "# Phase 66 Reward-Label Representation Audit",
+        "",
+        f"Status: {gate.get('phase66_status', '')}",
+        "",
+        f"Alignment advantage: {gate.get('alignment_advantage', {})}",
+        f"Failure mode counts: {gate.get('failure_mode_counts', {})}",
+        "",
+        "Claim boundary:",
+        str(analysis.get("claim_boundary", PHASE66_CLAIM_BOUNDARY)),
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def write_phase66_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    paths = {
+        "component_csv": output_path / "phase66_reward_component_attribution.csv",
+        "atlas_csv": output_path / "phase66_selected_block_atlas.csv",
+        "alignment_csv": output_path / "phase66_representation_rank_alignment.csv",
+        "failure_csv": output_path / "phase66_failure_mode_summary.csv",
+        "audit_json": output_path / "phase66_reward_label_representation_audit.json",
+        "audit_md": output_path / "phase66_reward_label_representation_audit.md",
+    }
+    _write_csv_rows(
+        paths["component_csv"],
+        PHASE66_COMPONENT_FIELDNAMES,
+        analysis.get("reward_component_rows", []),
+    )
+    _write_csv_rows(
+        paths["atlas_csv"],
+        PHASE66_ATLAS_FIELDNAMES,
+        analysis.get("selected_block_atlas_rows", []),
+    )
+    _write_csv_rows(
+        paths["alignment_csv"],
+        PHASE66_ALIGNMENT_FIELDNAMES,
+        analysis.get("representation_rank_alignment_rows", []),
+    )
+    _write_csv_rows(
+        paths["failure_csv"],
+        PHASE66_FAILURE_FIELDNAMES,
+        analysis.get("failure_mode_summary_rows", []),
+    )
+    saved = dict(analysis)
+    saved["phase66_status"] = dict(analysis.get("diagnostic_gate", {})).get(
+        "phase66_status",
+        PHASE66_STATUS_INSUFFICIENT,
+    )
+    paths["audit_json"].write_text(
+        json.dumps(_json_ready(saved), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    paths["audit_md"].write_text(_phase66_markdown(analysis), encoding="utf-8")
+    return paths
+
+
+def _filter_rows_for_eval_contract(
+    rows: Sequence[Mapping[str, object]],
+    variants: Sequence[str],
+    eval_tile_ids: Sequence[str],
+    seeds: Sequence[int],
+) -> list[Mapping[str, object]]:
+    allowed = {
+        (str(variant_id), str(tile_id), int(seed))
+        for variant_id in variants
+        for tile_id in eval_tile_ids
+        for seed in seeds
+    }
+    return [row for row in rows if _row_key(row) in allowed]
+
+
+def run_phase66_reward_label_representation_audit(
+    phase63_comparison_json: Path | str,
+    phase63_rollout_csv: Path | str,
+    phase63_oracle_summary_csv: Path | str,
+    phase64_failure_cases_csv: Path | str | None,
+    phase64_feature_effective_rank_csv: Path | str | None,
+    phase65_comparison_json: Path | str,
+    phase65_rollout_csv: Path | str,
+    phase65_pairwise_delta_csv: Path | str,
+    phase10_reward_readiness_json: Path | str | None = None,
+) -> dict[str, object]:
+    phase63_comparison = _load_json_object(
+        phase63_comparison_json,
+        "Phase 63 comparison JSON",
+    )
+    phase65_comparison = _load_json_object(
+        phase65_comparison_json,
+        "Phase 65 comparison JSON",
+    )
+    suitability_context = _load_json_object(
+        phase10_reward_readiness_json,
+        "Phase 10 reward readiness JSON",
+    )
+    contract = phase63_comparison.get("contract")
+    if not isinstance(contract, Mapping):
+        raise ValueError("Phase 63 comparison JSON is missing contract metadata")
+    variants = _contract_string_list(contract, "variants")
+    eval_tile_ids = _contract_string_list(contract, "eval_tile_ids")
+    seeds = _contract_int_list(contract, "seeds")
+    if not variants:
+        raise ValueError("Phase 66 contract has no variants")
+    if not eval_tile_ids:
+        raise ValueError("Phase 66 contract has no eval_tile_ids")
+    if not seeds:
+        raise ValueError("Phase 66 contract has no seeds")
+    phase63_rows = _filter_rows_for_eval_contract(
+        _load_csv_rows(phase63_rollout_csv, "Phase 63 rollout CSV"),
+        variants,
+        eval_tile_ids,
+        seeds,
+    )
+    oracle_rows = _filter_rows_for_eval_contract(
+        _load_csv_rows(phase63_oracle_summary_csv, "Phase 63 oracle summary CSV"),
+        variants,
+        eval_tile_ids,
+        seeds,
+    )
+    phase64_failure_rows = _load_csv_rows(
+        phase64_failure_cases_csv,
+        "Phase 64 failure cases CSV",
+    )
+    phase64_rank_rows = _load_csv_rows(
+        phase64_feature_effective_rank_csv,
+        "Phase 64 feature effective rank CSV",
+    )
+    phase65_rows = _filter_rows_for_eval_contract(
+        _load_csv_rows(phase65_rollout_csv, "Phase 65 rollout CSV"),
+        variants,
+        eval_tile_ids,
+        seeds,
+    )
+    phase65_pairwise_rows = _filter_rows_for_eval_contract(
+        _load_csv_rows(phase65_pairwise_delta_csv, "Phase 65 pairwise delta CSV"),
+        variants,
+        eval_tile_ids,
+        seeds,
+    )
+    tiled_inputs = _load_phase66_tiled_inputs(contract)
+    eval_tiled_inputs = {
+        key: tiled
+        for key, tiled in tiled_inputs.items()
+        if key[1] in set(eval_tile_ids)
+    }
+    eval_max_steps = int(contract.get("eval_max_steps", 8))
+    atlas_rows = build_phase66_selected_block_atlas(
+        phase63_rollout_rows=phase63_rows,
+        phase65_rollout_rows=phase65_rows,
+        oracle_rows=oracle_rows,
+        tiled_inputs=eval_tiled_inputs,
+    )
+    component_rows = build_phase66_reward_component_attribution(
+        phase63_rollout_rows=phase63_rows,
+        phase65_rollout_rows=phase65_rows,
+        oracle_rows=oracle_rows,
+        tiled_inputs=eval_tiled_inputs,
+    )
+    alignment_rows = build_phase66_representation_rank_alignment(
+        tiled_inputs=eval_tiled_inputs,
+        eval_max_steps=eval_max_steps,
+    )
+    failure_rows = build_phase66_failure_mode_summary(
+        atlas_rows,
+        alignment_rows,
+        phase65_pairwise_rows,
+    )
+    coverage_issues: list[object] = []
+    if dict(phase65_comparison).get("phase65_status") == PHASE66_STATUS_INSUFFICIENT:
+        coverage_issues.append("Phase 65 status is insufficient")
+    gate = build_phase66_diagnostic_gate(
+        coverage_issues,
+        alignment_rows,
+        failure_rows,
+        suitability_context,
+    )
+    return {
+        "phase": "phase66_reward_label_representation_audit",
+        "phase63_comparison_json": str(Path(phase63_comparison_json)),
+        "phase63_rollout_csv": str(Path(phase63_rollout_csv)),
+        "phase63_oracle_summary_csv": str(Path(phase63_oracle_summary_csv)),
+        "phase64_failure_cases_csv": ""
+        if phase64_failure_cases_csv is None
+        else str(Path(phase64_failure_cases_csv)),
+        "phase64_feature_effective_rank_csv": ""
+        if phase64_feature_effective_rank_csv is None
+        else str(Path(phase64_feature_effective_rank_csv)),
+        "phase65_comparison_json": str(Path(phase65_comparison_json)),
+        "phase65_rollout_csv": str(Path(phase65_rollout_csv)),
+        "phase65_pairwise_delta_csv": str(Path(phase65_pairwise_delta_csv)),
+        "contract": dict(contract),
+        "phase64_failure_case_rows_loaded": len(phase64_failure_rows),
+        "phase64_feature_effective_rank_rows_loaded": len(phase64_rank_rows),
+        "reward_component_rows": component_rows,
+        "selected_block_atlas_rows": atlas_rows,
+        "representation_rank_alignment_rows": alignment_rows,
+        "failure_mode_summary_rows": failure_rows,
+        "diagnostic_gate": gate,
+        "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+    }

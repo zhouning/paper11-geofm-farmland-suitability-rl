@@ -386,3 +386,223 @@ def test_phase66_diagnostic_gate_covers_all_statuses():
     assert build_phase66_diagnostic_gate([], redundant_alignment, [], {})["phase66_status"] == "representation_signal_redundant_with_explicit_reward"
     assert build_phase66_diagnostic_gate([], redundant_alignment, failure_summary, {"phase10_status": "not_ready_for_suitability_reward"})["phase66_status"] == "base_reward_target_masks_geofm_signal"
     assert build_phase66_diagnostic_gate(["missing row"], redundant_alignment, failure_summary, {})["phase66_status"] == "insufficient"
+
+
+def test_phase66_reward_component_attribution_marks_selected_missed_and_extra_blocks():
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        build_phase66_reward_component_attribution,
+    )
+
+    tiled = _tiled_input()
+    rows = build_phase66_reward_component_attribution(
+        phase63_rollout_rows=[_rollout_row(selected="b1;b3")],
+        phase65_rollout_rows=[_rollout_row(selected="b1;b2")],
+        oracle_rows=[_oracle_row(selected="b1;b2")],
+        tiled_inputs={("D4P8", "tile_eval"): tiled},
+    )
+    labels = {
+        (row["source"], row["action_group"], row["block_id"])
+        for row in rows
+    }
+
+    assert ("oracle", "oracle", "b1") in labels
+    assert ("oracle", "oracle", "b2") in labels
+    assert ("phase63", "selected", "b1") in labels
+    assert ("phase63", "selected", "b3") in labels
+    assert ("phase63", "missed_oracle", "b2") in labels
+    assert ("phase63", "extra_selected", "b3") in labels
+    assert ("phase65", "selected", "b1") in labels
+    assert ("phase65", "selected", "b2") in labels
+    assert all(row["claim_boundary"].startswith("Phase 66") for row in rows)
+
+
+def _write_csv(path: Path, rows: list[dict[str, object]]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0].keys())
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def _write_variant_fixture(
+    output_dir: Path,
+    variant_id: str,
+    rows: list[dict[str, object]],
+    columns: tuple[str, ...],
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    table = output_dir / f"variant_{variant_id}_features.csv"
+    with table.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=["block_id", *columns])
+        writer.writeheader()
+        writer.writerows(rows)
+    manifest = {
+        "variants": {
+            variant_id: {
+                "ready": True,
+                "feature_table": table.name,
+                "required_columns": list(columns),
+                "reward": "base_planning_reward",
+                "state_groups": ["synthetic"],
+            }
+        }
+    }
+    (output_dir / "experiment_variants.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+def test_phase66_writer_outputs_json_csv_and_markdown(tmp_path):
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        write_phase66_artifacts,
+    )
+
+    analysis = {
+        "phase": "phase66_reward_label_representation_audit",
+        "reward_component_rows": [{"variant_id": "B0", "tile_id": "tile_eval", "block_id": "b1", "reward_rank": 1, "source": "oracle", "seed": 0, "action_group": "oracle", "total_reward": 0.5, "claim_boundary": "phase66"}],
+        "selected_block_atlas_rows": [{"variant_id": "B0", "eval_tile_id": "tile_eval", "seed": 0, "claim_boundary": "phase66"}],
+        "representation_rank_alignment_rows": [{"variant_id": "B0", "tile_id": "tile_eval", "feature_group": "reward_explicit", "n_columns": 9, "proxy_r2": 1.0, "claim_boundary": "phase66"}],
+        "failure_mode_summary_rows": [{"failure_mode": "near_oracle_reward_equivalent", "case_count": 1, "representative_cases": "B0:tile_eval:0", "claim_boundary": "phase66"}],
+        "diagnostic_gate": {"phase66_status": "representation_signal_redundant_with_explicit_reward"},
+        "claim_boundary": "phase66",
+    }
+
+    paths = write_phase66_artifacts(analysis, tmp_path / "outputs")
+
+    assert paths["component_csv"].name == "phase66_reward_component_attribution.csv"
+    assert paths["atlas_csv"].name == "phase66_selected_block_atlas.csv"
+    assert paths["alignment_csv"].name == "phase66_representation_rank_alignment.csv"
+    assert paths["failure_csv"].name == "phase66_failure_mode_summary.csv"
+    assert paths["audit_json"].name == "phase66_reward_label_representation_audit.json"
+    assert paths["audit_md"].name == "phase66_reward_label_representation_audit.md"
+    saved = json.loads(paths["audit_json"].read_text(encoding="utf-8"))
+    assert saved["phase66_status"] == "representation_signal_redundant_with_explicit_reward"
+    assert "Phase 66 Reward-Label Representation Audit" in paths["audit_md"].read_text(encoding="utf-8")
+
+
+def test_phase66_cli_parser_accepts_required_inputs():
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase66_reward_label_representation_audit"
+        / "run_phase66_reward_label_representation_audit.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase66_runner_args", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    parser = module._build_parser()
+    args = parser.parse_args(
+        [
+            "--phase63-comparison-json", "phase63.json",
+            "--phase63-rollout-csv", "phase63_rollout.csv",
+            "--phase63-oracle-summary-csv", "phase63_oracle.csv",
+            "--phase64-failure-cases-csv", "phase64_failure.csv",
+            "--phase64-feature-effective-rank-csv", "phase64_rank.csv",
+            "--phase65-comparison-json", "phase65.json",
+            "--phase65-rollout-csv", "phase65_rollout.csv",
+            "--phase65-pairwise-delta-csv", "phase65_pairwise.csv",
+            "--phase10-reward-readiness-json", "phase10.json",
+            "--output-dir", "outputs",
+        ]
+    )
+
+    assert args.phase63_comparison_json == Path("phase63.json")
+    assert args.phase65_pairwise_delta_csv == Path("phase65_pairwise.csv")
+    assert args.output_dir == Path("outputs")
+
+
+def test_phase66_run_wrapper_loads_contract_and_returns_read_only_analysis(tmp_path):
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        run_phase66_reward_label_representation_audit,
+    )
+
+    columns = (
+        "explicit_feature_00",
+        "explicit_feature_01",
+        "explicit_feature_02",
+        "explicit_feature_04",
+        "explicit_feature_07",
+        "explicit_feature_09",
+        "explicit_feature_10",
+        "explicit_feature_13",
+        "explicit_feature_16",
+        "embedding_pca_00",
+    )
+    feature_rows = [
+        {**{"block_id": "b1"}, **{column: 0.0 for column in columns}},
+        {**{"block_id": "b2"}, **{column: 0.0 for column in columns}},
+        {**{"block_id": "b3"}, **{column: 0.0 for column in columns}},
+    ]
+    feature_rows[0]["explicit_feature_16"] = 0.9
+    feature_rows[1]["explicit_feature_16"] = 0.8
+    feature_rows[2]["explicit_feature_16"] = 0.1
+    feature_rows[0]["embedding_pca_00"] = 0.9
+    feature_rows[1]["embedding_pca_00"] = 0.8
+    feature_rows[2]["embedding_pca_00"] = 0.1
+    phase2 = tmp_path / "phase2"
+    _write_variant_fixture(phase2, "D4P8", feature_rows, columns)
+    tile_index = _write_csv(
+        tmp_path / "tiles.csv",
+        [
+            {"tile_id": "tile_train", "block_ids": "b1;b2;b3"},
+            {"tile_id": "tile_eval", "block_ids": "b1;b2;b3"},
+        ],
+    )
+    comparison = {
+        "contract": {
+            "tile_index_csv": str(tile_index),
+            "variant_source_dirs": {"D4P8": str(phase2)},
+            "variants": ["D4P8"],
+            "train_tile_id": "tile_train",
+            "eval_tile_ids": ["tile_eval"],
+            "seeds": [0],
+            "eval_max_steps": 2,
+        }
+    }
+    comparison_path = tmp_path / "phase63.json"
+    comparison_path.write_text(json.dumps(comparison), encoding="utf-8")
+    phase63_rollout = _write_csv(tmp_path / "phase63_rollout.csv", [_rollout_row(selected="b1;b3")])
+    phase65_rollout = _write_csv(tmp_path / "phase65_rollout.csv", [_rollout_row(selected="b1;b2")])
+    oracle = _write_csv(tmp_path / "oracle.csv", [_oracle_row(selected="b1;b2")])
+    pairwise = _write_csv(
+        tmp_path / "pairwise.csv",
+        [
+            {
+                "variant_id": "D4P8",
+                "eval_tile_id": "tile_eval",
+                "seed": 0,
+                "standardized_minus_unstandardized_reward": 0.1,
+            }
+        ],
+    )
+    phase65_json = tmp_path / "phase65.json"
+    phase65_json.write_text(json.dumps({"phase65_status": "fixture"}), encoding="utf-8")
+    phase10_json = tmp_path / "phase10.json"
+    phase10_json.write_text(json.dumps({"phase10_status": "not_ready_for_suitability_reward"}), encoding="utf-8")
+
+    analysis = run_phase66_reward_label_representation_audit(
+        phase63_comparison_json=comparison_path,
+        phase63_rollout_csv=phase63_rollout,
+        phase63_oracle_summary_csv=oracle,
+        phase64_failure_cases_csv=None,
+        phase64_feature_effective_rank_csv=None,
+        phase65_comparison_json=phase65_json,
+        phase65_rollout_csv=phase65_rollout,
+        phase65_pairwise_delta_csv=pairwise,
+        phase10_reward_readiness_json=phase10_json,
+    )
+
+    assert analysis["phase"] == "phase66_reward_label_representation_audit"
+    assert len(analysis["selected_block_atlas_rows"]) == 1
+    assert len(analysis["representation_rank_alignment_rows"]) == 3
+    assert len(analysis["reward_component_rows"]) > 3
+    assert analysis["diagnostic_gate"]["phase66_status"] in {
+        "representation_adds_reward_ranking_signal",
+        "representation_signal_redundant_with_explicit_reward",
+        "base_reward_target_masks_geofm_signal",
+        "insufficient",
+    }
