@@ -98,3 +98,57 @@ def test_phase70_standardization_uses_train_tile_only_and_safe_scales():
     assert transformed_eval.tiled_input.block_ids == eval_tile.block_ids
     assert transformed_eval.tiled_input.feature_columns == eval_tile.feature_columns
     assert transformed_eval.tiled_input.reward_mode == "base_planning_reward"
+
+def test_phase70_dual_matrix_rollout_scores_original_reward_matrix():
+    from paper11_geofm.phase70_standardized_set_policy_rerun import (
+        apply_phase70_standardization,
+        build_phase70_oracle_trajectory,
+        fit_phase70_standardization,
+        rollout_phase70_standardized_greedy_policy,
+        train_phase70_standardized_behavior_cloner,
+    )
+
+    train = _tiled_input(
+        np.array(
+            [
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.9],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.7],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2],
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1],
+            ],
+            dtype=np.float32,
+        ),
+        block_ids=("b1", "b2", "b3", "b4"),
+    )
+    params = fit_phase70_standardization(train)
+    standardized_train = apply_phase70_standardization(train, params)
+
+    oracle = build_phase70_oracle_trajectory(standardized_train, eval_max_steps=3)
+    model, history = train_phase70_standardized_behavior_cloner(
+        standardized_train,
+        seed=70,
+        eval_max_steps=3,
+        epochs=35,
+        learning_rate=0.01,
+        hidden_dim=16,
+        top_k=2,
+    )
+    rollout = rollout_phase70_standardized_greedy_policy(
+        model,
+        standardized_train,
+        train_tile_id="tile_train",
+        eval_tile_rank=1,
+        seed=70,
+        phase70_seed_rank=1,
+        eval_max_steps=3,
+    )
+
+    assert oracle["selected_block_ids"] == ["b1", "b2", "b3"]
+    assert oracle["total_oracle_reward"] == 0.63
+    assert history[-1]["loss"] <= history[0]["loss"]
+    assert rollout["row_type"] == "bc_greedy_policy"
+    assert rollout["phase70_standardized_input"] is True
+    assert rollout["all_actions_valid"] is True
+    assert rollout["invalid_action_count"] == 0
+    assert float(rollout["oracle_total_reward"]) == 0.63
+    assert float(rollout["total_contract_reward"]) > 0.0
