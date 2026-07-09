@@ -223,3 +223,91 @@ def test_phase67_gate_context_accepts_real_phase10_and_phase18_keys():
     assert context["phase18_suitability_reward_allowed"] is False
     assert context["phase39_status"] == "missing"
     assert context["phase40_status"] == "missing"
+
+
+def test_phase67_information_gain_detects_geofm_residual_signal():
+    from paper11_geofm.phase67_candidate_reward_label_target_audit import (
+        build_phase67_candidate_target_information_gain,
+    )
+
+    rows = _feature_rows()
+    for row in rows:
+        for column in list(row):
+            if str(column).startswith("explicit_feature_"):
+                row[column] = 0.0
+    targets = [
+        {
+            "target_id": "geofm_explained_residual",
+            "target_family": "explicit_residual",
+            "values_by_block": {"b1": 0.9, "b2": 0.8, "b3": 0.3, "b4": 0.1},
+            "higher_is_better": True,
+            "directly_uses_explicit": False,
+            "depends_on_geofm": False,
+            "self_referential": False,
+            "target_kind": "continuous",
+            "source_detail": "fixture",
+        }
+    ]
+
+    info_rows = build_phase67_candidate_target_information_gain(
+        feature_rows_by_variant={"D4P8": rows},
+        targets=targets,
+        top_k_values=[2],
+    )
+    row = info_rows[0]
+
+    assert row["target_id"] == "geofm_explained_residual"
+    assert row["variant_id"] == "D4P8"
+    assert row["explicit_proxy_r2"] >= 0.0
+    assert row["geofm_proxy_r2"] > 0.9
+    assert row["geofm_spearman"] > 0.9
+    assert row["geofm_minus_explicit_r2"] > 0.0
+    assert row["geofm_topk_enrichment"] == 1.0
+
+
+def test_phase67_candidate_gate_covers_all_statuses():
+    from paper11_geofm.phase67_candidate_reward_label_target_audit import (
+        build_phase67_candidate_target_gate,
+    )
+
+    candidate_info = [
+        {
+            "target_id": "residual_a",
+            "target_family": "explicit_residual",
+            "variant_id": "D4P8",
+            "geofm_minus_explicit_r2": 0.2,
+            "geofm_minus_d6_r2": 0.1,
+            "residual_after_explicit_r2": 0.2,
+        }
+    ]
+    diagnostic_gate = [
+        {
+            "target_id": "residual_a",
+            "usable": True,
+            "gate_risk": "diagnostic_only_allowed",
+            "diagnostic_only_allowed": True,
+        },
+    ]
+    explicit_info = [
+        {
+            "target_id": "base_planning_reward",
+            "target_family": "base_reward",
+            "variant_id": "B0",
+            "geofm_minus_explicit_r2": -0.9,
+            "geofm_minus_d6_r2": 0.0,
+            "residual_after_explicit_r2": 0.0,
+        }
+    ]
+    explicit_gate = [
+        {
+            "target_id": "base_planning_reward",
+            "usable": True,
+            "gate_risk": "explicit_reward_defined",
+            "diagnostic_only_allowed": True,
+        },
+    ]
+
+    assert build_phase67_candidate_target_gate([], candidate_info, diagnostic_gate)["phase67_status"] == "candidate_target_found_for_diagnostic_training"
+    assert build_phase67_candidate_target_gate([], explicit_info, explicit_gate)["phase67_status"] == "only_leakage_or_explicit_targets_found"
+    assert build_phase67_candidate_target_gate([], [], [])["phase67_status"] == "independent_label_required_before_reward_redesign"
+    assert build_phase67_candidate_target_gate(["missing artifact"], explicit_info, explicit_gate)["phase67_status"] == "insufficient"

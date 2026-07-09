@@ -402,3 +402,255 @@ def build_phase67_candidate_target_gate_audit(
             }
         )
     return rows
+
+
+PHASE67_INFORMATION_GAIN_FIELDNAMES = [
+    "target_id",
+    "target_family",
+    "variant_id",
+    "n_blocks",
+    "explicit_proxy_r2",
+    "all_explicit_proxy_r2",
+    "geofm_proxy_r2",
+    "explicit_spearman",
+    "geofm_spearman",
+    "combined_proxy_r2",
+    "residual_after_explicit_r2",
+    "geofm_minus_explicit_r2",
+    "geofm_minus_d6_r2",
+    "geofm_topk_enrichment",
+    "explicit_topk_enrichment",
+    "claim_boundary",
+]
+
+
+def _rank_average(values: Sequence[float]) -> np.ndarray:
+    array = np.asarray(values, dtype=np.float64)
+    order = np.argsort(array, kind="mergesort")
+    ranks = np.empty(len(array), dtype=np.float64)
+    start = 0
+    while start < len(array):
+        end = start + 1
+        while end < len(array) and array[order[end]] == array[order[start]]:
+            end += 1
+        ranks[order[start:end]] = (start + 1 + end) / 2.0
+        start = end
+    return ranks
+
+
+def phase67_topk_enrichment(
+    feature_values: Sequence[float],
+    target_values: Sequence[float],
+    top_k: int,
+) -> float:
+    x = np.asarray(feature_values, dtype=np.float64)
+    y = np.asarray(target_values, dtype=np.float64)
+    if x.size != y.size:
+        raise ValueError("Phase 67 top-k enrichment inputs must have equal length")
+    k = min(int(top_k), int(x.size))
+    if k <= 0:
+        return 0.0
+    target_top = set(np.argsort(-y, kind="mergesort")[:k].tolist())
+    high_top = set(np.argsort(-x, kind="mergesort")[:k].tolist())
+    low_top = set(np.argsort(x, kind="mergesort")[:k].tolist())
+    return _round_float(max(len(target_top & high_top), len(target_top & low_top)) / k)
+
+
+def phase67_spearman(feature_values: Sequence[float], target_values: Sequence[float]) -> float:
+    x = np.asarray(feature_values, dtype=np.float64)
+    y = np.asarray(target_values, dtype=np.float64)
+    if x.size != y.size or x.size == 0 or float(np.std(x)) == 0.0 or float(np.std(y)) == 0.0:
+        return 0.0
+    rx = _rank_average(x)
+    ry = _rank_average(y)
+    corr = np.corrcoef(rx, ry)[0, 1]
+    if np.isnan(corr):
+        return 0.0
+    return _round_float(corr)
+
+
+def _univariate_proxy_r2(x: np.ndarray, y: np.ndarray) -> float:
+    if x.ndim != 2 or x.shape[0] != y.shape[0] or x.shape[1] == 0:
+        return 0.0
+    if float(np.std(y)) == 0.0:
+        return 0.0
+    scores: list[float] = []
+    for column_index in range(x.shape[1]):
+        column = x[:, column_index]
+        if float(np.std(column)) == 0.0:
+            continue
+        corr = float(np.corrcoef(column, y)[0, 1])
+        if not np.isnan(corr):
+            scores.append(max(0.0, min(1.0, corr * corr)))
+    return _round_float(max(scores) if scores else 0.0)
+
+
+def _proxy_r2(x: np.ndarray, y: np.ndarray) -> float:
+    x = np.asarray(x, dtype=np.float64)
+    y = np.asarray(y, dtype=np.float64)
+    if x.ndim != 2 or x.shape[0] != y.shape[0] or x.shape[1] == 0:
+        return 0.0
+    keep = np.std(x, axis=0) > 1.0e-12
+    if not bool(np.any(keep)) or float(np.std(y)) == 0.0:
+        return 0.0
+    if x.shape[0] <= int(np.sum(keep)) + 1:
+        return _univariate_proxy_r2(x[:, keep], y)
+    z = x[:, keep]
+    z = (z - np.mean(z, axis=0)) / np.std(z, axis=0)
+    design = np.column_stack([np.ones(z.shape[0]), z])
+    coeffs, *_ = np.linalg.lstsq(design, y, rcond=None)
+    predicted = design @ coeffs
+    total = float(np.sum((y - np.mean(y)) ** 2))
+    if total <= 1.0e-12:
+        return 0.0
+    residual = float(np.sum((y - predicted) ** 2))
+    return _round_float(max(0.0, min(1.0, 1.0 - residual / total)))
+
+
+def _feature_group_indexes(fieldnames: Sequence[str]) -> dict[str, list[str]]:
+    reward_explicit = [column for column in fieldnames if column in BASE_PLANNING_REWARD_REQUIRED_COLUMNS]
+    all_explicit = [column for column in fieldnames if str(column).startswith("explicit_feature_")]
+    geofm = [
+        column
+        for column in fieldnames
+        if str(column).startswith(("embedding_pca_", "embedding_mean_", "projection_"))
+    ]
+    return {"reward_explicit": reward_explicit, "all_explicit": all_explicit, "geofm": geofm}
+
+
+def _aligned_target_vector(
+    rows: Sequence[Mapping[str, object]],
+    target: Mapping[str, object],
+) -> tuple[list[Mapping[str, object]], np.ndarray]:
+    values_by_block = dict(target.get("values_by_block", {}))
+    aligned_rows = []
+    values = []
+    for row in rows:
+        block_id = str(row.get("block_id", ""))
+        value = _safe_float(values_by_block.get(block_id))
+        if value is None:
+            continue
+        aligned_rows.append(row)
+        values.append(value)
+    if not values:
+        raise ValueError(f"Phase 67 target has no aligned values: {target.get('target_id')}")
+    return aligned_rows, np.asarray(values, dtype=np.float64)
+
+
+def _matrix_from_rows(rows: Sequence[Mapping[str, object]], columns: Sequence[str]) -> np.ndarray:
+    if not columns:
+        return np.zeros((len(rows), 0), dtype=np.float64)
+    matrix = []
+    for row in rows:
+        values = []
+        for column in columns:
+            value = _safe_float(row.get(column))
+            if value is None:
+                value = 0.0
+            values.append(value)
+        matrix.append(values)
+    return np.asarray(matrix, dtype=np.float64)
+
+
+def build_phase67_candidate_target_information_gain(
+    feature_rows_by_variant: Mapping[str, Sequence[Mapping[str, object]]],
+    targets: Sequence[Mapping[str, object]],
+    top_k_values: Sequence[int] = DEFAULT_PHASE67_TOP_K_VALUES,
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    d6_r2_by_target: dict[str, float] = {}
+    for variant_id, feature_rows in feature_rows_by_variant.items():
+        if not feature_rows:
+            continue
+        groups = _feature_group_indexes(feature_rows[0].keys())
+        for target in targets:
+            aligned_rows, y = _aligned_target_vector(feature_rows, target)
+            reward_x = _matrix_from_rows(aligned_rows, groups["reward_explicit"])
+            explicit_x = _matrix_from_rows(aligned_rows, groups["all_explicit"])
+            geofm_x = _matrix_from_rows(aligned_rows, groups["geofm"])
+            combined_x = np.column_stack([explicit_x, geofm_x]) if geofm_x.shape[1] else explicit_x
+            explicit_r2 = _proxy_r2(reward_x, y)
+            all_explicit_r2 = _proxy_r2(explicit_x, y)
+            geofm_r2 = _proxy_r2(geofm_x, y)
+            combined_r2 = _proxy_r2(combined_x, y)
+            residual_after_explicit = max(0.0, combined_r2 - all_explicit_r2)
+            geofm_scores = np.linalg.norm(geofm_x, axis=1) if geofm_x.shape[1] else np.zeros(len(y))
+            explicit_scores = np.mean(explicit_x, axis=1) if explicit_x.shape[1] else np.zeros(len(y))
+            geofm_topk = 0.0
+            if geofm_x.shape[1]:
+                geofm_topk = max(phase67_topk_enrichment(geofm_scores, y, k) for k in top_k_values)
+            explicit_topk = max(phase67_topk_enrichment(explicit_scores, y, k) for k in top_k_values)
+            target_id = str(target.get("target_id", ""))
+            if str(variant_id).startswith("D6"):
+                d6_r2_by_target[target_id] = max(d6_r2_by_target.get(target_id, 0.0), geofm_r2)
+            rows.append(
+                {
+                    "target_id": target_id,
+                    "target_family": str(target.get("target_family", "")),
+                    "variant_id": str(variant_id),
+                    "n_blocks": len(y),
+                    "explicit_proxy_r2": explicit_r2,
+                    "all_explicit_proxy_r2": all_explicit_r2,
+                    "geofm_proxy_r2": geofm_r2,
+                    "explicit_spearman": phase67_spearman(explicit_scores, y),
+                    "geofm_spearman": phase67_spearman(geofm_scores, y),
+                    "combined_proxy_r2": combined_r2,
+                    "residual_after_explicit_r2": _round_float(residual_after_explicit),
+                    "geofm_minus_explicit_r2": _round_float(geofm_r2 - all_explicit_r2),
+                    "geofm_minus_d6_r2": 0.0,
+                    "geofm_topk_enrichment": _round_float(geofm_topk),
+                    "explicit_topk_enrichment": _round_float(explicit_topk),
+                    "claim_boundary": PHASE67_CLAIM_BOUNDARY,
+                }
+            )
+    for row in rows:
+        row["geofm_minus_d6_r2"] = _round_float(
+            float(row["geofm_proxy_r2"]) - d6_r2_by_target.get(str(row["target_id"]), 0.0)
+        )
+    return rows
+
+
+def build_phase67_candidate_target_gate(
+    coverage_issues: Sequence[object],
+    information_gain_rows: Sequence[Mapping[str, object]],
+    gate_audit_rows: Sequence[Mapping[str, object]],
+) -> dict[str, object]:
+    if coverage_issues:
+        return {
+            "phase67_status": PHASE67_STATUS_INSUFFICIENT,
+            "coverage_issues": list(coverage_issues),
+            "claim_boundary": PHASE67_CLAIM_BOUNDARY,
+        }
+    if not information_gain_rows or not gate_audit_rows:
+        return {
+            "phase67_status": PHASE67_STATUS_INDEPENDENT_LABEL_REQUIRED,
+            "coverage_issues": [],
+            "claim_boundary": PHASE67_CLAIM_BOUNDARY,
+        }
+    gate_by_target = {str(row.get("target_id")): row for row in gate_audit_rows}
+    candidate_rows = [
+        row
+        for row in information_gain_rows
+        if bool(gate_by_target.get(str(row.get("target_id")), {}).get("diagnostic_only_allowed", False))
+        and str(gate_by_target.get(str(row.get("target_id")), {}).get("gate_risk")) == "diagnostic_only_allowed"
+        and float(row.get("residual_after_explicit_r2", 0.0)) >= 0.05
+        and float(row.get("geofm_minus_explicit_r2", 0.0)) >= 0.05
+        and float(row.get("geofm_minus_d6_r2", 0.0)) >= 0.0
+    ]
+    if candidate_rows:
+        status = PHASE67_STATUS_CANDIDATE_FOUND
+    elif all(
+        str(row.get("gate_risk")) in {"explicit_reward_defined", "explicit_label_leakage_risk"}
+        for row in gate_audit_rows
+        if bool(row.get("usable", False))
+    ):
+        status = PHASE67_STATUS_ONLY_LEAKAGE_OR_EXPLICIT
+    else:
+        status = PHASE67_STATUS_INDEPENDENT_LABEL_REQUIRED
+    return {
+        "phase67_status": status,
+        "coverage_issues": [],
+        "candidate_count": len(candidate_rows),
+        "best_candidate_target_ids": sorted({str(row.get("target_id")) for row in candidate_rows}),
+        "claim_boundary": PHASE67_CLAIM_BOUNDARY,
+    }
