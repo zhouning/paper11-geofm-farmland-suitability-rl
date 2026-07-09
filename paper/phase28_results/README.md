@@ -95,6 +95,9 @@ base-reward protocol.
 - `34_phase68_external_independent_label_package.md`: external independent-label
   package and preflight contract showing that templates are ready, but no
   external independent label has been supplied yet.
+- `35_phase69_label_free_evidence_synthesis_gate.md`: read-only label-free
+  synthesis gate showing that the strongest current algorithm claim must remain
+  narrowed to a bounded low-dimensional compressed state route.
 ## Reproduction Link
 
 Run the diagnostic from the repository root after the Phase 11/13 real Bishan
