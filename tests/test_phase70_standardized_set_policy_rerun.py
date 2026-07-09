@@ -152,3 +152,113 @@ def test_phase70_dual_matrix_rollout_scores_original_reward_matrix():
     assert rollout["invalid_action_count"] == 0
     assert float(rollout["oracle_total_reward"]) == 0.63
     assert float(rollout["total_contract_reward"]) > 0.0
+
+def _rollout_row(variant_id, reward, oracle=2.0, tile_id="tile_a", seed=0, boundary="fixture"):
+    return {
+        "row_type": "bc_greedy_policy",
+        "variant_id": variant_id,
+        "train_tile_id": "tile_train",
+        "eval_tile_id": tile_id,
+        "eval_tile_rank": 1 if tile_id == "tile_a" else 2,
+        "seed": seed,
+        "phase70_seed_rank": seed + 1,
+        "eval_max_steps": 3,
+        "n_blocks": 4,
+        "n_features": 9,
+        "episode_steps": 3,
+        "terminated": False,
+        "truncated": True,
+        "all_actions_valid": True,
+        "invalid_action_count": 0,
+        "total_contract_reward": reward,
+        "oracle_total_reward": oracle,
+        "oracle_gap": oracle - reward,
+        "oracle_gap_fraction": (oracle - reward) / oracle,
+        "selected_block_ids": "b1;b2;b3",
+        "selected_action_indices": "0;1;2",
+        "claim_boundary": boundary,
+    }
+
+
+def test_phase70_comparison_statuses_distinguish_geofm_architecture_and_incomplete(tmp_path):
+    from paper11_geofm.phase70_standardized_set_policy_rerun import (
+        build_phase70_standardized_set_policy_comparison,
+        write_phase70_standardized_set_policy_artifacts,
+    )
+
+    pairs = [("tile_a", 0), ("tile_a", 1), ("tile_b", 0), ("tile_b", 1)]
+    baseline = []
+    geofm_rows = []
+    architecture_rows = []
+    weak_rows = []
+    for tile_id, seed in pairs:
+        baseline.extend(
+            [
+                _rollout_row("B0", 1.10, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P8", 0.90, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P16", 0.95, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R8", 1.00, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R16", 1.02, tile_id=tile_id, seed=seed),
+            ]
+        )
+        geofm_rows.extend(
+            [
+                _rollout_row("B0", 1.20, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P8", 1.35, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P16", 1.40, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R8", 1.25, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R16", 1.27, tile_id=tile_id, seed=seed),
+            ]
+        )
+        architecture_rows.extend(
+            [
+                _rollout_row("B0", 1.40, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P8", 1.05, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P16", 1.06, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R8", 1.30, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R16", 1.31, tile_id=tile_id, seed=seed),
+            ]
+        )
+        weak_rows.extend(
+            [
+                _rollout_row("B0", 1.0, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P8", 0.85, tile_id=tile_id, seed=seed),
+                _rollout_row("D4P16", 0.86, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R8", 1.0, tile_id=tile_id, seed=seed),
+                _rollout_row("D6R16", 1.0, tile_id=tile_id, seed=seed),
+            ]
+        )
+
+    metadata = {
+        "variants": ["B0", "D4P8", "D4P16", "D6R8", "D6R16"],
+        "eval_tile_ids": ["tile_a", "tile_b"],
+        "seeds": [0, 1],
+    }
+    geofm = build_phase70_standardized_set_policy_comparison(geofm_rows, baseline, metadata=metadata)
+    architecture = build_phase70_standardized_set_policy_comparison(architecture_rows, baseline, metadata=metadata)
+    weak = build_phase70_standardized_set_policy_comparison(weak_rows, baseline, metadata=metadata)
+    incomplete = build_phase70_standardized_set_policy_comparison(geofm_rows[:-1], baseline, metadata=metadata)
+
+    assert geofm["phase70_status"] == "standardization_improves_geofm_set_policy_route"
+    assert geofm["d4_b0_delta_summary"]["mean_delta"] > 0.0
+    assert geofm["d4_d6_delta_summary"]["mean_delta"] > 0.0
+    assert architecture["phase70_status"] == "standardization_improves_architecture_not_geofm"
+    assert architecture["standardized_minus_phase63_summary"]["mean_delta"] > 0.0
+    assert weak["phase70_status"] == "standardization_not_sufficient"
+    assert incomplete["phase70_status"] == "standardized_rerun_incomplete"
+
+    paths = write_phase70_standardized_set_policy_artifacts(
+        {
+            **geofm,
+            "standardization_parameter_rows": [
+                {"variant_id": "D4P8", "tile_id": "tile_train", "feature_name": "f0", "mean": 1.0, "scale": 2.0}
+            ],
+            "history_rows": [],
+            "rollout_rows": geofm_rows,
+            "oracle_summary_rows": [],
+        },
+        tmp_path / "outputs",
+    )
+    assert paths["comparison_json"].name == "phase70_standardized_set_policy_comparison.json"
+    assert paths["delta_csv"].name == "phase70_standardized_delta_table.csv"
+    assert "standardization_improves_geofm_set_policy_route" in paths["readiness_md"].read_text(encoding="utf-8")
