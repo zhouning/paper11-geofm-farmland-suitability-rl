@@ -230,3 +230,43 @@ def test_phase69_missing_required_status_field_raises(tmp_path):
         match="Phase 66 JSON is missing required status field: phase66_status",
     ):
         build_phase69_label_free_evidence_synthesis_gate(**paths)
+
+def test_phase69_runner_cli_writes_artifacts(tmp_path):
+    paths = _fixture_paths(tmp_path)
+    script = (
+        ROOT
+        / "experiments"
+        / "phase69_label_free_evidence_synthesis_gate"
+        / "run_phase69_label_free_evidence_synthesis_gate.py"
+    )
+    output_dir = tmp_path / "outputs"
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--phase60-json",
+            str(paths["phase60_json"]),
+            "--phase57-json",
+            str(paths["phase57_json"]),
+            "--phase59-json",
+            str(paths["phase59_json"]),
+            "--phase62-json",
+            str(paths["phase62_json"]),
+            "--phase66-json",
+            str(paths["phase66_json"]),
+            "--phase67-json",
+            str(paths["phase67_json"]),
+            "--phase68-json",
+            str(paths["phase68_json"]),
+            "--output-dir",
+            str(output_dir),
+        ],
+        cwd=ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "Phase 69 label-free synthesis status: claim_must_be_narrowed_to_low_dimensional_route" in result.stdout
+    assert (output_dir / "phase69_label_free_evidence_synthesis_gate.json").exists()
