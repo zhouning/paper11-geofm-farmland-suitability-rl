@@ -92,6 +92,9 @@ base-reward protocol.
   standardization gate using Phase 63 behavior-cloned rollout, oracle summary,
   training-history, and feature-scale artifacts to decide whether standardized
   set-policy BC is the next justified algorithm experiment.
+- `34_phase68_external_independent_label_package.md`: external independent-label
+  package and preflight contract showing that templates are ready, but no
+  external independent label has been supplied yet.
 ## Reproduction Link
 
 Run the diagnostic from the repository root after the Phase 11/13 real Bishan
