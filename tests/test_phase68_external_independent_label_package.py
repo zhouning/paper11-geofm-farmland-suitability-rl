@@ -149,3 +149,67 @@ def test_phase68_template_only_generates_package_ready_status_and_templates(tmp_
     ).read_text(encoding="utf-8")
     assert "block_id" in readme
     assert "Phase 40" in readme
+
+def test_phase68_validation_mode_without_inputs_reports_missing(tmp_path):
+    from paper11_geofm.phase68_external_independent_label_package import (
+        build_phase68_external_independent_label_package,
+    )
+
+    analysis = build_phase68_external_independent_label_package(
+        phase2_output_dir=_phase2_dir(tmp_path),
+        validation_mode=True,
+    )
+
+    assert analysis["phase68_status"] == "external_label_inputs_missing"
+    assert analysis["row_counts"]["label_preflight_rows"] == 0
+    assert "missing" in analysis["recommended_next_step"].lower()
+
+
+def test_phase68_external_csv_rejects_blank_block_id(tmp_path):
+    from paper11_geofm.phase68_external_independent_label_package import (
+        build_phase68_external_independent_label_package,
+    )
+
+    labels = _external_labels(
+        tmp_path / "labels.csv",
+        [1, 0],
+        block_ids=["b000", ""],
+    )
+    registry = _registry(tmp_path / "registry.csv")
+
+    try:
+        build_phase68_external_independent_label_package(
+            phase2_output_dir=_phase2_dir(tmp_path),
+            external_label_csvs=labels,
+            label_registry=registry,
+            validation_mode=True,
+        )
+    except ValueError as exc:
+        assert "blank block_id" in str(exc)
+    else:
+        raise AssertionError("Expected blank block_id to raise ValueError")
+
+
+def test_phase68_external_csv_rejects_duplicate_block_id(tmp_path):
+    from paper11_geofm.phase68_external_independent_label_package import (
+        build_phase68_external_independent_label_package,
+    )
+
+    labels = _external_labels(
+        tmp_path / "labels.csv",
+        [1, 0],
+        block_ids=["b000", "b000"],
+    )
+    registry = _registry(tmp_path / "registry.csv")
+
+    try:
+        build_phase68_external_independent_label_package(
+            phase2_output_dir=_phase2_dir(tmp_path),
+            external_label_csvs=labels,
+            label_registry=registry,
+            validation_mode=True,
+        )
+    except ValueError as exc:
+        assert "duplicate block_id b000" in str(exc)
+    else:
+        raise AssertionError("Expected duplicate block_id to raise ValueError")

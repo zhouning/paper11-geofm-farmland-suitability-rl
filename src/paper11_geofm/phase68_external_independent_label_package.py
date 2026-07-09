@@ -119,9 +119,19 @@ def build_phase68_external_independent_label_package(
         )
         label_preflight_rows: list[dict[str, object]] = []
         registry_rows: list[dict[str, str]] = []
-    else:
+    elif validation_mode and (not external_paths or label_registry is None):
+        status = "external_label_inputs_missing"
         label_preflight_rows = []
         registry_rows = []
+    else:
+        _external_values_by_label, _sources_by_label, _unjoined_by_label = (
+            _load_external_label_csvs(
+                phase2_rows,
+                external_paths,
+            )
+        )
+        registry_rows = _load_phase68_registry(label_registry)
+        label_preflight_rows = []
         status = "external_label_inputs_invalid"
 
     summary_rows = [
@@ -231,6 +241,115 @@ def _normalize_paths(paths: Sequence[Path | str] | Path | str | None) -> list[Pa
     if isinstance(paths, (str, Path)):
         return [Path(paths)]
     return [Path(path) for path in paths]
+
+
+def _load_external_label_csvs(
+    phase2_rows: Sequence[Mapping[str, str]],
+    external_paths: Sequence[Path],
+) -> tuple[dict[str, dict[str, str]], dict[str, list[str]], dict[str, int]]:
+    phase2_block_ids = {
+        str(row.get("block_id", "")).strip()
+        for row in phase2_rows
+        if str(row.get("block_id", "")).strip()
+    }
+    values_by_label: dict[str, dict[str, str]] = {}
+    sources_by_label: dict[str, list[str]] = {}
+    unjoined_by_label: dict[str, int] = {}
+    for external_path in external_paths:
+        fieldnames, external_rows = _read_csv_table(
+            external_path,
+            "Phase 68 external label CSV",
+        )
+        if "block_id" not in fieldnames:
+            raise ValueError(
+                f"Phase 68 external label CSV is missing block_id: {external_path}"
+            )
+        label_columns = [field for field in fieldnames if field != "block_id"]
+        seen_block_ids: set[str] = set()
+        for external_row in external_rows:
+            block_id = str(external_row.get("block_id", "")).strip()
+            if not block_id:
+                raise ValueError(
+                    "Phase 68 external label CSV contains a blank block_id: "
+                    f"{external_path}"
+                )
+            if block_id in seen_block_ids:
+                raise ValueError(
+                    "Phase 68 external label CSV has duplicate block_id "
+                    f"{block_id}: {external_path}"
+                )
+            seen_block_ids.add(block_id)
+            joined = block_id in phase2_block_ids
+            for label_column in label_columns:
+                sources_by_label.setdefault(label_column, []).append(str(external_path))
+                if not joined:
+                    unjoined_by_label[label_column] = (
+                        unjoined_by_label.get(label_column, 0) + 1
+                    )
+                    continue
+                values_by_label.setdefault(label_column, {})[block_id] = str(
+                    external_row.get(label_column, "")
+                )
+    return values_by_label, sources_by_label, unjoined_by_label
+
+
+def _load_phase68_registry(label_registry: Path | str | None) -> list[dict[str, str]]:
+    if label_registry is None:
+        return []
+    registry_path = Path(label_registry)
+    if not registry_path.exists():
+        raise ValueError(f"Missing Phase 68 label registry: {registry_path}")
+    if registry_path.suffix.lower() == ".csv":
+        _, rows = _read_csv_table(registry_path, "Phase 68 label registry CSV")
+    elif registry_path.suffix.lower() == ".json":
+        rows = _read_json_registry_rows(registry_path)
+    else:
+        raise ValueError(
+            f"Unsupported Phase 68 label registry extension: {registry_path}"
+        )
+    normalized_rows: list[dict[str, str]] = []
+    for index, row in enumerate(rows, start=2):
+        normalized = {
+            field: str(row.get(field, "")).strip()
+            for field in PHASE68_REGISTRY_FIELDNAMES
+        }
+        if not normalized["label_column"]:
+            raise ValueError(
+                f"Phase 68 label registry row {index} has blank label_column: "
+                f"{registry_path}"
+            )
+        normalized_rows.append(normalized)
+    return normalized_rows
+
+
+def _read_json_registry_rows(registry_path: Path) -> list[dict[str, object]]:
+    try:
+        payload = json.loads(registry_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Phase 68 label registry JSON is invalid: {registry_path}"
+        ) from exc
+    if isinstance(payload, list):
+        if not all(isinstance(row, Mapping) for row in payload):
+            raise ValueError(
+                f"Phase 68 label registry JSON rows must be objects: {registry_path}"
+            )
+        return [dict(row) for row in payload]
+    if isinstance(payload, Mapping):
+        rows: list[dict[str, object]] = []
+        for label_column, row in payload.items():
+            if not isinstance(row, Mapping):
+                raise ValueError(
+                    "Phase 68 label registry JSON entry "
+                    f"{label_column!r} is not an object: {registry_path}"
+                )
+            normalized = dict(row)
+            normalized.setdefault("label_column", str(label_column))
+            rows.append(normalized)
+        return rows
+    raise ValueError(
+        f"Phase 68 label registry JSON must be a list or object: {registry_path}"
+    )
 
 
 def _external_label_template_rows(
@@ -466,8 +585,8 @@ def _phase68_next_step(status: str) -> str:
         )
     if status == "external_label_inputs_missing":
         return (
-            "Supply both an external label CSV and a Phase 40-compatible "
-            "registry, then rerun validation mode."
+            "Missing external label input: supply both an external label CSV "
+            "and a Phase 40-compatible registry, then rerun validation mode."
         )
     if status == "phase40_ready_to_rerun_with_external_label":
         return (
