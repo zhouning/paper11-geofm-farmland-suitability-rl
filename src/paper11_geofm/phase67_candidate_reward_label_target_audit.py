@@ -312,3 +312,93 @@ def build_phase67_candidate_target_inventory(
             }
         )
     return rows
+
+
+PHASE67_GATE_AUDIT_FIELDNAMES = [
+    "target_id",
+    "target_family",
+    "usable",
+    "gate_risk",
+    "diagnostic_only_allowed",
+    "reward_training_allowed",
+    "independent_label_required",
+    "phase10_status",
+    "phase10_recommendation",
+    "phase18_suitability_reward_allowed",
+    "phase39_status",
+    "phase40_status",
+    "reason",
+    "claim_boundary",
+]
+
+
+def build_phase67_gate_context(
+    phase10: Mapping[str, object],
+    phase18: Mapping[str, object],
+    phase39: Mapping[str, object] | None = None,
+    phase40: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    phase39 = {} if phase39 is None else dict(phase39)
+    phase40 = {} if phase40 is None else dict(phase40)
+    return {
+        "phase10_status": str(phase10.get("phase10_status", phase10.get("status", ""))),
+        "phase10_recommendation": str(
+            phase10.get("phase10_recommendation", phase10.get("recommendation", ""))
+        ),
+        "phase18_suitability_reward_allowed": bool(
+            phase18.get("suitability_reward_allowed", False)
+        ),
+        "phase39_status": str(phase39.get("status", phase39.get("phase39_status", "missing"))),
+        "phase40_status": str(phase40.get("status", phase40.get("phase40_status", "missing"))),
+    }
+
+
+def _target_gate_risk(inventory_row: Mapping[str, object]) -> tuple[str, str]:
+    target_family = str(inventory_row.get("target_family", ""))
+    target_id = str(inventory_row.get("target_id", ""))
+    if target_family == "base_reward" or target_id == "base_planning_reward":
+        return "explicit_reward_defined", "Target is the current explicit-feature-defined base reward."
+    if target_family == "weak_label":
+        return "explicit_label_leakage_risk", "Target is an existing weak DLTB/slope-derived label."
+    if bool(inventory_row.get("self_referential")) or target_family == "geofm_self_reference":
+        return "geofm_self_reference", "Target is constructed from GeoFM representation values."
+    if target_family == "explicit_residual":
+        return "diagnostic_only_allowed", "Residual target is allowed only for diagnostic analysis."
+    return "independent_label_missing", "Target is not backed by a registered independent label."
+
+
+def build_phase67_candidate_target_gate_audit(
+    inventory_rows: Sequence[Mapping[str, object]],
+    gate_context: Mapping[str, object],
+) -> list[dict[str, object]]:
+    rows: list[dict[str, object]] = []
+    for inventory_row in inventory_rows:
+        gate_risk, reason = _target_gate_risk(inventory_row)
+        usable = bool(inventory_row.get("usable", False))
+        diagnostic_only_allowed = usable and gate_risk in {
+            "explicit_label_leakage_risk",
+            "geofm_self_reference",
+            "diagnostic_only_allowed",
+        }
+        rows.append(
+            {
+                "target_id": str(inventory_row.get("target_id", "")),
+                "target_family": str(inventory_row.get("target_family", "")),
+                "usable": usable,
+                "gate_risk": gate_risk,
+                "diagnostic_only_allowed": diagnostic_only_allowed,
+                "reward_training_allowed": False,
+                "independent_label_required": gate_risk
+                in {"independent_label_missing", "diagnostic_only_allowed"},
+                "phase10_status": str(gate_context.get("phase10_status", "")),
+                "phase10_recommendation": str(gate_context.get("phase10_recommendation", "")),
+                "phase18_suitability_reward_allowed": bool(
+                    gate_context.get("phase18_suitability_reward_allowed", False)
+                ),
+                "phase39_status": str(gate_context.get("phase39_status", "missing")),
+                "phase40_status": str(gate_context.get("phase40_status", "missing")),
+                "reason": reason,
+                "claim_boundary": PHASE67_CLAIM_BOUNDARY,
+            }
+        )
+    return rows

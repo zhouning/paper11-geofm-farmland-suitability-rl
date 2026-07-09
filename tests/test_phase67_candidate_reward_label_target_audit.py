@@ -149,3 +149,77 @@ def test_phase67_inventory_marks_zero_variance_and_missing_targets_unusable():
     assert by_id["constant_score"]["unusable_reason"] == "zero_variance"
     assert by_id["partial_score"]["non_missing_count"] == 2
     assert by_id["partial_score"]["usable"] is True
+
+
+def test_phase67_gate_audit_blocks_base_weak_and_geofm_self_reference_targets():
+    from paper11_geofm.phase67_candidate_reward_label_target_audit import (
+        build_phase67_candidate_target_gate_audit,
+    )
+
+    inventory_rows = [
+        {
+            "target_id": "base_planning_reward",
+            "target_family": "base_reward",
+            "usable": True,
+            "directly_uses_explicit": True,
+            "depends_on_geofm": False,
+            "self_referential": False,
+        },
+        {
+            "target_id": "weak_label_current_farmland_label",
+            "target_family": "weak_label",
+            "usable": True,
+            "directly_uses_explicit": True,
+            "depends_on_geofm": False,
+            "self_referential": False,
+        },
+        {
+            "target_id": "geofm_norm_embedding_pca",
+            "target_family": "geofm_self_reference",
+            "usable": True,
+            "directly_uses_explicit": False,
+            "depends_on_geofm": True,
+            "self_referential": True,
+        },
+    ]
+    gate_context = {
+        "phase10_status": "not_ready_for_suitability_reward",
+        "phase10_recommendation": "do_not_enable_suitability_reward",
+        "phase18_suitability_reward_allowed": False,
+        "phase39_status": "independent_label_inputs_missing",
+        "phase40_status": "independent_label_inputs_missing",
+    }
+
+    rows = build_phase67_candidate_target_gate_audit(inventory_rows, gate_context)
+    by_id = {row["target_id"]: row for row in rows}
+
+    assert by_id["base_planning_reward"]["gate_risk"] == "explicit_reward_defined"
+    assert by_id["base_planning_reward"]["reward_training_allowed"] is False
+    assert by_id["weak_label_current_farmland_label"]["gate_risk"] == "explicit_label_leakage_risk"
+    assert by_id["geofm_norm_embedding_pca"]["gate_risk"] == "geofm_self_reference"
+    assert by_id["geofm_norm_embedding_pca"]["diagnostic_only_allowed"] is True
+
+
+def test_phase67_gate_context_accepts_real_phase10_and_phase18_keys():
+    from paper11_geofm.phase67_candidate_reward_label_target_audit import (
+        build_phase67_gate_context,
+    )
+
+    context = build_phase67_gate_context(
+        phase10={
+            "status": "not_ready_for_suitability_reward",
+            "recommendation": "do_not_enable_suitability_reward",
+        },
+        phase18={
+            "suitability_reward_allowed": False,
+            "phase10_status": "not_ready_for_suitability_reward",
+        },
+        phase39={},
+        phase40={},
+    )
+
+    assert context["phase10_status"] == "not_ready_for_suitability_reward"
+    assert context["phase10_recommendation"] == "do_not_enable_suitability_reward"
+    assert context["phase18_suitability_reward_allowed"] is False
+    assert context["phase39_status"] == "missing"
+    assert context["phase40_status"] == "missing"
