@@ -156,3 +156,217 @@ def build_phase66_block_reward_table(tiled_input) -> list[dict[str, object]]:
         row["reward_rank"] = int(ranked_ids[str(row["block_id"])])
         row["claim_boundary"] = PHASE66_CLAIM_BOUNDARY
     return block_rows
+
+
+PHASE66_ATLAS_FIELDNAMES = [
+    "variant_id",
+    "eval_tile_id",
+    "seed",
+    "oracle_block_ids",
+    "phase63_selected_block_ids",
+    "phase65_selected_block_ids",
+    "phase63_oracle_overlap_count",
+    "phase65_oracle_overlap_count",
+    "phase63_oracle_jaccard",
+    "phase65_oracle_jaccard",
+    "phase63_phase65_jaccard",
+    "phase63_selected_rank_values",
+    "phase65_selected_rank_values",
+    "phase63_missed_oracle_block_ids",
+    "phase63_extra_selected_block_ids",
+    "phase65_missed_oracle_block_ids",
+    "phase65_extra_selected_block_ids",
+    "phase63_reward_equivalent_substitution",
+    "phase65_reward_equivalent_substitution",
+    "claim_boundary",
+]
+
+
+def _split_semicolon_values(value: object) -> list[str]:
+    return [part.strip() for part in str(value or "").split(";") if part.strip()]
+
+
+def _safe_int(value: object, default: int = 0) -> int:
+    if value is None or str(value).strip() == "":
+        return int(default)
+    return int(float(value))
+
+
+def _safe_float(value: object, default: float = 0.0) -> float:
+    if value is None or str(value).strip() == "":
+        return float(default)
+    return float(value)
+
+
+def _row_key(row: Mapping[str, object]) -> tuple[str, str, int]:
+    return (
+        str(row.get("variant_id", "")),
+        str(row.get("eval_tile_id", row.get("tile_id", ""))),
+        _safe_int(row.get("seed")),
+    )
+
+
+def _index_unique_rows(
+    rows: Sequence[Mapping[str, object]],
+    label: str,
+) -> dict[tuple[str, str, int], Mapping[str, object]]:
+    index: dict[tuple[str, str, int], Mapping[str, object]] = {}
+    for row in rows:
+        key = _row_key(row)
+        if key in index:
+            raise ValueError(f"Phase 66 found duplicate {label} row for {key}")
+        index[key] = row
+    return index
+
+
+def _jaccard(left: Sequence[str], right: Sequence[str]) -> float:
+    left_set = set(left)
+    right_set = set(right)
+    if not left_set and not right_set:
+        return 1.0
+    union = left_set | right_set
+    if not union:
+        return 0.0
+    return _round_float(len(left_set & right_set) / len(union))
+
+
+def _block_rank_and_reward(tiled_input) -> dict[str, dict[str, object]]:
+    return {str(row["block_id"]): row for row in build_phase66_block_reward_table(tiled_input)}
+
+
+def _rank_values(
+    block_ids: Sequence[str],
+    reward_index: Mapping[str, Mapping[str, object]],
+) -> str:
+    return ";".join(
+        str(int(reward_index[str(block_id)]["reward_rank"])) for block_id in block_ids
+    )
+
+
+def _reward_equivalent_substitution(
+    missed_block_ids: Sequence[str],
+    extra_block_ids: Sequence[str],
+    reward_index: Mapping[str, Mapping[str, object]],
+    tolerance: float,
+) -> bool:
+    if not missed_block_ids and not extra_block_ids:
+        return True
+    if not missed_block_ids or not extra_block_ids:
+        return False
+    missed_rewards = [
+        float(reward_index[str(block_id)]["total_reward"]) for block_id in missed_block_ids
+    ]
+    extra_rewards = [
+        float(reward_index[str(block_id)]["total_reward"]) for block_id in extra_block_ids
+    ]
+    return bool(
+        abs(statistics.mean(missed_rewards) - statistics.mean(extra_rewards))
+        <= float(tolerance)
+    )
+
+
+def _missing_block_ids(
+    block_ids: Sequence[str],
+    reward_index: Mapping[str, Mapping[str, object]],
+) -> list[str]:
+    return [str(block_id) for block_id in block_ids if str(block_id) not in reward_index]
+
+
+def build_phase66_selected_block_atlas(
+    phase63_rollout_rows: Sequence[Mapping[str, object]],
+    phase65_rollout_rows: Sequence[Mapping[str, object]],
+    oracle_rows: Sequence[Mapping[str, object]],
+    tiled_inputs: Mapping[tuple[str, str], object],
+    reward_tolerance: float = PHASE66_REWARD_EQUIVALENT_TOLERANCE,
+) -> list[dict[str, object]]:
+    phase63_index = _index_unique_rows(
+        [
+            row
+            for row in phase63_rollout_rows
+            if str(row.get("row_type", "")) == "bc_greedy_policy"
+        ],
+        "Phase 63 rollout",
+    )
+    phase65_index = _index_unique_rows(
+        [
+            row
+            for row in phase65_rollout_rows
+            if str(row.get("row_type", "")) == "bc_greedy_policy"
+        ],
+        "Phase 65 rollout",
+    )
+    oracle_index = _index_unique_rows(oracle_rows, "Phase 63 oracle")
+    rows: list[dict[str, object]] = []
+    for key in sorted(oracle_index):
+        variant_id, tile_id, seed = key
+        if key not in phase63_index:
+            raise ValueError(f"Phase 66 missing Phase 63 rollout row for {key}")
+        if key not in phase65_index:
+            raise ValueError(f"Phase 66 missing Phase 65 rollout row for {key}")
+        tiled = tiled_inputs.get((variant_id, tile_id))
+        if tiled is None:
+            raise ValueError(f"Phase 66 missing tiled input for {(variant_id, tile_id)}")
+        oracle_ids = _split_semicolon_values(oracle_index[key].get("selected_block_ids"))
+        phase63_ids = _split_semicolon_values(
+            phase63_index[key].get("selected_block_ids")
+        )
+        phase65_ids = _split_semicolon_values(
+            phase65_index[key].get("selected_block_ids")
+        )
+        reward_index = _block_rank_and_reward(tiled)
+        missing = (
+            _missing_block_ids(oracle_ids, reward_index)
+            + _missing_block_ids(phase63_ids, reward_index)
+            + _missing_block_ids(phase65_ids, reward_index)
+        )
+        if missing:
+            raise ValueError(
+                f"Phase 66 selected block IDs missing from tiled input: {missing[:5]}"
+            )
+        phase63_missed = [
+            block_id for block_id in oracle_ids if block_id not in set(phase63_ids)
+        ]
+        phase63_extra = [
+            block_id for block_id in phase63_ids if block_id not in set(oracle_ids)
+        ]
+        phase65_missed = [
+            block_id for block_id in oracle_ids if block_id not in set(phase65_ids)
+        ]
+        phase65_extra = [
+            block_id for block_id in phase65_ids if block_id not in set(oracle_ids)
+        ]
+        rows.append(
+            {
+                "variant_id": variant_id,
+                "eval_tile_id": tile_id,
+                "seed": int(seed),
+                "oracle_block_ids": ";".join(oracle_ids),
+                "phase63_selected_block_ids": ";".join(phase63_ids),
+                "phase65_selected_block_ids": ";".join(phase65_ids),
+                "phase63_oracle_overlap_count": len(set(phase63_ids) & set(oracle_ids)),
+                "phase65_oracle_overlap_count": len(set(phase65_ids) & set(oracle_ids)),
+                "phase63_oracle_jaccard": _jaccard(phase63_ids, oracle_ids),
+                "phase65_oracle_jaccard": _jaccard(phase65_ids, oracle_ids),
+                "phase63_phase65_jaccard": _jaccard(phase63_ids, phase65_ids),
+                "phase63_selected_rank_values": _rank_values(phase63_ids, reward_index),
+                "phase65_selected_rank_values": _rank_values(phase65_ids, reward_index),
+                "phase63_missed_oracle_block_ids": ";".join(phase63_missed),
+                "phase63_extra_selected_block_ids": ";".join(phase63_extra),
+                "phase65_missed_oracle_block_ids": ";".join(phase65_missed),
+                "phase65_extra_selected_block_ids": ";".join(phase65_extra),
+                "phase63_reward_equivalent_substitution": _reward_equivalent_substitution(
+                    phase63_missed,
+                    phase63_extra,
+                    reward_index,
+                    reward_tolerance,
+                ),
+                "phase65_reward_equivalent_substitution": _reward_equivalent_substitution(
+                    phase65_missed,
+                    phase65_extra,
+                    reward_index,
+                    reward_tolerance,
+                ),
+                "claim_boundary": PHASE66_CLAIM_BOUNDARY,
+            }
+        )
+    return rows
