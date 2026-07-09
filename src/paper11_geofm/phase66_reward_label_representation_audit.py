@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 import csv
@@ -725,7 +725,7 @@ def build_phase66_diagnostic_gate(
     elif (
         failure_counts.get("misses_explicit_reward_components", 0) > 0
         and failure_counts.get("representation_not_aligned_with_base_reward", 0) > 0
-        and str(suitability_context.get("phase10_status", "")).startswith("not_ready")
+        and _suitability_context_not_ready(suitability_context)
     ):
         status = PHASE66_STATUS_BASE_REWARD_MASKS
     else:
@@ -1180,3 +1180,14 @@ def run_phase66_reward_label_representation_audit(
         "diagnostic_gate": gate,
         "claim_boundary": PHASE66_CLAIM_BOUNDARY,
     }
+
+
+def _suitability_context_not_ready(suitability_context: Mapping[str, object]) -> bool:
+    status = str(
+        suitability_context.get(
+            "phase10_status",
+            suitability_context.get("status", ""),
+        )
+    )
+    recommendation = str(suitability_context.get("recommendation", ""))
+    return status.startswith("not_ready") or recommendation == "do_not_enable_suitability_reward"

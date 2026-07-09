@@ -606,3 +606,28 @@ def test_phase66_run_wrapper_loads_contract_and_returns_read_only_analysis(tmp_p
         "base_reward_target_masks_geofm_signal",
         "insufficient",
     }
+
+
+def test_phase66_diagnostic_gate_accepts_real_phase10_status_key():
+    from paper11_geofm.phase66_reward_label_representation_audit import (
+        build_phase66_diagnostic_gate,
+    )
+
+    redundant_alignment = [
+        {"variant_id": "B0", "feature_group": "reward_explicit", "proxy_r2": 0.85, "max_abs_spearman": 0.90, "best_topk_enrichment": 1.00},
+        {"variant_id": "D4P8", "feature_group": "reward_explicit", "proxy_r2": 0.86, "max_abs_spearman": 0.91, "best_topk_enrichment": 1.00},
+        {"variant_id": "D4P8", "feature_group": "representation_extra", "proxy_r2": 0.10, "max_abs_spearman": 0.20, "best_topk_enrichment": 0.50},
+    ]
+    failure_summary = [
+        {"failure_mode": "misses_explicit_reward_components", "case_count": 5},
+        {"failure_mode": "representation_not_aligned_with_base_reward", "case_count": 5},
+    ]
+
+    gate = build_phase66_diagnostic_gate(
+        [],
+        redundant_alignment,
+        failure_summary,
+        {"status": "not_ready_for_suitability_reward", "recommendation": "do_not_enable_suitability_reward"},
+    )
+
+    assert gate["phase66_status"] == "base_reward_target_masks_geofm_signal"
