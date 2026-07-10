@@ -14,6 +14,7 @@ from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score
 from sklearn.preprocessing import StandardScaler
+from threadpoolctl import threadpool_limits
 
 from .phase72b_geofm_features import build_phase72b_control_features
 from .phase72b_metrics import phase72b_metrics
@@ -103,6 +104,19 @@ def _candidate_id(config: Mapping[str, object]) -> str:
 
 
 def _fit_estimator(
+    train_x: np.ndarray,
+    train_y: np.ndarray,
+    config: Mapping[str, object],
+    *,
+    seed: int,
+) -> tuple[StandardScaler | None, object]:
+    with threadpool_limits(limits=1):
+        return _fit_estimator_single_thread(
+            train_x, train_y, config, seed=seed
+        )
+
+
+def _fit_estimator_single_thread(
     train_x: np.ndarray,
     train_y: np.ndarray,
     config: Mapping[str, object],

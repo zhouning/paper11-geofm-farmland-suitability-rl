@@ -802,6 +802,32 @@ def test_phase72b_model_selection_returns_frozen_bundle():
     assert np.isfinite(probability).all()
 
 
+def test_phase72b_model_fit_limits_native_threads(monkeypatch):
+    import paper11_geofm.phase72b_models as models
+
+    entered = []
+
+    class _ThreadLimit:
+        def __enter__(self):
+            entered.append(True)
+
+        def __exit__(self, exc_type, exc, traceback):
+            return False
+
+    monkeypatch.setattr(
+        models, "threadpool_limits", lambda *, limits: _ThreadLimit()
+    )
+    features = np.asarray([[0.0], [1.0], [2.0], [3.0]])
+    outcome = np.asarray([0, 0, 1, 1])
+    models._fit_estimator(
+        features,
+        outcome,
+        {"model_family": "logistic", "C": 1.0, "class_weight": None},
+        seed=72,
+    )
+    assert entered == [True]
+
+
 def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path):
     from paper11_geofm.phase72b_information_gain_screen import (
         prepare_phase72b_information_gain_screen,
