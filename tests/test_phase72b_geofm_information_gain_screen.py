@@ -221,3 +221,122 @@ def test_phase72b_terrain_audit_blocks_wrong_shape(tmp_path):
     audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
     assert audit["status"] == "phase72b_inputs_not_ready"
     assert "shape" in " ".join(audit["errors"]).lower()
+
+
+def _explicit_fixture():
+    from paper11_geofm.phase72a_label_sources import Phase72ARegionSpec
+
+    region = Phase72ARegionSpec(
+        "alpha",
+        (100.0, 20.0, 101.0, 21.0),
+        (2017, 2018, 2019, 2020),
+        (3, 3),
+        2,
+        "e{year}.npy",
+        "l{year}.npy",
+    )
+    labels = {
+        2017: np.array(
+            [[1, 5, 1], [5, 7, 5], [1, 5, 1]], dtype=np.int16
+        ),
+        2018: np.array(
+            [[5, 5, 5], [5, 5, 7], [1, 5, 1]], dtype=np.int16
+        ),
+        2019: np.full((3, 3), 7, dtype=np.int16),
+        2020: np.full((3, 3), 1, dtype=np.int16),
+    }
+    feature_names = (
+        "elevation_mean",
+        "elevation_std",
+        "elevation_min",
+        "elevation_max",
+        "slope_mean",
+        "slope_std",
+        "slope_max",
+        "local_relief",
+    )
+    terrain = {
+        name: np.full((3, 3), index, dtype=np.float32)
+        for index, name in enumerate(feature_names)
+    }
+    return region, labels, terrain
+
+
+def test_phase72b_explicit_features_use_only_history_through_origin():
+    from paper11_geofm.phase72b_explicit_features import (
+        build_phase72b_explicit_features,
+    )
+
+    region, labels, terrain = _explicit_fixture()
+    rows = [
+        {
+            "sample_index": 0,
+            "region_id": "alpha",
+            "row": 1,
+            "col": 1,
+            "origin_year": 2018,
+            "history_length": 2,
+        }
+    ]
+    first = build_phase72b_explicit_features(
+        rows,
+        regions={"alpha": region},
+        labels={"alpha": labels},
+        terrain={"alpha": terrain},
+        crop_class_code=5,
+    )
+    changed = {
+        **labels,
+        2019: np.zeros((3, 3), dtype=np.int16),
+        2020: np.zeros((3, 3), dtype=np.int16),
+    }
+    second = build_phase72b_explicit_features(
+        rows,
+        regions={"alpha": region},
+        labels={"alpha": changed},
+        terrain={"alpha": terrain},
+        crop_class_code=5,
+    )
+    assert np.array_equal(
+        first["explicit_history"], second["explicit_history"]
+    )
+    registry = first["registry"]
+    values = dict(
+        zip(registry["explicit_history"], first["explicit_history"][0])
+    )
+    assert values["terrain_local_relief"] == 7.0
+    assert values["cell_crop_transition_count"] == 1.0
+    assert values["cell_history_count_lulc_07"] == 1.0
+    assert np.isclose(values["neighbor3_current_crop_fraction"], 6 / 9)
+
+
+def test_phase72b_explicit_neighborhoods_clip_at_grid_edges():
+    from paper11_geofm.phase72b_explicit_features import (
+        build_phase72b_explicit_features,
+    )
+
+    region, labels, terrain = _explicit_fixture()
+    result = build_phase72b_explicit_features(
+        [
+            {
+                "sample_index": 0,
+                "region_id": "alpha",
+                "row": 0,
+                "col": 0,
+                "origin_year": 2018,
+                "history_length": 2,
+            }
+        ],
+        regions={"alpha": region},
+        labels={"alpha": labels},
+        terrain={"alpha": terrain},
+        crop_class_code=5,
+    )
+    values = dict(
+        zip(
+            result["registry"]["explicit_history"],
+            result["explicit_history"][0],
+        )
+    )
+    assert values["neighbor3_current_crop_fraction"] == 1.0
+    assert np.isclose(values["neighbor5_current_crop_fraction"], 6 / 9)
