@@ -828,6 +828,51 @@ def test_phase72b_model_fit_limits_native_threads(monkeypatch):
     assert entered == [True]
 
 
+def test_phase72b_model_search_uses_bounded_thread_parallelism(monkeypatch):
+    import paper11_geofm.phase72b_models as models
+
+    captured = {}
+
+    class _ImmediateParallel:
+        def __init__(self, *, n_jobs, prefer):
+            captured.update({"n_jobs": n_jobs, "prefer": prefer})
+
+        def __call__(self, jobs):
+            return [function(*args, **kwargs) for function, args, kwargs in jobs]
+
+    monkeypatch.setattr(models, "Parallel", _ImmediateParallel)
+    monkeypatch.setattr(
+        models,
+        "delayed",
+        lambda function: (
+            lambda *args, **kwargs: (function, args, kwargs)
+        ),
+    )
+    protocol = _protocol_payload()
+    protocol["models"] = {
+        "logistic_c": [0.1],
+        "logistic_class_weight": ["none"],
+        "hgb_learning_rate": [],
+        "hgb_max_leaf_nodes": [],
+        "hgb_min_samples_leaf": [],
+        "hgb_max_iter": 20,
+        "hgb_l2_regularization": [],
+    }
+    protocol["calibration"] = {"methods": ["none"], "ece_bins": 2}
+    features = np.asarray([[0.0], [1.0], [2.0], [3.0]])
+    outcome = np.asarray([0, 1, 0, 1])
+    models.fit_select_phase72b_model(
+        features,
+        outcome,
+        features,
+        outcome,
+        variant_id="fixture",
+        axis_id="pooled_temporal",
+        protocol=protocol,
+    )
+    assert captured == {"n_jobs": 4, "prefer": "threads"}
+
+
 def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path):
     from paper11_geofm.phase72b_information_gain_screen import (
         prepare_phase72b_information_gain_screen,

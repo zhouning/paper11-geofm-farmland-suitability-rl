@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import joblib
+from joblib import Parallel, delayed
 import numpy as np
 import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
@@ -308,8 +309,9 @@ def fit_select_phase72b_model(
     budgets = tuple(float(value) for value in protocol["budgets"])
     candidate_results = []
     validation_rows = []
-    for config in _candidate_configs(protocol):
-        result, rows = _fit_candidate(
+    configs = _candidate_configs(protocol)
+    fitted = Parallel(n_jobs=4, prefer="threads")(
+        delayed(_fit_candidate)(
             train_x,
             train_y,
             validation_x,
@@ -320,6 +322,9 @@ def fit_select_phase72b_model(
             ece_bins=int(calibration["ece_bins"]),
             seed=int(protocol["seed"]),
         )
+        for config in configs
+    )
+    for config, (result, rows) in zip(configs, fitted):
         candidate_results.append(result)
         for row in rows:
             validation_rows.append(
