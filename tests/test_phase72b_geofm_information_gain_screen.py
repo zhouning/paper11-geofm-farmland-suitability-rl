@@ -119,3 +119,105 @@ def test_phase72b_hashed_json_rejects_modified_payload(tmp_path):
         raise AssertionError(
             "Expected a modified frozen payload to be rejected"
         )
+
+
+def _phase72a_regions(path: Path) -> Path:
+    payload = {
+        "source": {
+            "source_id": "esri",
+            "collection": "esri",
+            "label_role": "independent_annual_product_label",
+            "independent_from_dltb_slope_reward_geofm": True,
+            "crop_class_code": 5,
+            "scale_m": 500,
+        },
+        "regions": [
+            {
+                "region_id": "alpha",
+                "bbox": [100, 20, 101, 21],
+                "years": [2017, 2018, 2019],
+                "grid_shape": [2, 3],
+                "embedding_dim": 2,
+                "embedding_pattern": "alpha_emb_{year}.npy",
+                "label_pattern": "alpha_lulc_{year}.npy",
+            }
+        ],
+    }
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
+def test_phase72b_terrain_fetch_and_audit_use_exact_grid(tmp_path):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import (
+        audit_phase72b_terrain_assets,
+        fetch_phase72b_terrain,
+    )
+
+    def extractor(*, bbox, shape, scale_m, collection, band):
+        assert bbox == (100.0, 20.0, 101.0, 21.0)
+        assert shape == (2, 3)
+        assert scale_m == 500
+        assert collection == "COPERNICUS/DEM/GLO30"
+        assert band == "DEM"
+        base = np.arange(6, dtype=np.float32).reshape(2, 3)
+        return {
+            "elevation_mean": base,
+            "elevation_std": base + 1,
+            "elevation_min": base - 1,
+            "elevation_max": base + 2,
+            "slope_mean": base + 3,
+            "slope_std": base + 4,
+            "slope_max": base + 5,
+            "local_relief": np.full((2, 3), 3, np.float32),
+        }
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+    manifest = fetch_phase72b_terrain(
+        protocol,
+        regions,
+        output_dir=tmp_path / "terrain",
+        extractor=extractor,
+    )
+    audit = audit_phase72b_terrain_assets(
+        protocol, regions, tmp_path / "terrain"
+    )
+    assert manifest["status"] == "complete"
+    assert audit["status"] == "terrain_inputs_ready"
+    assert audit["rows"][0]["shape"] == "2x3"
+    assert len(audit["rows"][0]["sha256"]) == 64
+
+
+def test_phase72b_terrain_audit_blocks_wrong_shape(tmp_path):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import audit_phase72b_terrain_assets
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+    terrain = tmp_path / "terrain"
+    terrain.mkdir()
+    np.savez(
+        terrain / "alpha_terrain.npz",
+        **{
+            name: np.zeros((2, 2), np.float32)
+            for name in protocol.terrain_features
+        },
+    )
+    audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+    assert audit["status"] == "phase72b_inputs_not_ready"
+    assert "shape" in " ".join(audit["errors"]).lower()
