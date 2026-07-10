@@ -516,8 +516,7 @@ def _save_bundle(
     variant_id: str,
     seed: int | None,
 ) -> dict[str, object]:
-    suffix = "" if seed is None else f"_seed{int(seed)}"
-    filename = f"{axis_id}__{variant_id}{suffix}.joblib"
+    filename = _bundle_filename(axis_id, variant_id, seed)
     path = bundles_dir / filename
     joblib.dump(dict(bundle), path)
     return {
@@ -535,6 +534,97 @@ def _save_bundle(
         "validation_brier": bundle["validation_metrics"]["brier"],
         "validation_ece": bundle["validation_metrics"]["ece"],
     }
+
+
+def _bundle_filename(
+    axis_id: str, variant_id: str, seed: int | None
+) -> str:
+    suffix = "" if seed is None else f"_seed{int(seed)}"
+    return f"{axis_id}__{variant_id}{suffix}.joblib"
+
+
+def _load_fit_progress(
+    path: Path, *, protocol_hash: str
+) -> dict[str, object]:
+    hash_path = path.with_suffix(".sha256")
+    if not path.exists() and not hash_path.exists():
+        progress = {
+            "status": "phase72b_fit_in_progress",
+            "frozen_protocol_sha256": protocol_hash,
+            "entries": {},
+        }
+        write_hashed_json(path, progress)
+        return progress
+    if not path.exists() or not hash_path.exists():
+        raise ValueError("Phase 72B fit progress hash pair is incomplete")
+    progress = load_hashed_json(path, hash_path)
+    if str(progress.get("frozen_protocol_sha256", "")) != protocol_hash:
+        raise ValueError("Phase 72B fit progress protocol hash mismatch")
+    if not isinstance(progress.get("entries"), dict):
+        raise ValueError("Phase 72B fit progress entries are invalid")
+    return progress
+
+
+def _write_fit_progress(path: Path, progress: Mapping[str, object]) -> None:
+    write_hashed_json(path, progress)
+
+
+def _resume_bundle(
+    progress: Mapping[str, object],
+    *,
+    bundles_dir: Path,
+    axis_id: str,
+    variant_id: str,
+    seed: int | None,
+    feature_count: int,
+    train_indexes: Sequence[int],
+    validation_indexes: Sequence[int],
+) -> tuple[dict[str, object], dict[str, object], list[dict[str, object]]] | None:
+    filename = _bundle_filename(axis_id, variant_id, seed)
+    entry = dict(progress.get("entries", {})).get(filename)
+    if entry is None:
+        return None
+    entry = dict(entry)
+    record = dict(entry["record"])
+    expected_seed = "" if seed is None else int(seed)
+    if (
+        str(record.get("axis_id")) != axis_id
+        or str(record.get("variant_id")) != variant_id
+        or record.get("control_seed", "") != expected_seed
+        or Path(str(record.get("bundle_path", ""))).name != filename
+    ):
+        raise ValueError(f"Phase 72B fit progress identity mismatch: {filename}")
+    bundle = load_phase72b_model_bundle(
+        bundles_dir / filename, str(record["bundle_sha256"])
+    )
+    if (
+        str(bundle.get("axis_id")) != axis_id
+        or str(bundle.get("variant_id")) != variant_id
+        or int(bundle.get("feature_count", -1)) != int(feature_count)
+        or str(bundle.get("train_index_sha256"))
+        != _array_sha256(np.asarray(train_indexes, dtype=np.int64))
+        or str(bundle.get("validation_index_sha256"))
+        != _array_sha256(np.asarray(validation_indexes, dtype=np.int64))
+    ):
+        raise ValueError(f"Phase 72B resumed bundle contract mismatch: {filename}")
+    return bundle, record, [dict(row) for row in entry["validation_rows"]]
+
+
+def _checkpoint_bundle(
+    progress: dict[str, object],
+    progress_path: Path,
+    *,
+    record: Mapping[str, object],
+    validation_rows: Sequence[Mapping[str, object]],
+) -> None:
+    entries = dict(progress.get("entries", {}))
+    filename = Path(str(record["bundle_path"])).name
+    entries[filename] = {
+        "record": dict(record),
+        "validation_rows": [dict(row) for row in validation_rows],
+    }
+    progress["entries"] = entries
+    _write_fit_progress(progress_path, progress)
 
 
 def fit_freeze_phase72b_models(
@@ -557,6 +647,10 @@ def fit_freeze_phase72b_models(
         frozen_protocol.get("development_targets_sha256", "")
     ):
         raise ValueError("Phase 72B development target hash mismatch")
+    progress_path = output / "phase72b_fit_progress.json"
+    progress = _load_fit_progress(
+        progress_path, protocol_hash=protocol_hash
+    )
     feature_rows = pd.read_csv(
         prepared / "phase72b_feature_rows.csv", keep_default_na=False
     ).to_dict(orient="records")
@@ -591,24 +685,43 @@ def fit_freeze_phase72b_models(
         selected_configs[axis_id] = {}
         for variant_id in _CORE_VARIANTS:
             matrix = _variant_matrix(variant_id, matrices, feature_rows)
-            bundle, rows = fit_select_phase72b_model(
-                matrix[train_indexes],
-                train_y,
-                matrix[validation_indexes],
-                validation_y,
-                variant_id=variant_id,
-                axis_id=axis_id,
-                protocol=protocol,
-                train_indexes=train_indexes,
-                validation_indexes=validation_indexes,
-            )
-            record = _save_bundle(
-                bundle,
+            resumed = _resume_bundle(
+                progress,
                 bundles_dir=bundles_dir,
                 axis_id=axis_id,
                 variant_id=variant_id,
                 seed=None,
+                feature_count=matrix.shape[1],
+                train_indexes=train_indexes,
+                validation_indexes=validation_indexes,
             )
+            if resumed is None:
+                bundle, rows = fit_select_phase72b_model(
+                    matrix[train_indexes],
+                    train_y,
+                    matrix[validation_indexes],
+                    validation_y,
+                    variant_id=variant_id,
+                    axis_id=axis_id,
+                    protocol=protocol,
+                    train_indexes=train_indexes,
+                    validation_indexes=validation_indexes,
+                )
+                record = _save_bundle(
+                    bundle,
+                    bundles_dir=bundles_dir,
+                    axis_id=axis_id,
+                    variant_id=variant_id,
+                    seed=None,
+                )
+                _checkpoint_bundle(
+                    progress,
+                    progress_path,
+                    record=record,
+                    validation_rows=rows,
+                )
+            else:
+                bundle, record, rows = resumed
             bundle_records.append(record)
             validation_rows.extend(rows)
             axes[axis_id].append(record["bundle_path"])
@@ -626,31 +739,49 @@ def fit_freeze_phase72b_models(
                     feature_rows,
                     seed=int(control_seed),
                 )
-                bundle, rows = fit_select_phase72b_model(
-                    matrix[train_indexes],
-                    train_y,
-                    matrix[validation_indexes],
-                    validation_y,
-                    variant_id=variant_id,
-                    axis_id=axis_id,
-                    protocol=protocol,
-                    train_indexes=train_indexes,
-                    validation_indexes=validation_indexes,
-                )
-                record = _save_bundle(
-                    bundle,
+                resumed = _resume_bundle(
+                    progress,
                     bundles_dir=bundles_dir,
                     axis_id=axis_id,
                     variant_id=variant_id,
                     seed=int(control_seed),
+                    feature_count=matrix.shape[1],
+                    train_indexes=train_indexes,
+                    validation_indexes=validation_indexes,
                 )
-                bundle_records.append(record)
-                validation_rows.extend(
-                    [
+                if resumed is None:
+                    bundle, rows = fit_select_phase72b_model(
+                        matrix[train_indexes],
+                        train_y,
+                        matrix[validation_indexes],
+                        validation_y,
+                        variant_id=variant_id,
+                        axis_id=axis_id,
+                        protocol=protocol,
+                        train_indexes=train_indexes,
+                        validation_indexes=validation_indexes,
+                    )
+                    record = _save_bundle(
+                        bundle,
+                        bundles_dir=bundles_dir,
+                        axis_id=axis_id,
+                        variant_id=variant_id,
+                        seed=int(control_seed),
+                    )
+                    checkpoint_rows = [
                         {**row, "control_seed": int(control_seed)}
                         for row in rows
                     ]
-                )
+                    _checkpoint_bundle(
+                        progress,
+                        progress_path,
+                        record=record,
+                        validation_rows=checkpoint_rows,
+                    )
+                else:
+                    bundle, record, checkpoint_rows = resumed
+                bundle_records.append(record)
+                validation_rows.extend(checkpoint_rows)
                 axes[axis_id].append(record["bundle_path"])
                 seed_records.append((record, bundle))
             best_record, best_bundle = min(
@@ -697,28 +828,37 @@ def fit_freeze_phase72b_models(
                 seed=control_seed,
             )
             config = selected_configs["pooled_temporal"][variant_id]
-            bundle, rows = fit_fixed_phase72b_model(
-                matrix[train_indexes],
-                train_y,
-                matrix[validation_indexes],
-                validation_y,
-                variant_id=variant_id,
-                axis_id=axis_id,
-                protocol=protocol,
-                candidate_config=config,
-                train_indexes=train_indexes,
-                validation_indexes=validation_indexes,
-            )
-            record = _save_bundle(
-                bundle,
+            resumed = _resume_bundle(
+                progress,
                 bundles_dir=bundles_dir,
                 axis_id=axis_id,
                 variant_id=variant_id,
                 seed=control_seed,
+                feature_count=matrix.shape[1],
+                train_indexes=train_indexes,
+                validation_indexes=validation_indexes,
             )
-            bundle_records.append(record)
-            validation_rows.extend(
-                [
+            if resumed is None:
+                bundle, rows = fit_fixed_phase72b_model(
+                    matrix[train_indexes],
+                    train_y,
+                    matrix[validation_indexes],
+                    validation_y,
+                    variant_id=variant_id,
+                    axis_id=axis_id,
+                    protocol=protocol,
+                    candidate_config=config,
+                    train_indexes=train_indexes,
+                    validation_indexes=validation_indexes,
+                )
+                record = _save_bundle(
+                    bundle,
+                    bundles_dir=bundles_dir,
+                    axis_id=axis_id,
+                    variant_id=variant_id,
+                    seed=control_seed,
+                )
+                checkpoint_rows = [
                     {
                         **row,
                         "control_seed": ""
@@ -727,7 +867,16 @@ def fit_freeze_phase72b_models(
                     }
                     for row in rows
                 ]
-            )
+                _checkpoint_bundle(
+                    progress,
+                    progress_path,
+                    record=record,
+                    validation_rows=checkpoint_rows,
+                )
+            else:
+                bundle, record, checkpoint_rows = resumed
+            bundle_records.append(record)
+            validation_rows.extend(checkpoint_rows)
             axes[axis_id].append(record["bundle_path"])
 
     selected = {
@@ -744,6 +893,11 @@ def fit_freeze_phase72b_models(
     selected_json, selected_hash = write_hashed_json(
         output / "phase72b_selected_models.json", selected
     )
+    progress["status"] = "phase72b_fit_complete"
+    progress["selected_models_sha256"] = selected_hash.read_text(
+        encoding="ascii"
+    ).strip()
+    _write_fit_progress(progress_path, progress)
     return selected, {
         "validation_metrics_csv": validation_path,
         "selected_models_json": selected_json,

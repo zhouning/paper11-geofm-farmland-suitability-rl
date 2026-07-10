@@ -873,7 +873,7 @@ def test_phase72b_model_search_uses_bounded_thread_parallelism(monkeypatch):
     assert captured == {"n_jobs": 4, "prefer": "threads"}
 
 
-def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path):
+def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path, monkeypatch):
     from paper11_geofm.phase72b_information_gain_screen import (
         prepare_phase72b_information_gain_screen,
         write_phase72b_prepared_artifacts,
@@ -935,6 +935,21 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path):
     assert all(
         len(record["bundle_sha256"]) == 64
         for record in selected["bundle_records"]
+    )
+    import paper11_geofm.phase72b_models as models
+
+    def _unexpected_fit(*args, **kwargs):
+        raise AssertionError("Completed Phase 72B bundles should be resumed")
+
+    monkeypatch.setattr(models, "fit_select_phase72b_model", _unexpected_fit)
+    monkeypatch.setattr(models, "fit_fixed_phase72b_model", _unexpected_fit)
+    resumed, resumed_paths = fit_freeze_phase72b_models(
+        prepared_dir=prepared_dir, output_dir=frozen_dir
+    )
+    assert resumed == selected
+    assert (
+        resumed_paths["selected_models_hash"].read_text(encoding="ascii")
+        == paths["selected_models_hash"].read_text(encoding="ascii")
     )
     record = selected["bundle_records"][0]
     bundle_path = frozen_dir / record["bundle_path"]
