@@ -909,3 +909,175 @@ def _phase71_markdown(analysis: Mapping[str, object]) -> str:
         ]
     )
     return "\n".join(lines)
+
+
+def _load_csv_rows(path: Path | str, label: str) -> list[dict[str, object]]:
+    csv_path = Path(path)
+    if not csv_path.exists():
+        raise FileNotFoundError(f"Missing {label}: {csv_path}")
+    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+        return [dict(row) for row in csv.DictReader(handle)]
+
+
+def _load_phase71_tiled_variant_input(
+    contract: Mapping[str, object],
+    tile_id: str,
+    variant_id: str,
+) -> TiledVariantInput:
+    variant_source_dirs = contract.get("variant_source_dirs")
+    if not isinstance(variant_source_dirs, Mapping):
+        raise ValueError("Phase 71 contract is missing variant source routing")
+    source_dir = variant_source_dirs.get(variant_id)
+    if source_dir is None:
+        raise ValueError(f"Phase 71 contract has no source for variant {variant_id}")
+    return load_tiled_variant_input(
+        source_dir,
+        str(contract["tile_index_csv"]),
+        tile_id,
+        variant_id=variant_id,
+    )
+
+
+def _phase71_fold_train_tile_ids(
+    contract: Mapping[str, object],
+    held_out_eval_tile_id: str,
+) -> list[str]:
+    ids = [str(contract["train_tile_id"])]
+    ids.extend(
+        str(tile_id)
+        for tile_id in contract.get("eval_tile_ids", [])
+        if str(tile_id) != str(held_out_eval_tile_id)
+    )
+    return list(dict.fromkeys(ids))
+
+
+def _component_diagnostic_rows(tiled_input: TiledVariantInput) -> list[dict[str, object]]:
+    rows = []
+    for target in build_phase71_component_targets(tiled_input):
+        for component_name, component_value in dict(target["components"]).items():
+            rows.append(
+                {
+                    "variant_id": target["variant_id"],
+                    "tile_id": target["tile_id"],
+                    "block_id": target["block_id"],
+                    "action_index": target["action_index"],
+                    "reward_total": target["reward_total"],
+                    "component_name": component_name,
+                    "component_value": component_value,
+                    "claim_boundary": PHASE71_CLAIM_BOUNDARY,
+                }
+            )
+    return rows
+
+
+def run_phase71_component_supervised_ranker(
+    phase2_output_dir: Path | str,
+    phase8_output_dir: Path | str,
+    phase61_output_dir: Path | str,
+    tile_index_csv: Path | str,
+    phase63_rollout_csv: Path | str,
+    phase70_rollout_csv: Path | str,
+    variants: Sequence[str] | str = PHASE63_DEFAULT_VARIANTS,
+    train_tile_id: str | None = None,
+    eval_tile_ids: Sequence[str] | str | None = None,
+    max_eval_tiles: int = 5,
+    eval_max_steps: int = 8,
+    seeds: Sequence[int | str] | str | int | None = (0, 1, 2),
+    ranker_epochs: int = 80,
+    learning_rate: float = 0.001,
+    hidden_dim: int = 64,
+    component_weight: float = 0.05,
+    top_k: int = 3,
+) -> dict[str, object]:
+    contract = build_phase63_set_policy_contract(
+        phase2_output_dir=phase2_output_dir,
+        phase8_output_dir=phase8_output_dir,
+        phase61_output_dir=phase61_output_dir,
+        tile_index_csv=tile_index_csv,
+        variants=variants,
+        train_tile_id=train_tile_id,
+        eval_tile_ids=eval_tile_ids,
+        max_eval_tiles=max_eval_tiles,
+        eval_max_steps=eval_max_steps,
+        seeds=seeds,
+        bc_epochs=ranker_epochs,
+        learning_rate=learning_rate,
+        hidden_dim=hidden_dim,
+        top_k=top_k,
+    )
+    contract["phase"] = "phase71_component_supervised_ranker"
+    contract["ranker_epochs"] = int(ranker_epochs)
+    contract["component_weight"] = float(component_weight)
+    history_rows: list[dict[str, object]] = []
+    rollout_rows: list[dict[str, object]] = []
+    oracle_summary_rows: list[dict[str, object]] = []
+    component_rows: list[dict[str, object]] = []
+    for variant_id in contract["variants"]:
+        variant = str(variant_id)
+        for eval_tile_id in contract["eval_tile_ids"]:
+            eval_id = str(eval_tile_id)
+            train_tile_ids = _phase71_fold_train_tile_ids(contract, eval_id)
+            raw_training_tiles = [
+                _load_phase71_tiled_variant_input(contract, tile_id, variant)
+                for tile_id in train_tile_ids
+            ]
+            params = fit_phase71_fold_standardization(
+                raw_training_tiles,
+                variant_id=variant,
+                fold_id=eval_id,
+            )
+            prepared_training_tiles = [
+                apply_phase71_fold_standardization(tile, params)
+                for tile in raw_training_tiles
+            ]
+            raw_eval_tile = _load_phase71_tiled_variant_input(contract, eval_id, variant)
+            prepared_eval = apply_phase71_fold_standardization(raw_eval_tile, params)
+            component_rows.extend(_component_diagnostic_rows(raw_eval_tile))
+            for seed in contract["seeds"]:
+                model, history = train_phase71_component_ranker(
+                    prepared_training_tiles,
+                    seed=int(seed),
+                    epochs=int(ranker_epochs),
+                    learning_rate=float(learning_rate),
+                    hidden_dim=int(hidden_dim),
+                    component_weight=float(component_weight),
+                    top_k=int(top_k),
+                )
+                history_rows.extend(history)
+                oracle = build_phase71_oracle_trajectory(prepared_eval, int(eval_max_steps))
+                oracle_row = _phase63_oracle_summary_row(
+                    oracle,
+                    seed=int(seed),
+                    tile_role="eval",
+                )
+                oracle_row["claim_boundary"] = PHASE71_CLAIM_BOUNDARY
+                oracle_summary_rows.append(oracle_row)
+                rollout_rows.append(
+                    rollout_phase71_ranker(
+                        model,
+                        prepared_eval,
+                        train_tile_ids=train_tile_ids,
+                        eval_tile_rank=int(contract["eval_tile_ranks"][eval_id]),
+                        seed=int(seed),
+                        phase71_seed_rank=int(contract["seed_ranks"][str(int(seed))]),
+                        eval_max_steps=int(eval_max_steps),
+                    )
+                )
+    phase63_rows = _load_csv_rows(phase63_rollout_csv, "Phase 63 rollout CSV")
+    phase70_rows = _load_csv_rows(phase70_rollout_csv, "Phase 70 rollout CSV")
+    analysis = build_phase71_component_ranker_comparison(
+        rollout_rows,
+        phase63_rows,
+        phase70_rows,
+        metadata={
+            "variants": contract["variants"],
+            "eval_tile_ids": contract["eval_tile_ids"],
+            "seeds": contract["seeds"],
+        },
+    )
+    analysis["contract"] = contract
+    analysis["history_rows"] = history_rows
+    analysis["rollout_rows"] = rollout_rows
+    analysis["oracle_summary_rows"] = oracle_summary_rows
+    analysis["component_diagnostic_rows"] = component_rows
+    return analysis

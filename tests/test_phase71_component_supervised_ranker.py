@@ -352,3 +352,166 @@ def test_phase71_comparison_statuses_and_writer_outputs(tmp_path):
     assert "ranker_improves_but_target_masks_geofm" in paths[
         "readiness_md"
     ].read_text(encoding="utf-8")
+
+
+def _write_csv(path: Path, rows: list[dict[str, object]]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(rows[0].keys())
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        import csv
+
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+    return path
+
+
+def _write_variant_fixture(
+    output_dir: Path,
+    variant_id: str,
+    rows: list[dict[str, object]],
+    columns: tuple[str, ...],
+) -> None:
+    output_dir.mkdir(parents=True, exist_ok=True)
+    table = output_dir / f"variant_{variant_id}_features.csv"
+    with table.open("w", encoding="utf-8", newline="") as handle:
+        import csv
+
+        writer = csv.DictWriter(handle, fieldnames=["block_id", *columns])
+        writer.writeheader()
+        writer.writerows(rows)
+    manifest = {
+        "variants": {
+            variant_id: {
+                "ready": True,
+                "feature_table": table.name,
+                "required_columns": list(columns),
+                "reward": "base_planning_reward",
+                "state_groups": ["synthetic"],
+            }
+        }
+    }
+    (output_dir / "experiment_variants.json").write_text(
+        json.dumps(manifest, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+def test_phase71_run_wrapper_and_cli_succeed_on_fixture(tmp_path):
+    from paper11_geofm.phase71_component_supervised_ranker import (
+        run_phase71_component_supervised_ranker,
+    )
+
+    columns = _required_feature_columns()
+    blocks = ("b1", "b2", "b3", "b4")
+    rows = [
+        {**{"block_id": block_id}, **{column: 0.0 for column in columns}}
+        for block_id in blocks
+    ]
+    for row, value in zip(rows, (0.90, 0.70, 0.20, 0.10)):
+        row["explicit_feature_00"] = 5.0
+        row["explicit_feature_13"] = value
+        row["explicit_feature_16"] = value
+    phase2 = tmp_path / "phase2"
+    phase8 = tmp_path / "phase8"
+    phase61 = tmp_path / "phase61"
+    _write_variant_fixture(phase2, "B0", rows, columns)
+    _write_variant_fixture(phase8, "D4P8", rows, columns)
+    _write_variant_fixture(phase61, "D6R8", rows, columns)
+    tile_index = _write_csv(
+        tmp_path / "tiles.csv",
+        [
+            {"tile_id": "tile_train", "block_ids": ";".join(blocks)},
+            {"tile_id": "tile_eval_a", "block_ids": ";".join(blocks)},
+        ],
+    )
+    phase63_csv = _write_csv(
+        tmp_path / "phase63_rollout.csv",
+        [
+            _reference_row("B0", 0.50, tile_id="tile_eval_a", seed=0),
+            _reference_row("D4P8", 0.45, tile_id="tile_eval_a", seed=0),
+            _reference_row("D6R8", 0.48, tile_id="tile_eval_a", seed=0),
+        ],
+    )
+    phase70_csv = _write_csv(
+        tmp_path / "phase70_rollout.csv",
+        [
+            _reference_row("B0", 0.55, tile_id="tile_eval_a", seed=0),
+            _reference_row("D4P8", 0.50, tile_id="tile_eval_a", seed=0),
+            _reference_row("D6R8", 0.51, tile_id="tile_eval_a", seed=0),
+        ],
+    )
+
+    analysis = run_phase71_component_supervised_ranker(
+        phase2_output_dir=phase2,
+        phase8_output_dir=phase8,
+        phase61_output_dir=phase61,
+        tile_index_csv=tile_index,
+        phase63_rollout_csv=phase63_csv,
+        phase70_rollout_csv=phase70_csv,
+        variants="B0,D4P8,D6R8",
+        train_tile_id="tile_train",
+        eval_tile_ids="tile_eval_a",
+        seeds="0",
+        eval_max_steps=3,
+        ranker_epochs=8,
+        learning_rate=0.01,
+        hidden_dim=12,
+        component_weight=0.05,
+        top_k=2,
+    )
+
+    assert analysis["phase"] == "phase71_component_supervised_ranker"
+    assert len(analysis["rollout_rows"]) == 3
+    assert len(analysis["history_rows"]) == 24
+
+    runner_path = (
+        ROOT
+        / "experiments"
+        / "phase71_component_supervised_ranker"
+        / "run_phase71_component_supervised_ranker.py"
+    )
+    spec = importlib.util.spec_from_file_location("phase71_runner", runner_path)
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    exit_code = module.main(
+        [
+            "--phase2-output-dir",
+            str(phase2),
+            "--phase8-output-dir",
+            str(phase8),
+            "--phase61-output-dir",
+            str(phase61),
+            "--tile-index-csv",
+            str(tile_index),
+            "--phase63-rollout-csv",
+            str(phase63_csv),
+            "--phase70-rollout-csv",
+            str(phase70_csv),
+            "--variants",
+            "B0,D4P8,D6R8",
+            "--train-tile-id",
+            "tile_train",
+            "--eval-tile-ids",
+            "tile_eval_a",
+            "--seeds",
+            "0",
+            "--eval-max-steps",
+            "3",
+            "--ranker-epochs",
+            "8",
+            "--learning-rate",
+            "0.01",
+            "--hidden-dim",
+            "12",
+            "--component-weight",
+            "0.05",
+            "--top-k",
+            "2",
+            "--output-dir",
+            str(tmp_path / "outputs"),
+        ]
+    )
+    assert exit_code == 0
+    assert (tmp_path / "outputs" / "phase71_component_supervised_ranker.json").exists()
