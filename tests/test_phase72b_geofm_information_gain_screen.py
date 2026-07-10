@@ -457,3 +457,172 @@ def test_phase72b_random_projection_is_seeded_and_same_dimension():
     assert np.isfinite(first).all()
     assert np.array_equal(first, second)
     assert not np.array_equal(first, third)
+
+
+def test_phase72b_splits_lock_years_regions_and_spatial_buffers():
+    from paper11_geofm.phase72b_splits import build_phase72b_split_registry
+
+    rows = []
+    for region in ("bishan", "dongxing"):
+        for year in range(2017, 2024):
+            for br, bc in ((0, 0), (0, 2), (2, 0), (2, 2), (4, 4)):
+                rows.append(
+                    {
+                        "sample_index": len(rows),
+                        "region_id": region,
+                        "origin_year": year,
+                        "spatial_block_id": (
+                            f"{region}_br{br:03d}_bc{bc:03d}"
+                        ),
+                        "conversion_1y": (br + bc + year) % 2,
+                    }
+                )
+    registry = build_phase72b_split_registry(
+        rows,
+        train_years=(2017, 2018, 2019, 2020, 2021),
+        validation_year=2022,
+        test_year=2023,
+        folds=5,
+        buffer_rings=1,
+    )
+    pooled = registry["pooled_temporal"]
+    assert {rows[index]["origin_year"] for index in pooled["train"]} == {
+        2017,
+        2018,
+        2019,
+        2020,
+        2021,
+    }
+    transfer = registry["bishan_to_dongxing"]
+    assert {rows[index]["region_id"] for index in transfer["train"]} == {
+        "bishan"
+    }
+    assert {rows[index]["region_id"] for index in transfer["test"]} == {
+        "dongxing"
+    }
+    spatial = registry["spatial_bishan_fold0"]
+    assert not set(spatial["train_block_ids"]) & set(
+        spatial["test_block_ids"]
+    )
+    assert not set(spatial["train_block_ids"]) & set(
+        spatial["buffer_block_ids"]
+    )
+
+
+def _phase72b_prepare_fixture(tmp_path: Path):
+    from paper11_geofm.phase72a_temporal_label_package import (
+        build_phase72a_temporal_label_package,
+        write_phase72a_temporal_label_package_artifacts,
+    )
+
+    years = list(range(2017, 2025))
+    regions_payload = {
+        "source": {
+            "source_id": "esri_global_lulc_10m_ts",
+            "collection": "esri",
+            "label_role": "independent_annual_product_label",
+            "independent_from_dltb_slope_reward_geofm": True,
+            "crop_class_code": 5,
+            "scale_m": 500,
+        },
+        "regions": [],
+    }
+    embedding_dirs = {}
+    label_dirs = {}
+    terrain_dir = tmp_path / "terrain"
+    terrain_dir.mkdir()
+    label_sequence = [5, 7, 5, 7, 5, 5, 7, 7]
+    for region_index, region_id in enumerate(("bishan", "dongxing")):
+        regions_payload["regions"].append(
+            {
+                "region_id": region_id,
+                "bbox": [100 + region_index, 20, 101 + region_index, 21],
+                "years": years,
+                "grid_shape": [2, 2],
+                "embedding_dim": 2,
+                "embedding_pattern": f"{region_id}_emb_{{year}}.npy",
+                "label_pattern": f"{region_id}_lulc_{{year}}.npy",
+            }
+        )
+        embedding_dir = tmp_path / f"{region_id}_embeddings"
+        label_dir = tmp_path / f"{region_id}_labels"
+        embedding_dir.mkdir()
+        label_dir.mkdir()
+        embedding_dirs[region_id] = embedding_dir
+        label_dirs[region_id] = label_dir
+        for offset, year in enumerate(years):
+            embedding = np.zeros((2, 2, 2), dtype=np.float32)
+            embedding[..., 0] = year + region_index
+            embedding[..., 1] = np.arange(4).reshape(2, 2)
+            labels = np.full((2, 2), 7, dtype=np.int32)
+            labels[0, 0] = 5
+            labels[0, 1] = label_sequence[offset]
+            np.save(
+                embedding_dir / f"{region_id}_emb_{year}.npy", embedding
+            )
+            np.save(label_dir / f"{region_id}_lulc_{year}.npy", labels)
+        terrain = {
+            name: np.full((2, 2), index + region_index, np.float32)
+            for index, name in enumerate(
+                _protocol_payload()["terrain"]["feature_names"]
+            )
+        }
+        np.savez_compressed(
+            terrain_dir / f"{region_id}_terrain.npz", **terrain
+        )
+    region_config = tmp_path / "regions.json"
+    region_config.write_text(
+        json.dumps(regions_payload), encoding="utf-8"
+    )
+    phase72a = build_phase72a_temporal_label_package(
+        region_config=region_config,
+        embedding_dirs=embedding_dirs,
+        label_dirs=label_dirs,
+        manual_review_per_stratum=1,
+        spatial_block_size=1,
+    )
+    phase72a_dir = tmp_path / "phase72a"
+    write_phase72a_temporal_label_package_artifacts(phase72a, phase72a_dir)
+    protocol_path = _write_protocol(tmp_path / "protocol.json")
+    return {
+        "protocol_path": protocol_path,
+        "region_config": region_config,
+        "phase72a_dir": phase72a_dir,
+        "embedding_dirs": embedding_dirs,
+        "label_dirs": label_dirs,
+        "terrain_dir": terrain_dir,
+    }
+
+
+def test_phase72b_prepare_separates_confirmation_targets_and_freezes_protocol(
+    tmp_path,
+):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+        write_phase72b_prepared_artifacts,
+    )
+    from paper11_geofm.phase72b_protocol import load_hashed_json
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    package = prepare_phase72b_information_gain_screen(
+        protocol_path=inputs["protocol_path"],
+        phase72a_region_config=inputs["region_config"],
+        phase72a_package_dir=inputs["phase72a_dir"],
+        embedding_dirs=inputs["embedding_dirs"],
+        label_dirs=inputs["label_dirs"],
+        terrain_dir=inputs["terrain_dir"],
+    )
+    paths = write_phase72b_prepared_artifacts(
+        package, tmp_path / "prepared"
+    )
+    with np.load(paths["development_targets_npz"]) as development:
+        assert set(development["origin_year"].tolist()) <= set(
+            range(2017, 2023)
+        )
+    with np.load(paths["confirmation_targets_npz"]) as confirmation:
+        assert set(confirmation["origin_year"].tolist()) == {2023}
+    frozen = load_hashed_json(
+        paths["protocol_json"], paths["protocol_hash"]
+    )
+    assert frozen["status"] == "phase72b_protocol_frozen"
+    assert package["leakage_audit"]["status"] == "leakage_audit_passed"
