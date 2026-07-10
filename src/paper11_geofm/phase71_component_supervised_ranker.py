@@ -454,3 +454,458 @@ def rollout_phase71_ranker(
         "phase71_component_supervised": True,
         "claim_boundary": PHASE71_CLAIM_BOUNDARY,
     }
+
+
+PHASE71_HISTORY_FIELDNAMES = (
+    "variant_id",
+    "train_tile_ids",
+    "seed",
+    "epoch",
+    "loss",
+    "top1_accuracy",
+    "topk_hit_rate",
+    "learning_rate",
+    "hidden_dim",
+    "component_weight",
+    "phase71_component_supervised",
+    "claim_boundary",
+)
+PHASE71_ROLLOUT_FIELDNAMES = (
+    "row_type",
+    "variant_id",
+    "train_tile_ids",
+    "eval_tile_id",
+    "eval_tile_rank",
+    "seed",
+    "phase71_seed_rank",
+    "eval_max_steps",
+    "n_blocks",
+    "n_features",
+    "episode_steps",
+    "terminated",
+    "truncated",
+    "all_actions_valid",
+    "invalid_action_count",
+    "total_contract_reward",
+    "oracle_total_reward",
+    "oracle_gap",
+    "oracle_gap_fraction",
+    "topk_oracle_overlap_count",
+    "topk_oracle_overlap_fraction",
+    "worst_selected_oracle_rank",
+    "selected_block_ids",
+    "selected_action_indices",
+    "selected_model_scores",
+    "phase71_component_supervised",
+    "claim_boundary",
+)
+PHASE71_ORACLE_FIELDNAMES = (
+    "variant_id",
+    "tile_role",
+    "tile_id",
+    "seed",
+    "eval_max_steps",
+    "n_blocks",
+    "n_features",
+    "episode_steps",
+    "terminated",
+    "total_oracle_reward",
+    "top_k_reward_ceiling",
+    "selected_block_ids",
+    "action_indices",
+    "claim_boundary",
+)
+PHASE71_COMPONENT_FIELDNAMES = (
+    "variant_id",
+    "tile_id",
+    "block_id",
+    "action_index",
+    "reward_total",
+    "component_name",
+    "component_value",
+    "claim_boundary",
+)
+PHASE71_DELTA_FIELDNAMES = (
+    "reference_phase",
+    "variant_id",
+    "eval_tile_id",
+    "seed",
+    "phase71_reward",
+    "reference_reward",
+    "phase71_minus_reference_reward",
+    "phase71_oracle_gap_fraction",
+    "reference_oracle_gap_fraction",
+    "claim_boundary",
+)
+
+
+def _rollout_key(row: Mapping[str, object]) -> tuple[str, str, int]:
+    return (
+        str(row.get("variant_id", "")),
+        str(row.get("eval_tile_id", row.get("tile_id", ""))),
+        int(float(row.get("seed", 0))),
+    )
+
+
+def _coverage_issues(
+    rows: Sequence[Mapping[str, object]],
+    variants: Sequence[str],
+    eval_tile_ids: Sequence[str],
+    seeds: Sequence[int],
+) -> dict[str, list[dict[str, object]]]:
+    counts: dict[tuple[str, str, int], int] = {}
+    for row in rows:
+        if str(row.get("row_type", "")) != "component_ranker_policy":
+            continue
+        key = _rollout_key(row)
+        counts[key] = counts.get(key, 0) + 1
+    expected = {
+        (str(variant), str(tile_id), int(seed))
+        for variant in variants
+        for tile_id in eval_tile_ids
+        for seed in seeds
+    }
+    observed = set(counts)
+    return {
+        "missing_rollout_rows": [
+            {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2]}
+            for key in sorted(expected - observed)
+        ],
+        "unexpected_rollout_rows": [
+            {"variant_id": key[0], "eval_tile_id": key[1], "seed": key[2]}
+            for key in sorted(observed - expected)
+        ],
+        "duplicate_rollout_rows": [
+            {
+                "variant_id": key[0],
+                "eval_tile_id": key[1],
+                "seed": key[2],
+                "count": count,
+            }
+            for key, count in sorted(counts.items())
+            if count > 1
+        ],
+    }
+
+
+def _numeric_summary(values: Sequence[float]) -> dict[str, object]:
+    numbers = [float(value) for value in values]
+    if not numbers:
+        return {
+            "mean_delta": 0.0,
+            "positive_count": 0,
+            "total_count": 0,
+            "min_delta": 0.0,
+            "max_delta": 0.0,
+        }
+    return {
+        "mean_delta": _round_float(statistics.mean(numbers)),
+        "positive_count": sum(1 for value in numbers if value > 0.0),
+        "total_count": len(numbers),
+        "min_delta": _round_float(min(numbers)),
+        "max_delta": _round_float(max(numbers)),
+    }
+
+
+def _mean_by_variant(rows: Sequence[Mapping[str, object]], field: str) -> dict[str, float]:
+    grouped: dict[str, list[float]] = {}
+    for row in rows:
+        if str(row.get(field, "")).strip() == "":
+            continue
+        grouped.setdefault(str(row.get("variant_id", "")), []).append(float(row[field]))
+    return {
+        key: _round_float(statistics.mean(values))
+        for key, values in sorted(grouped.items())
+    }
+
+
+def _delta_rows(
+    reference_phase: str,
+    phase71_rows: Sequence[Mapping[str, object]],
+    reference_rows: Sequence[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    baseline = {
+        _rollout_key(row): row
+        for row in reference_rows
+        if str(row.get("total_contract_reward", "")).strip() != ""
+    }
+    rows = []
+    for row in phase71_rows:
+        if str(row.get("row_type", "")) != "component_ranker_policy":
+            continue
+        key = _rollout_key(row)
+        old = baseline.get(key)
+        if old is None:
+            continue
+        phase71_reward = float(row.get("total_contract_reward", 0.0))
+        reference_reward = float(old.get("total_contract_reward", 0.0))
+        rows.append(
+            {
+                "reference_phase": reference_phase,
+                "variant_id": key[0],
+                "eval_tile_id": key[1],
+                "seed": key[2],
+                "phase71_reward": _round_float(phase71_reward),
+                "reference_reward": _round_float(reference_reward),
+                "phase71_minus_reference_reward": _round_float(
+                    phase71_reward - reference_reward
+                ),
+                "phase71_oracle_gap_fraction": _round_float(
+                    row.get("oracle_gap_fraction", 0.0)
+                ),
+                "reference_oracle_gap_fraction": _round_float(
+                    old.get("oracle_gap_fraction", 0.0)
+                ),
+                "claim_boundary": PHASE71_CLAIM_BOUNDARY,
+            }
+        )
+    return rows
+
+
+def _paired_delta_summary(
+    rows: Sequence[Mapping[str, object]],
+    pairs: Sequence[tuple[str, str]],
+) -> dict[str, object]:
+    index = {
+        _rollout_key(row): float(row.get("total_contract_reward", 0.0))
+        for row in rows
+        if str(row.get("row_type", "")) == "component_ranker_policy"
+    }
+    values = []
+    tile_seed_keys = sorted({(key[1], key[2]) for key in index})
+    for left, right in pairs:
+        for tile_id, seed in tile_seed_keys:
+            left_key = (left, tile_id, seed)
+            right_key = (right, tile_id, seed)
+            if left_key in index and right_key in index:
+                values.append(index[left_key] - index[right_key])
+    return _numeric_summary(values)
+
+
+def _positive_majority(summary: Mapping[str, object]) -> bool:
+    total = int(summary.get("total_count", 0))
+    return total > 0 and int(summary.get("positive_count", 0)) * 2 >= total
+
+
+def _phase71_status(
+    coverage: Mapping[str, object],
+    phase63_summary: Mapping[str, object],
+    phase70_summary: Mapping[str, object],
+    d4_b0: Mapping[str, object],
+    d4_d6: Mapping[str, object],
+) -> str:
+    if (
+        coverage["missing_rollout_rows"]
+        or coverage["duplicate_rollout_rows"]
+        or coverage["unexpected_rollout_rows"]
+    ):
+        return PHASE71_STATUS_INCOMPLETE
+    decision_improved = (
+        float(phase63_summary["mean_delta"]) > 0.0
+        and _positive_majority(phase63_summary)
+        and float(phase70_summary["mean_delta"]) > 0.0
+        and _positive_majority(phase70_summary)
+    )
+    geofm_improved = (
+        float(d4_b0["mean_delta"]) > 0.0
+        and _positive_majority(d4_b0)
+        and float(d4_d6["mean_delta"]) > 0.0
+        and _positive_majority(d4_d6)
+    )
+    if decision_improved and geofm_improved:
+        return PHASE71_STATUS_GEOFM
+    if decision_improved and d4_b0["total_count"] and d4_d6["total_count"]:
+        return PHASE71_STATUS_TARGET_MASKS_GEOFM
+    if decision_improved:
+        return PHASE71_STATUS_DECISION
+    return PHASE71_STATUS_NOT_SUFFICIENT
+
+
+def build_phase71_component_ranker_comparison(
+    phase71_rollout_rows: Sequence[Mapping[str, object]],
+    phase63_rollout_rows: Sequence[Mapping[str, object]],
+    phase70_rollout_rows: Sequence[Mapping[str, object]],
+    metadata: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    metadata = dict(metadata or {})
+    variants = [str(value) for value in metadata.get("variants", [])] or sorted(
+        _mean_by_variant(phase71_rollout_rows, "total_contract_reward")
+    )
+    eval_tile_ids = [str(value) for value in metadata.get("eval_tile_ids", [])] or sorted(
+        {str(row.get("eval_tile_id", "")) for row in phase71_rollout_rows}
+    )
+    seeds = [int(value) for value in metadata.get("seeds", [])] or sorted(
+        {int(float(row.get("seed", 0))) for row in phase71_rollout_rows}
+    )
+    coverage = _coverage_issues(phase71_rollout_rows, variants, eval_tile_ids, seeds)
+    phase63_delta_rows = _delta_rows("phase63", phase71_rollout_rows, phase63_rollout_rows)
+    phase70_delta_rows = _delta_rows("phase70", phase71_rollout_rows, phase70_rollout_rows)
+    phase63_summary = _numeric_summary(
+        [float(row["phase71_minus_reference_reward"]) for row in phase63_delta_rows]
+    )
+    phase70_summary = _numeric_summary(
+        [float(row["phase71_minus_reference_reward"]) for row in phase70_delta_rows]
+    )
+    d4_b0 = _paired_delta_summary(
+        phase71_rollout_rows,
+        (("D4P8", "B0"), ("D4P16", "B0")),
+    )
+    d4_d6 = _paired_delta_summary(
+        phase71_rollout_rows,
+        (("D4P8", "D6R8"), ("D4P16", "D6R16")),
+    )
+    status = _phase71_status(coverage, phase63_summary, phase70_summary, d4_b0, d4_d6)
+    return {
+        "phase": "phase71_component_supervised_ranker",
+        "phase71_status": status,
+        "variants": variants,
+        "eval_tile_ids": eval_tile_ids,
+        "seeds": seeds,
+        "coverage_issues": coverage,
+        "mean_phase71_reward_by_variant": _mean_by_variant(
+            phase71_rollout_rows,
+            "total_contract_reward",
+        ),
+        "mean_phase71_minus_phase63_by_variant": _mean_by_variant(
+            phase63_delta_rows,
+            "phase71_minus_reference_reward",
+        ),
+        "mean_phase71_minus_phase70_by_variant": _mean_by_variant(
+            phase70_delta_rows,
+            "phase71_minus_reference_reward",
+        ),
+        "phase71_minus_phase63_summary": phase63_summary,
+        "phase71_minus_phase70_summary": phase70_summary,
+        "d4_b0_delta_summary": d4_b0,
+        "d4_d6_delta_summary": d4_d6,
+        "delta_rows": [*phase63_delta_rows, *phase70_delta_rows],
+        "recommended_next_step": _phase71_next_step(status),
+        "claim_boundary": PHASE71_CLAIM_BOUNDARY,
+    }
+
+
+def _phase71_next_step(status: str) -> str:
+    if status == PHASE71_STATUS_GEOFM:
+        return "Use Phase 71 as the next bounded algorithm evidence gate and design a GeoFM follow-up without broad suitability claims."
+    if status == PHASE71_STATUS_TARGET_MASKS_GEOFM:
+        return "Keep Phase 71 as a stronger decision-learning baseline, but treat the explicit base target as masking GeoFM-specific value."
+    if status == PHASE71_STATUS_DECISION:
+        return "Use Phase 71 as an algorithm baseline and run targeted attribution before changing manuscript claims."
+    if status == PHASE71_STATUS_INCOMPLETE:
+        return "Repair missing or duplicated Phase 71 coverage before interpreting results."
+    return "Treat the component-supervised ranker as insufficient and design a different algorithm route."
+
+
+def write_phase71_component_ranker_artifacts(
+    analysis: Mapping[str, object],
+    output_dir: Path | str,
+) -> dict[str, Path]:
+    output_path = Path(output_dir)
+    output_path.mkdir(parents=True, exist_ok=True)
+    paths = {
+        "history_csv": output_path / "phase71_ranker_training_history.csv",
+        "rollout_csv": output_path / "phase71_ranker_rollout_summary.csv",
+        "oracle_summary_csv": output_path / "phase71_ranker_oracle_summary.csv",
+        "component_diagnostics_csv": output_path
+        / "phase71_ranker_component_diagnostics.csv",
+        "delta_csv": output_path / "phase71_ranker_delta_table.csv",
+        "comparison_json": output_path / "phase71_component_supervised_ranker.json",
+        "readiness_md": output_path / "phase71_component_supervised_ranker.md",
+    }
+    _write_csv_rows(
+        paths["history_csv"],
+        PHASE71_HISTORY_FIELDNAMES,
+        analysis.get("history_rows", []),
+    )
+    _write_csv_rows(
+        paths["rollout_csv"],
+        PHASE71_ROLLOUT_FIELDNAMES,
+        analysis.get("rollout_rows", []),
+    )
+    _write_csv_rows(
+        paths["oracle_summary_csv"],
+        PHASE71_ORACLE_FIELDNAMES,
+        analysis.get("oracle_summary_rows", []),
+    )
+    _write_csv_rows(
+        paths["component_diagnostics_csv"],
+        PHASE71_COMPONENT_FIELDNAMES,
+        analysis.get("component_diagnostic_rows", []),
+    )
+    _write_csv_rows(
+        paths["delta_csv"],
+        PHASE71_DELTA_FIELDNAMES,
+        analysis.get("delta_rows", []),
+    )
+    comparison = {
+        key: value
+        for key, value in analysis.items()
+        if key
+        not in {
+            "history_rows",
+            "rollout_rows",
+            "oracle_summary_rows",
+            "component_diagnostic_rows",
+        }
+    }
+    paths["comparison_json"].write_text(
+        json.dumps(_json_ready(comparison), indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+    paths["readiness_md"].write_text(_phase71_markdown(analysis), encoding="utf-8")
+    return paths
+
+
+def _write_csv_rows(path: Path, fieldnames: Sequence[str], rows: object) -> None:
+    if not isinstance(rows, list):
+        raise ValueError(f"Phase 71 rows must be a list for {path.name}")
+    with path.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=list(fieldnames))
+        writer.writeheader()
+        for row in rows:
+            if not isinstance(row, Mapping):
+                raise ValueError(f"Phase 71 CSV rows must be objects for {path.name}")
+            writer.writerow({field: row.get(field, "") for field in fieldnames})
+
+
+def _json_ready(value: object) -> object:
+    if isinstance(value, Mapping):
+        return {str(key): _json_ready(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_ready(item) for item in value]
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    return value
+
+
+def _phase71_markdown(analysis: Mapping[str, object]) -> str:
+    lines = [
+        "# Phase 71 Component-Supervised Listwise Ranker",
+        "",
+        f"Status: {analysis.get('phase71_status', '')}",
+        "",
+        "Mean Phase 71 reward by variant:",
+    ]
+    for variant_id, value in dict(
+        analysis.get("mean_phase71_reward_by_variant", {})
+    ).items():
+        lines.append(f"- {variant_id}: {value}")
+    lines.extend(
+        [
+            "",
+            f"Phase 71 minus Phase 63 summary: {analysis.get('phase71_minus_phase63_summary', {})}",
+            f"Phase 71 minus Phase 70 summary: {analysis.get('phase71_minus_phase70_summary', {})}",
+            f"D4/B0 delta summary: {analysis.get('d4_b0_delta_summary', {})}",
+            f"D4/D6 delta summary: {analysis.get('d4_d6_delta_summary', {})}",
+            "",
+            "Recommended next step:",
+            str(analysis.get("recommended_next_step", "")),
+            "",
+            "Claim boundary:",
+            str(analysis.get("claim_boundary", PHASE71_CLAIM_BOUNDARY)),
+            "",
+        ]
+    )
+    return "\n".join(lines)

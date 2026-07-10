@@ -207,3 +207,148 @@ def test_phase71_listwise_ranker_rollout_scores_original_reward_matrix():
         rollout["total_contract_reward"]
     )
     assert float(rollout["total_contract_reward"]) > 0.0
+
+
+def _phase71_rollout_row(variant_id, reward, oracle=2.0, tile_id="tile_a", seed=0):
+    return {
+        "row_type": "component_ranker_policy",
+        "variant_id": variant_id,
+        "train_tile_ids": "tile_train_a;tile_train_b",
+        "eval_tile_id": tile_id,
+        "eval_tile_rank": 1 if tile_id == "tile_a" else 2,
+        "seed": seed,
+        "phase71_seed_rank": seed + 1,
+        "eval_max_steps": 3,
+        "n_blocks": 4,
+        "n_features": 9,
+        "episode_steps": 3,
+        "terminated": False,
+        "truncated": True,
+        "all_actions_valid": True,
+        "invalid_action_count": 0,
+        "total_contract_reward": reward,
+        "oracle_total_reward": oracle,
+        "oracle_gap": oracle - reward,
+        "oracle_gap_fraction": (oracle - reward) / oracle,
+        "topk_oracle_overlap_count": 3,
+        "topk_oracle_overlap_fraction": 1.0,
+        "worst_selected_oracle_rank": 3,
+        "selected_block_ids": "b1;b2;b3",
+        "selected_action_indices": "0;1;2",
+        "selected_model_scores": "3.0;2.0;1.0",
+        "phase71_component_supervised": True,
+        "claim_boundary": "fixture",
+    }
+
+
+def _reference_row(variant_id, reward, tile_id="tile_a", seed=0):
+    return {
+        "row_type": "bc_greedy_policy",
+        "variant_id": variant_id,
+        "eval_tile_id": tile_id,
+        "seed": seed,
+        "total_contract_reward": reward,
+        "oracle_gap_fraction": 0.1,
+    }
+
+
+def test_phase71_comparison_statuses_and_writer_outputs(tmp_path):
+    from paper11_geofm.phase71_component_supervised_ranker import (
+        build_phase71_component_ranker_comparison,
+        write_phase71_component_ranker_artifacts,
+    )
+
+    pairs = [("tile_a", 0), ("tile_a", 1), ("tile_b", 0), ("tile_b", 1)]
+    phase63_rows = []
+    phase70_rows = []
+    target_masked_rows = []
+    geofm_rows = []
+    weak_rows = []
+    for tile_id, seed in pairs:
+        for variant_id in ("B0", "D4P8", "D4P16", "D6R8", "D6R16"):
+            phase63_rows.append(
+                _reference_row(variant_id, 1.00, tile_id=tile_id, seed=seed)
+            )
+            phase70_rows.append(
+                _reference_row(variant_id, 1.05, tile_id=tile_id, seed=seed)
+            )
+        target_masked_rows.extend(
+            [
+                _phase71_rollout_row("B0", 1.40, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D4P8", 1.20, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D4P16", 1.22, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D6R8", 1.30, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D6R16", 1.31, tile_id=tile_id, seed=seed),
+            ]
+        )
+        geofm_rows.extend(
+            [
+                _phase71_rollout_row("B0", 1.20, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D4P8", 1.45, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D4P16", 1.46, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D6R8", 1.30, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D6R16", 1.32, tile_id=tile_id, seed=seed),
+            ]
+        )
+        weak_rows.extend(
+            [
+                _phase71_rollout_row("B0", 0.90, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D4P8", 0.88, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D4P16", 0.87, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D6R8", 0.89, tile_id=tile_id, seed=seed),
+                _phase71_rollout_row("D6R16", 0.90, tile_id=tile_id, seed=seed),
+            ]
+        )
+    metadata = {
+        "variants": ["B0", "D4P8", "D4P16", "D6R8", "D6R16"],
+        "eval_tile_ids": ["tile_a", "tile_b"],
+        "seeds": [0, 1],
+    }
+    target_masked = build_phase71_component_ranker_comparison(
+        target_masked_rows,
+        phase63_rows,
+        phase70_rows,
+        metadata=metadata,
+    )
+    geofm = build_phase71_component_ranker_comparison(
+        geofm_rows,
+        phase63_rows,
+        phase70_rows,
+        metadata=metadata,
+    )
+    weak = build_phase71_component_ranker_comparison(
+        weak_rows,
+        phase63_rows,
+        phase70_rows,
+        metadata=metadata,
+    )
+    incomplete = build_phase71_component_ranker_comparison(
+        target_masked_rows[:-1],
+        phase63_rows,
+        phase70_rows,
+        metadata=metadata,
+    )
+
+    assert target_masked["phase71_status"] == "ranker_improves_but_target_masks_geofm"
+    assert target_masked["phase71_minus_phase63_summary"]["mean_delta"] > 0.0
+    assert target_masked["phase71_minus_phase70_summary"]["mean_delta"] > 0.0
+    assert target_masked["d4_b0_delta_summary"]["mean_delta"] < 0.0
+    assert geofm["phase71_status"] == "ranker_supports_geofm_followup"
+    assert weak["phase71_status"] == "ranker_not_sufficient"
+    assert incomplete["phase71_status"] == "ranker_incomplete"
+
+    paths = write_phase71_component_ranker_artifacts(
+        {
+            **target_masked,
+            "history_rows": [],
+            "rollout_rows": target_masked_rows,
+            "oracle_summary_rows": [],
+            "component_diagnostic_rows": [],
+        },
+        tmp_path / "outputs",
+    )
+    assert paths["comparison_json"].name == "phase71_component_supervised_ranker.json"
+    assert paths["rollout_csv"].name == "phase71_ranker_rollout_summary.csv"
+    assert "ranker_improves_but_target_masks_geofm" in paths[
+        "readiness_md"
+    ].read_text(encoding="utf-8")
