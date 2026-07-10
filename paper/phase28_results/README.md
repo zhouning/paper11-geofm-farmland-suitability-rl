@@ -99,6 +99,7 @@ base-reward protocol.
   synthesis gate showing that the strongest current algorithm claim must remain
   narrowed to a bounded low-dimensional compressed state route.
 - `36_phase70_standardized_set_policy_rerun.md`: standardized set-policy rerun testing whether train-tile-fitted model-input standardization strengthens the bounded low-dimensional set-policy route.
+- `37_phase71_component_supervised_ranker.md`: component-supervised listwise ranker testing whether direct base-reward ranking improves the algorithm route beyond Phase 63 and Phase 70 while keeping GeoFM-specific claims secondary.
 
 ## Reproduction Link
 
