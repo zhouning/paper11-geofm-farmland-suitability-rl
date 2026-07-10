@@ -1793,3 +1793,92 @@ count 0. This does not revive a GeoFM advantage claim; it only justifies testing
 whether feature standardization removes a conditioning bottleneck under the
 same base-reward set-policy route.
 ```
+
+## Phase 71 Window-Close Save - 2026-07-10 10:20 +08:00
+
+Paper11 remains algorithm/model/experiment-first; formal manuscript files were not changed in this window.
+
+Current branch and sync state before this handoff-doc save:
+
+```text
+branch: main
+local/remote: main...origin/main
+latest pushed commit: a6475b3 docs: record Phase 71 component-supervised ranker result
+HEAD: a6475b33212fd17c2bbeb69a3bd8d88b7718f128
+origin/main: a6475b33212fd17c2bbeb69a3bd8d88b7718f128
+worktree before this handoff save: clean
+```
+
+Phase 71 implementation and result files:
+
+```text
+src/paper11_geofm/phase71_component_supervised_ranker.py
+experiments/phase71_component_supervised_ranker/run_phase71_component_supervised_ranker.py
+tests/test_phase71_component_supervised_ranker.py
+paper/phase28_results/37_phase71_component_supervised_ranker.md
+paper/phase28_results/README.md
+```
+
+Real Phase 71 generated outputs are local ignored artifacts under:
+
+```text
+experiments/phase71_component_supervised_ranker/outputs/phase52_full5_seed3
+```
+
+Real Phase 71 command used locally:
+
+```powershell
+D:\adk\.venv\Scripts\python.exe experiments\phase71_component_supervised_ranker\run_phase71_component_supervised_ranker.py --phase2-output-dir experiments\phase11_bishan_dltb_real\outputs\phase2_real --phase8-output-dir experiments\phase8_ablation_controls\outputs\real_bishan_controls --phase61-output-dir experiments\phase61_d6_geofm_projection_controls\outputs\phase52_full5_seed3 --tile-index-csv experiments\phase13_tiled_real_contract\outputs\real_bishan\phase13_tile_index.csv --phase63-rollout-csv experiments\phase63_set_policy_oracle_pretraining\outputs\phase52_full5_seed3\phase63_bc_rollout_summary.csv --phase70-rollout-csv experiments\phase70_standardized_set_policy_rerun\outputs\phase52_full5_seed3\phase70_standardized_bc_rollout_summary.csv --variants B0,D4P8,D4P16,D6R8,D6R16 --eval-tile-ids tile_r002_c003,tile_r005_c004,tile_r005_c003,tile_r000_c004,tile_r001_c004 --eval-max-steps 8 --seeds 0,1,2 --ranker-epochs 80 --learning-rate 0.001 --hidden-dim 64 --component-weight 0.05 --top-k 3 --output-dir experiments\phase71_component_supervised_ranker\outputs\phase52_full5_seed3
+```
+
+Real Phase 71 status:
+
+```text
+ranker_improves_but_target_masks_geofm
+```
+
+Core values:
+
+```text
+Phase71 - Phase63 mean delta: 0.42645, positive 74 / 75, min -0.0312008374, max 1.1167472976
+Phase71 - Phase70 mean delta: 0.4340833829, positive 53 / 75, min -0.0995773531, max 1.8612068485
+D4 - B0 Phase71 mean delta: -0.0498759068, positive 5 / 30, min -0.2071761723, max 0.0314642968
+D4 - D6 Phase71 mean delta: -0.0116453458, positive 16 / 30, min -0.1027135046, max 0.0392837765
+```
+
+Interpretation update:
+
+```text
+Phase 71 supports the direct base-reward ranking / component-supervised listwise route as a stronger algorithm baseline than Phase 63 and Phase 70. It does not support a GeoFM-specific advantage claim: D4 remains negative versus B0 on mean and slightly negative versus D6 on mean. Treat the explicit base target as masking or dominating GeoFM-specific signal. The next Paper11 work should stay on algorithm/model/experiment design, especially attribution or target-design work that explains why base-reward decision learning improves while GeoFM signal remains secondary.
+```
+
+Verification completed before the Phase 71 result commit and push:
+
+```text
+D:\adk\.venv\Scripts\python.exe -m pytest tests\test_phase71_component_supervised_ranker.py tests\test_phase70_standardized_set_policy_rerun.py tests\test_phase64_set_policy_error_diagnosis.py tests\test_phase63_set_policy_oracle_pretraining.py tests\test_phase69_label_free_evidence_synthesis_gate.py -q --basetemp=D:\tmp\paper11_phase71_pytest_tmp -p no:cacheprovider
+32 passed
+
+D:\adk\.venv\Scripts\python.exe scripts\smoke_check.py
+Paper11 smoke check passed.
+
+git diff --check
+clean
+
+git diff --name-only HEAD -- paper\submission\final
+clean
+```
+
+Claim boundary remains unchanged: Phase 71 does not alter rewards, enable B2/B3, validate suitability, prove independent agronomic value, prove GeoFM superiority, prove PCA optimality, test transfer, or justify formal submission-level claims.
+
+Recommended next window entry:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl
+```
+
+Start next by reading this handoff and the Phase 71 result note:
+
+```text
+docs/superpowers/phase33_current_progress_handoff.md
+paper/phase28_results/37_phase71_component_supervised_ranker.md
+```
