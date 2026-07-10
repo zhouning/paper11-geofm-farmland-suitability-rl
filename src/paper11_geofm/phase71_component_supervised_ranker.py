@@ -202,3 +202,255 @@ def apply_phase71_fold_standardization(
         reward_matrix=matrix.astype(np.float32, copy=True),
         standardization=dict(params),
     )
+
+
+def _reward_view(prepared: Phase71PreparedTile) -> TiledVariantInput:
+    return TiledVariantInput(
+        tile_id=prepared.tiled_input.tile_id,
+        variant_id=prepared.tiled_input.variant_id,
+        block_ids=prepared.tiled_input.block_ids,
+        feature_columns=prepared.tiled_input.feature_columns,
+        state_matrix=prepared.reward_matrix.astype(np.float32, copy=True),
+        reward_mode=prepared.tiled_input.reward_mode,
+        state_groups=prepared.tiled_input.state_groups,
+        source_table=prepared.tiled_input.source_table,
+        tile_index_csv=prepared.tiled_input.tile_index_csv,
+        claim_boundary=prepared.tiled_input.claim_boundary,
+    )
+
+
+def build_phase71_oracle_trajectory(
+    prepared: Phase71PreparedTile,
+    eval_max_steps: int,
+) -> dict[str, object]:
+    oracle = build_phase63_oracle_trajectory(_reward_view(prepared), eval_max_steps)
+    oracle["claim_boundary"] = PHASE71_CLAIM_BOUNDARY
+    oracle["phase71_component_supervised"] = True
+    return oracle
+
+
+def build_phase71_listwise_training_tile(
+    prepared: Phase71PreparedTile,
+) -> dict[str, object]:
+    target_rows = build_phase71_component_targets(_reward_view(prepared))
+    reward_targets = np.asarray(
+        [float(row["reward_total"]) for row in target_rows],
+        dtype=np.float32,
+    )
+    component_targets = np.asarray(
+        [
+            [float(row["components"][name]) for name in PHASE71_COMPONENT_NAMES]
+            for row in target_rows
+        ],
+        dtype=np.float32,
+    )
+    return {
+        "variant_id": str(prepared.tiled_input.variant_id),
+        "tile_id": str(prepared.tiled_input.tile_id),
+        "block_ids": tuple(prepared.tiled_input.block_ids),
+        "model_matrix": prepared.model_matrix.astype(np.float32, copy=True),
+        "reward_targets": reward_targets,
+        "component_targets": component_targets,
+    }
+
+
+class Phase71ComponentRanker(__import__("torch").nn.Module):
+    def __init__(
+        self,
+        n_features: int,
+        hidden_dim: int = 64,
+        n_components: int = 8,
+    ) -> None:
+        from torch import nn
+
+        super().__init__()
+        if int(n_features) <= 0:
+            raise ValueError("n_features must be positive")
+        self.encoder = nn.Sequential(
+            nn.Linear(int(n_features), int(hidden_dim)),
+            nn.ReLU(),
+            nn.Linear(int(hidden_dim), int(hidden_dim)),
+            nn.ReLU(),
+        )
+        self.score_head = nn.Linear(int(hidden_dim), 1)
+        self.component_head = nn.Linear(int(hidden_dim), int(n_components))
+
+    def forward(self, block_features):
+        encoded = self.encoder(block_features)
+        return self.score_head(encoded).squeeze(-1), self.component_head(encoded)
+
+
+def train_phase71_component_ranker(
+    prepared_training_tiles: Sequence[Phase71PreparedTile],
+    seed: int,
+    epochs: int,
+    learning_rate: float,
+    hidden_dim: int,
+    component_weight: float = 0.05,
+    top_k: int = 3,
+    device: str = "cpu",
+):
+    import torch
+    import torch.nn.functional as F
+
+    if not prepared_training_tiles:
+        raise ValueError("Phase 71 training requires at least one prepared training tile")
+    torch.manual_seed(int(seed))
+    np.random.seed(int(seed))
+    random.seed(int(seed))
+    examples = [
+        build_phase71_listwise_training_tile(tile) for tile in prepared_training_tiles
+    ]
+    model = Phase71ComponentRanker(
+        len(prepared_training_tiles[0].tiled_input.feature_columns),
+        int(hidden_dim),
+        len(PHASE71_COMPONENT_NAMES),
+    ).to(device)
+    optimizer = torch.optim.Adam(model.parameters(), lr=float(learning_rate))
+    history: list[dict[str, object]] = []
+    for epoch in range(1, int(epochs) + 1):
+        losses = []
+        top1_hits = 0
+        topk_hits = 0
+        for example in examples:
+            features = torch.tensor(
+                example["model_matrix"],
+                dtype=torch.float32,
+                device=device,
+            )
+            reward_targets = torch.tensor(
+                example["reward_targets"],
+                dtype=torch.float32,
+                device=device,
+            )
+            component_targets = torch.tensor(
+                example["component_targets"],
+                dtype=torch.float32,
+                device=device,
+            )
+            target_probs = torch.softmax(reward_targets, dim=0)
+            scores, component_predictions = model(features)
+            listwise_loss = -(target_probs * torch.log_softmax(scores, dim=0)).sum()
+            component_loss = F.mse_loss(component_predictions, component_targets)
+            loss = listwise_loss + float(component_weight) * component_loss
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            losses.append(float(loss.detach().cpu()))
+            best_target = int(torch.argmax(reward_targets).item())
+            predicted_order = torch.argsort(
+                scores.detach(),
+                descending=True,
+            ).cpu().tolist()
+            top1_hits += int(predicted_order[0] == best_target)
+            topk_hits += int(
+                best_target in predicted_order[: min(int(top_k), len(predicted_order))]
+            )
+        history.append(
+            {
+                "variant_id": str(prepared_training_tiles[0].tiled_input.variant_id),
+                "train_tile_ids": ";".join(
+                    str(tile.tiled_input.tile_id) for tile in prepared_training_tiles
+                ),
+                "seed": int(seed),
+                "epoch": int(epoch),
+                "loss": _round_float(statistics.mean(losses)),
+                "top1_accuracy": _round_float(top1_hits / len(examples)),
+                "topk_hit_rate": _round_float(topk_hits / len(examples)),
+                "learning_rate": float(learning_rate),
+                "hidden_dim": int(hidden_dim),
+                "component_weight": float(component_weight),
+                "phase71_component_supervised": True,
+                "claim_boundary": PHASE71_CLAIM_BOUNDARY,
+            }
+        )
+    model.eval()
+    return model, history
+
+
+def rollout_phase71_ranker(
+    model,
+    prepared_eval_tile: Phase71PreparedTile,
+    train_tile_ids: Sequence[str],
+    eval_tile_rank: int,
+    seed: int,
+    phase71_seed_rank: int,
+    eval_max_steps: int,
+    device: str = "cpu",
+) -> dict[str, object]:
+    import torch
+
+    with torch.no_grad():
+        features = torch.tensor(
+            prepared_eval_tile.model_matrix,
+            dtype=torch.float32,
+            device=device,
+        )
+        scores, _components = model(features)
+        score_values = [float(value) for value in scores.detach().cpu().tolist()]
+    ranked_indices = sorted(
+        range(len(score_values)),
+        key=lambda index: (
+            -score_values[index],
+            str(prepared_eval_tile.tiled_input.block_ids[index]),
+            index,
+        ),
+    )
+    selected = ranked_indices[: min(int(eval_max_steps), len(ranked_indices))]
+    rewards = [
+        compute_base_planning_reward_from_matrix_row(
+            prepared_eval_tile.tiled_input.feature_columns,
+            prepared_eval_tile.reward_matrix[index],
+        )
+        for index in selected
+    ]
+    selected_block_ids = [
+        str(prepared_eval_tile.tiled_input.block_ids[index]) for index in selected
+    ]
+    oracle = build_phase71_oracle_trajectory(prepared_eval_tile, int(eval_max_steps))
+    oracle_total = float(oracle["total_oracle_reward"])
+    total_reward = _round_float(sum(rewards))
+    oracle_gap = _round_float(oracle_total - total_reward)
+    oracle_blocks = [str(value) for value in oracle.get("selected_block_ids", [])]
+    overlap = set(selected_block_ids).intersection(oracle_blocks)
+    oracle_rank = {block_id: rank for rank, block_id in enumerate(oracle_blocks, start=1)}
+    worst_rank = max(
+        (oracle_rank.get(block_id, 999999) for block_id in selected_block_ids),
+        default=0,
+    )
+    terminated = len(selected) == len(prepared_eval_tile.tiled_input.block_ids)
+    return {
+        "row_type": "component_ranker_policy",
+        "variant_id": str(prepared_eval_tile.tiled_input.variant_id),
+        "train_tile_ids": ";".join(str(value) for value in train_tile_ids),
+        "eval_tile_id": str(prepared_eval_tile.tiled_input.tile_id),
+        "eval_tile_rank": int(eval_tile_rank),
+        "seed": int(seed),
+        "phase71_seed_rank": int(phase71_seed_rank),
+        "eval_max_steps": int(eval_max_steps),
+        "n_blocks": len(prepared_eval_tile.tiled_input.block_ids),
+        "n_features": len(prepared_eval_tile.tiled_input.feature_columns),
+        "episode_steps": len(selected),
+        "terminated": bool(terminated),
+        "truncated": not terminated,
+        "all_actions_valid": True,
+        "invalid_action_count": 0,
+        "total_contract_reward": total_reward,
+        "oracle_total_reward": _round_float(oracle_total),
+        "oracle_gap": oracle_gap,
+        "oracle_gap_fraction": _round_float(
+            oracle_gap / max(abs(oracle_total), 1.0e-9)
+        ),
+        "topk_oracle_overlap_count": len(overlap),
+        "topk_oracle_overlap_fraction": _round_float(
+            len(overlap) / max(len(oracle_blocks), 1)
+        ),
+        "worst_selected_oracle_rank": int(worst_rank),
+        "selected_block_ids": ";".join(selected_block_ids),
+        "selected_action_indices": ";".join(str(index) for index in selected),
+        "selected_model_scores": ";".join(
+            str(_round_float(score_values[index])) for index in selected
+        ),
+        "phase71_component_supervised": True,
+        "claim_boundary": PHASE71_CLAIM_BOUNDARY,
+    }

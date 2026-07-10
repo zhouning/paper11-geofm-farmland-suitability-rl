@@ -121,3 +121,89 @@ def test_phase71_reward_components_sum_to_base_reward_and_fold_standardization_i
         / params["scales"][0],
         atol=1.0e-6,
     )
+
+
+def test_phase71_listwise_ranker_rollout_scores_original_reward_matrix():
+    from paper11_geofm.phase71_component_supervised_ranker import (
+        apply_phase71_fold_standardization,
+        build_phase71_listwise_training_tile,
+        fit_phase71_fold_standardization,
+        rollout_phase71_ranker,
+        train_phase71_component_ranker,
+    )
+
+    train_a = _tiled_input(
+        np.array(
+            [
+                [5.0, 5.0, 7.0, 0.2, 0.4, 0.1, 0.0, 0.8, 0.9],
+                [2.5, 10.0, 14.0, 0.1, 0.3, 0.0, 0.2, 0.5, 0.7],
+                [1.0, 15.0, 21.0, 0.0, 0.1, 0.2, 0.3, 0.4, 0.2],
+                [3.0, 20.0, 28.0, 0.4, 0.4, 0.0, 0.1, 0.9, 0.8],
+            ],
+            dtype=np.float32,
+        ),
+        tile_id="tile_train_a",
+        block_ids=("b1", "b2", "b3", "b4"),
+    )
+    train_b = _tiled_input(
+        np.array(
+            [
+                [5.0, 4.0, 6.0, 0.2, 0.5, 0.0, 0.0, 0.9, 0.95],
+                [2.0, 9.0, 12.0, 0.1, 0.2, 0.1, 0.2, 0.6, 0.65],
+                [1.0, 18.0, 30.0, 0.0, 0.0, 0.2, 0.4, 0.3, 0.1],
+                [3.0, 21.0, 31.0, 0.4, 0.3, 0.0, 0.1, 0.8, 0.75],
+            ],
+            dtype=np.float32,
+        ),
+        tile_id="tile_train_b",
+        block_ids=("c1", "c2", "c3", "c4"),
+    )
+    eval_tile = _tiled_input(
+        train_a.state_matrix.copy(),
+        tile_id="tile_eval",
+        block_ids=("e1", "e2", "e3", "e4"),
+    )
+    params = fit_phase71_fold_standardization(
+        [train_a, train_b],
+        variant_id="B0",
+        fold_id="tile_eval",
+    )
+    prepared_train = [
+        apply_phase71_fold_standardization(train_a, params),
+        apply_phase71_fold_standardization(train_b, params),
+    ]
+    prepared_eval = apply_phase71_fold_standardization(eval_tile, params)
+
+    example = build_phase71_listwise_training_tile(prepared_train[0])
+    assert example["reward_targets"][0] > example["reward_targets"][2]
+    assert example["component_targets"].shape == (4, 8)
+
+    model, history = train_phase71_component_ranker(
+        prepared_train,
+        seed=71,
+        epochs=60,
+        learning_rate=0.01,
+        hidden_dim=24,
+        component_weight=0.05,
+        top_k=3,
+    )
+    rollout = rollout_phase71_ranker(
+        model,
+        prepared_eval,
+        train_tile_ids=("tile_train_a", "tile_train_b"),
+        eval_tile_rank=1,
+        seed=71,
+        phase71_seed_rank=1,
+        eval_max_steps=3,
+    )
+
+    assert history[-1]["loss"] <= history[0]["loss"]
+    assert rollout["row_type"] == "component_ranker_policy"
+    assert rollout["phase71_component_supervised"] is True
+    assert rollout["all_actions_valid"] is True
+    assert rollout["invalid_action_count"] == 0
+    assert rollout["selected_block_ids"].split(";")[0] == "e1"
+    assert float(rollout["oracle_total_reward"]) >= float(
+        rollout["total_contract_reward"]
+    )
+    assert float(rollout["total_contract_reward"]) > 0.0
