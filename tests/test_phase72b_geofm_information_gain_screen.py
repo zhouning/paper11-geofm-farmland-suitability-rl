@@ -531,14 +531,16 @@ def _phase72b_prepare_fixture(tmp_path: Path):
     label_dirs = {}
     terrain_dir = tmp_path / "terrain"
     terrain_dir.mkdir()
-    label_sequence = [5, 7, 5, 7, 5, 5, 7, 7]
+    validation_conversion = [5, 7, 5, 7, 5, 5, 7, 7]
+    test_conversion = [5, 5, 5, 5, 5, 5, 5, 7]
+    training_conversion = [5, 7, 5, 7, 5, 5, 5, 5]
     for region_index, region_id in enumerate(("bishan", "dongxing")):
         regions_payload["regions"].append(
             {
                 "region_id": region_id,
                 "bbox": [100 + region_index, 20, 101 + region_index, 21],
                 "years": years,
-                "grid_shape": [2, 2],
+                "grid_shape": [2, 3],
                 "embedding_dim": 2,
                 "embedding_pattern": f"{region_id}_emb_{{year}}.npy",
                 "label_pattern": f"{region_id}_lulc_{{year}}.npy",
@@ -551,18 +553,22 @@ def _phase72b_prepare_fixture(tmp_path: Path):
         embedding_dirs[region_id] = embedding_dir
         label_dirs[region_id] = label_dir
         for offset, year in enumerate(years):
-            embedding = np.zeros((2, 2, 2), dtype=np.float32)
+            embedding = np.zeros((2, 3, 2), dtype=np.float32)
             embedding[..., 0] = year + region_index
-            embedding[..., 1] = np.arange(4).reshape(2, 2)
-            labels = np.full((2, 2), 7, dtype=np.int32)
+            embedding[..., 1] = np.arange(6).reshape(2, 3)
+            labels = np.full((2, 3), 7, dtype=np.int32)
             labels[0, 0] = 5
-            labels[0, 1] = label_sequence[offset]
+            labels[0, 1] = 5
+            labels[0, 2] = validation_conversion[offset]
+            labels[1, 0] = test_conversion[offset]
+            labels[1, 1] = test_conversion[offset]
+            labels[1, 2] = training_conversion[offset]
             np.save(
                 embedding_dir / f"{region_id}_emb_{year}.npy", embedding
             )
             np.save(label_dir / f"{region_id}_lulc_{year}.npy", labels)
         terrain = {
-            name: np.full((2, 2), index + region_index, np.float32)
+            name: np.full((2, 3), index + region_index, np.float32)
             for index, name in enumerate(
                 _protocol_payload()["terrain"]["feature_names"]
             )
@@ -819,6 +825,29 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path):
     prepared_dir = tmp_path / "prepared"
     write_phase72b_prepared_artifacts(prepared_package, prepared_dir)
     frozen_dir = tmp_path / "frozen"
+    target_path = prepared_dir / "phase72b_development_targets.npz"
+    with np.load(target_path) as loaded:
+        original_targets = {
+            name: loaded[name].copy() for name in loaded.files
+        }
+    changed_targets = {
+        name: value.copy() for name, value in original_targets.items()
+    }
+    changed_targets["conversion_1y"][0] = (
+        1 - changed_targets["conversion_1y"][0]
+    )
+    np.savez_compressed(target_path, **changed_targets)
+    try:
+        fit_freeze_phase72b_models(
+            prepared_dir=prepared_dir, output_dir=frozen_dir
+        )
+    except ValueError as exc:
+        assert "development target hash mismatch" in str(exc).lower()
+    else:
+        raise AssertionError(
+            "Expected modified development targets to be rejected"
+        )
+    np.savez_compressed(target_path, **original_targets)
     selected, paths = fit_freeze_phase72b_models(
         prepared_dir=prepared_dir, output_dir=frozen_dir
     )
@@ -847,3 +876,180 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path):
         assert "hash" in str(exc).lower()
     else:
         raise AssertionError("Expected a modified model bundle to be rejected")
+
+
+def _prepare_and_freeze(tmp_path: Path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+        write_phase72b_prepared_artifacts,
+    )
+    from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    package = prepare_phase72b_information_gain_screen(
+        protocol_path=inputs["protocol_path"],
+        phase72a_region_config=inputs["region_config"],
+        phase72a_package_dir=inputs["phase72a_dir"],
+        embedding_dirs=inputs["embedding_dirs"],
+        label_dirs=inputs["label_dirs"],
+        terrain_dir=inputs["terrain_dir"],
+    )
+    prepared_dir = tmp_path / "prepared"
+    write_phase72b_prepared_artifacts(package, prepared_dir)
+    frozen_dir = tmp_path / "frozen"
+    fit_freeze_phase72b_models(
+        prepared_dir=prepared_dir, output_dir=frozen_dir
+    )
+    return inputs, prepared_dir, frozen_dir
+
+
+def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+        write_phase72b_confirmation_artifacts,
+    )
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    result = confirm_phase72b_information_gain_screen(
+        prepared_dir=prepared_dir, frozen_dir=frozen_dir
+    )
+    paths = write_phase72b_confirmation_artifacts(
+        result, tmp_path / "confirm"
+    )
+    assert set(paths) == {
+        "metrics_csv",
+        "predictions_csv",
+        "calibration_csv",
+        "bootstrap_csv",
+        "control_csv",
+        "transfer_csv",
+        "screen_json",
+        "screen_md",
+    }
+    assert result["phase72b_status"] in {
+        "phase72b_inputs_not_ready",
+        "geofm_information_not_supported",
+        "geofm_information_mixed",
+        "geofm_information_supported",
+    }
+    target_path = prepared_dir / "phase72b_confirmation_targets.npz"
+    with np.load(target_path) as loaded:
+        changed = {name: loaded[name].copy() for name in loaded.files}
+    changed["conversion_1y"][0] = 1 - changed["conversion_1y"][0]
+    np.savez_compressed(target_path, **changed)
+    try:
+        confirm_phase72b_information_gain_screen(
+            prepared_dir=prepared_dir, frozen_dir=frozen_dir
+        )
+    except ValueError as exc:
+        assert "confirmation target hash mismatch" in str(exc).lower()
+    else:
+        raise AssertionError(
+            "Expected modified confirmation targets to be rejected"
+        )
+
+
+def test_phase72b_runner_executes_modes_and_rejects_changed_manifest(tmp_path):
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    script = (
+        ROOT
+        / "experiments"
+        / "phase72b_geofm_information_gain_screen"
+        / "run_phase72b_information_gain_screen.py"
+    )
+    prepared_dir = tmp_path / "cli_prepared"
+    frozen_dir = tmp_path / "cli_frozen"
+    confirm_dir = tmp_path / "cli_confirm"
+    prepare_command = [
+        sys.executable,
+        str(script),
+        "--mode",
+        "prepare",
+        "--protocol",
+        str(inputs["protocol_path"]),
+        "--phase72a-region-config",
+        str(inputs["region_config"]),
+        "--phase72a-package-dir",
+        str(inputs["phase72a_dir"]),
+        "--terrain-dir",
+        str(inputs["terrain_dir"]),
+        "--output-dir",
+        str(prepared_dir),
+    ]
+    for region_id in ("bishan", "dongxing"):
+        prepare_command.extend(
+            [
+                "--embedding-dir",
+                f"{region_id}={inputs['embedding_dirs'][region_id]}",
+                "--label-dir",
+                f"{region_id}={inputs['label_dirs'][region_id]}",
+            ]
+        )
+    prepare = subprocess.run(
+        prepare_command,
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert prepare.returncode == 0, prepare.stderr
+    frozen = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--mode",
+            "fit-freeze",
+            "--prepared-dir",
+            str(prepared_dir),
+            "--output-dir",
+            str(frozen_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert frozen.returncode == 0, frozen.stderr
+    confirmed = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--mode",
+            "confirm",
+            "--prepared-dir",
+            str(prepared_dir),
+            "--frozen-dir",
+            str(frozen_dir),
+            "--output-dir",
+            str(confirm_dir),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert confirmed.returncode == 0, confirmed.stderr
+    selected_path = frozen_dir / "phase72b_selected_models.json"
+    changed = json.loads(selected_path.read_text(encoding="utf-8"))
+    changed["changed_after_freeze"] = True
+    selected_path.write_text(json.dumps(changed), encoding="utf-8")
+    rejected = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--mode",
+            "confirm",
+            "--prepared-dir",
+            str(prepared_dir),
+            "--frozen-dir",
+            str(frozen_dir),
+            "--output-dir",
+            str(tmp_path / "rejected"),
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert rejected.returncode == 1
+    assert "hash mismatch" in rejected.stderr.lower()

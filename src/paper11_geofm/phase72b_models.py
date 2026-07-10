@@ -19,6 +19,7 @@ from .phase72b_geofm_features import build_phase72b_control_features
 from .phase72b_metrics import phase72b_metrics
 from .phase72b_protocol import (
     PHASE72B_CLAIM_BOUNDARY,
+    canonical_json_sha256,
     load_hashed_json,
     write_hashed_json,
 )
@@ -48,6 +49,15 @@ def _array_sha256(array: np.ndarray) -> str:
     digest.update(json.dumps(list(value.shape)).encode("ascii"))
     digest.update(value.tobytes())
     return digest.hexdigest()
+
+
+def _target_npz_sha256(path: Path) -> str:
+    with np.load(path) as loaded:
+        hashes = {
+            str(name): _array_sha256(loaded[name])
+            for name in sorted(loaded.files)
+        }
+    return canonical_json_sha256(hashes)
 
 
 def _candidate_configs(protocol: Mapping[str, object]) -> list[dict[str, object]]:
@@ -523,6 +533,11 @@ def fit_freeze_phase72b_models(
     protocol_hash = (
         prepared / "phase72b_frozen_protocol.sha256"
     ).read_text(encoding="ascii").strip()
+    development_target_path = prepared / "phase72b_development_targets.npz"
+    if _target_npz_sha256(development_target_path) != str(
+        frozen_protocol.get("development_targets_sha256", "")
+    ):
+        raise ValueError("Phase 72B development target hash mismatch")
     feature_rows = pd.read_csv(
         prepared / "phase72b_feature_rows.csv", keep_default_na=False
     ).to_dict(orient="records")
@@ -534,7 +549,7 @@ def fit_freeze_phase72b_models(
         )
     )
     outcomes = _development_outcome(
-        prepared / "phase72b_development_targets.npz"
+        development_target_path
     )
     bundle_records = []
     validation_rows = []
