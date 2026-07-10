@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
 import json
 from pathlib import Path
+
+import numpy as np
 
 
 PHASE72A_CLAIM_BOUNDARY = (
@@ -79,3 +82,87 @@ def load_phase72a_region_contract(
         scale_m=int(source["scale_m"]),
         regions=tuple(regions),
     )
+
+
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def audit_phase72a_region_assets(
+    contract: Phase72ARegionContract,
+    region: Phase72ARegionSpec,
+    *,
+    embedding_dir: Path | str,
+    label_dir: Path | str,
+) -> dict[str, object]:
+    embedding_dir = Path(embedding_dir)
+    label_dir = Path(label_dir)
+    errors: list[str] = []
+    rows: list[dict[str, object]] = []
+    years_ready: list[int] = []
+
+    for year in region.years:
+        year_ok = True
+        assets = {
+            "embedding": embedding_dir
+            / region.embedding_pattern.format(year=year),
+            "label": label_dir / region.label_pattern.format(year=year),
+        }
+        for asset_type, path in assets.items():
+            if not path.exists():
+                errors.append(
+                    f"missing {asset_type} for {region.region_id} {year}: "
+                    f"{path}"
+                )
+                year_ok = False
+                continue
+
+            array = np.load(path, mmap_mode="r")
+            expected_shape = (
+                (*region.grid_shape, region.embedding_dim)
+                if asset_type == "embedding"
+                else region.grid_shape
+            )
+            if tuple(array.shape) != tuple(expected_shape):
+                errors.append(
+                    f"{asset_type} shape mismatch for {region.region_id} "
+                    f"{year}: expected {expected_shape}, got "
+                    f"{tuple(array.shape)}"
+                )
+                year_ok = False
+            rows.append(
+                {
+                    "region_id": region.region_id,
+                    "year": int(year),
+                    "asset_type": asset_type,
+                    "source_id": (
+                        contract.source_id
+                        if asset_type == "label"
+                        else "alphaearth_annual"
+                    ),
+                    "path": str(path),
+                    "shape": "x".join(str(value) for value in array.shape),
+                    "dtype": str(array.dtype),
+                    "sha256": _sha256(path),
+                    "independent_label": asset_type == "label",
+                }
+            )
+        if year_ok:
+            years_ready.append(int(year))
+
+    return {
+        "region_id": region.region_id,
+        "status": (
+            "region_label_inputs_ready"
+            if not errors
+            else "label_inputs_not_ready"
+        ),
+        "years_ready": years_ready,
+        "errors": errors,
+        "file_manifest_rows": rows,
+        "claim_boundary": PHASE72A_CLAIM_BOUNDARY,
+    }
