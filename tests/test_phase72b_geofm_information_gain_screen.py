@@ -340,3 +340,120 @@ def test_phase72b_explicit_neighborhoods_clip_at_grid_edges():
     )
     assert values["neighbor3_current_crop_fraction"] == 1.0
     assert np.isclose(values["neighbor5_current_crop_fraction"], 6 / 9)
+
+
+def _geofm_control_fixture():
+    histories = np.zeros((4, 4, 2), dtype=np.float32)
+    masks = np.array(
+        [
+            [1, 1, 1, 0],
+            [1, 1, 1, 0],
+            [1, 1, 0, 0],
+            [1, 1, 0, 0],
+        ],
+        dtype=bool,
+    )
+    histories[0, :3] = [[1, 2], [2, 4], [4, 8]]
+    histories[1, :3] = [[3, 1], [4, 2], [5, 4]]
+    histories[2, :2] = [[1, 1], [2, 2]]
+    histories[3, :2] = [[7, 7], [8, 8]]
+    rows = [
+        {"region_id": "a", "origin_year": 2019},
+        {"region_id": "a", "origin_year": 2019},
+        {"region_id": "b", "origin_year": 2018},
+        {"region_id": "b", "origin_year": 2018},
+    ]
+    return histories, masks, rows
+
+
+def test_phase72b_geofm_temporal_summary_and_controls_are_deterministic():
+    from paper11_geofm.phase72b_geofm_features import (
+        build_phase72b_control_features,
+        build_phase72b_geofm_features,
+    )
+
+    histories, masks, rows = _geofm_control_fixture()
+    features = build_phase72b_geofm_features(histories, masks)
+    assert features["geofm_current"][0].tolist() == [4.0, 8.0]
+    assert features["geofm_temporal_full"].shape == (4, 10)
+    first = build_phase72b_control_features(
+        "spatial_shuffle",
+        histories,
+        masks,
+        rows,
+        seed=72,
+        output_dim=10,
+    )
+    second = build_phase72b_control_features(
+        "spatial_shuffle",
+        histories,
+        masks,
+        rows,
+        seed=72,
+        output_dim=10,
+    )
+    assert np.array_equal(first, second)
+    assert sorted(map(tuple, first[:, :2])) == sorted(
+        map(tuple, features["geofm_current"])
+    )
+
+
+def test_phase72b_temporal_shuffle_keeps_current_embedding():
+    from paper11_geofm.phase72b_geofm_features import (
+        build_phase72b_control_features,
+        build_phase72b_geofm_features,
+    )
+
+    histories = np.array(
+        [[[-1.0], [2.0], [8.0], [4.0]]], dtype=np.float32
+    )
+    masks = np.ones((1, 4), dtype=bool)
+    control = build_phase72b_control_features(
+        "temporal_order_shuffle",
+        histories,
+        masks,
+        [{"region_id": "a", "origin_year": 2020}],
+        seed=72,
+        output_dim=5,
+    )
+    original = build_phase72b_geofm_features(histories, masks)[
+        "geofm_temporal_full"
+    ]
+    assert control[0, 0] == 4.0
+    assert not np.array_equal(control, original)
+
+
+def test_phase72b_random_projection_is_seeded_and_same_dimension():
+    from paper11_geofm.phase72b_geofm_features import (
+        build_phase72b_control_features,
+    )
+
+    histories, masks, rows = _geofm_control_fixture()
+    first = build_phase72b_control_features(
+        "random_projection",
+        histories,
+        masks,
+        rows,
+        seed=72,
+        output_dim=5,
+    )
+    second = build_phase72b_control_features(
+        "random_projection",
+        histories,
+        masks,
+        rows,
+        seed=72,
+        output_dim=5,
+    )
+    third = build_phase72b_control_features(
+        "random_projection",
+        histories,
+        masks,
+        rows,
+        seed=73,
+        output_dim=5,
+    )
+    assert first.shape == (4, 5)
+    assert np.isfinite(first).all()
+    assert np.array_equal(first, second)
+    assert not np.array_equal(first, third)
