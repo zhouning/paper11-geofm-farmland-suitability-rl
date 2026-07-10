@@ -234,3 +234,65 @@ def test_phase72a_samples_mark_unavailable_two_year_target():
     assert latest["y_1y"] == 1
     assert latest["y_2y"] == ""
     assert samples["tensors"]["y_2y"][index] == -1
+
+
+def test_phase72a_package_writes_outputs_and_blank_review_labels(tmp_path):
+    from paper11_geofm.phase72a_temporal_label_package import (
+        build_phase72a_temporal_label_package,
+        write_phase72a_temporal_label_package_artifacts,
+    )
+
+    embedding_dir, label_dir = _asset_dirs(tmp_path)
+    package = build_phase72a_temporal_label_package(
+        region_config=_region_config(tmp_path / "regions.json"),
+        embedding_dirs={"alpha": embedding_dir},
+        label_dirs={"alpha": label_dir},
+        manual_review_per_stratum=2,
+        spatial_block_size=2,
+    )
+    paths = write_phase72a_temporal_label_package_artifacts(
+        package, tmp_path / "outputs"
+    )
+    assert package["phase72a_status"] == "phase72a_label_inputs_ready"
+    assert package["row_counts"]["sample_rows"] > 0
+    assert set(paths) == {
+        "manifest_csv",
+        "audit_csv",
+        "sample_index_csv",
+        "sample_tensors_npz",
+        "review_frame_csv",
+        "summary_csv",
+        "package_json",
+        "package_md",
+    }
+    review = pd.read_csv(
+        paths["review_frame_csv"], keep_default_na=False
+    )
+    assert {
+        "review_label",
+        "review_source",
+        "review_date",
+        "review_confidence",
+    }.issubset(review.columns)
+    assert review["review_label"].eq("").all()
+    tensors = np.load(paths["sample_tensors_npz"])
+    assert (
+        tensors["embedding_history"].shape[0]
+        == package["row_counts"]["sample_rows"]
+    )
+
+
+def test_phase72a_package_blocks_samples_when_an_asset_is_missing(tmp_path):
+    from paper11_geofm.phase72a_temporal_label_package import (
+        build_phase72a_temporal_label_package,
+    )
+
+    embedding_dir, label_dir = _asset_dirs(tmp_path)
+    (label_dir / "alpha_lulc_2020.npy").unlink()
+    package = build_phase72a_temporal_label_package(
+        region_config=_region_config(tmp_path / "regions.json"),
+        embedding_dirs={"alpha": embedding_dir},
+        label_dirs={"alpha": label_dir},
+    )
+    assert package["phase72a_status"] == "label_inputs_not_ready"
+    assert package["sample_rows"] == []
