@@ -1,0 +1,30 @@
+{
+  "source": {
+    "source_id": "esri_global_lulc_10m_ts",
+    "collection": "projects/sat-io/open-datasets/landcover/ESRI_Global-LULC_10m_TS",
+    "label_role": "independent_annual_product_label",
+    "independent_from_dltb_slope_reward_geofm": true,
+    "crop_class_code": 5,
+    "scale_m": 500
+  },
+  "regions": [
+    {
+      "region_id": "bishan",
+      "bbox": [106.02, 29.38, 106.33, 29.68],
+      "years": [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
+      "grid_shape": [67, 70],
+      "embedding_dim": 64,
+      "embedding_pattern": "bishan_emb_{year}.npy",
+      "label_pattern": "bishan_lulc_{year}.npy"
+    },
+    {
+      "region_id": "dongxing",
+      "bbox": [104.97937034, 29.44405085, 105.42096421, 29.85040656],
+      "years": [2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024],
+      "grid_shape": [91, 99],
+      "embedding_dim": 64,
+      "embedding_pattern": "dongxing_emb_{year}.npy",
+      "label_pattern": "dongxing_lulc_{year}.npy"
+    }
+  ]
+}
