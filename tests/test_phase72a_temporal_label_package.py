@@ -296,3 +296,68 @@ def test_phase72a_package_blocks_samples_when_an_asset_is_missing(tmp_path):
     )
     assert package["phase72a_status"] == "label_inputs_not_ready"
     assert package["sample_rows"] == []
+
+
+def test_phase72a_fetcher_uses_injected_extractor(tmp_path):
+    from experiments.phase72a_temporal_label_package.fetch_phase72a_esri_lulc import (
+        fetch_phase72a_labels,
+    )
+
+    def fake_extractor(*, bbox, year, scale, collection):
+        assert bbox == (100.0, 20.0, 101.0, 21.0)
+        assert scale == 500
+        assert "ESRI_Global-LULC" in collection
+        return np.full(
+            (2, 3), 5 if year < 2020 else 7, dtype=np.int32
+        )
+
+    manifest = fetch_phase72a_labels(
+        region_config=_region_config(tmp_path / "regions.json"),
+        output_dir=tmp_path / "labels",
+        regions=("alpha",),
+        years=(2017, 2018, 2019, 2020),
+        extractor=fake_extractor,
+    )
+    assert manifest["status"] == "complete"
+    assert manifest["n_records"] == 4
+    assert manifest["n_failures"] == 0
+    assert (tmp_path / "labels" / "alpha_lulc_2020.npy").exists()
+
+
+def test_phase72a_local_runner_succeeds_on_fixture(tmp_path):
+    embedding_dir, label_dir = _asset_dirs(tmp_path)
+    script = (
+        ROOT
+        / "experiments"
+        / "phase72a_temporal_label_package"
+        / "run_phase72a_temporal_label_package.py"
+    )
+    result = subprocess.run(
+        [
+            sys.executable,
+            str(script),
+            "--region-config",
+            str(_region_config(tmp_path / "regions.json")),
+            "--embedding-dir",
+            f"alpha={embedding_dir}",
+            "--label-dir",
+            f"alpha={label_dir}",
+            "--output-dir",
+            str(tmp_path / "outputs"),
+            "--manual-review-per-stratum",
+            "2",
+            "--spatial-block-size",
+            "2",
+        ],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "phase72a_label_inputs_ready" in result.stdout
+    assert (
+        tmp_path
+        / "outputs"
+        / "phase72a_temporal_label_package.json"
+    ).exists()
