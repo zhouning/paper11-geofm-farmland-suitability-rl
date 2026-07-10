@@ -583,7 +583,26 @@ def _phase72b_prepare_fixture(tmp_path: Path):
     )
     phase72a_dir = tmp_path / "phase72a"
     write_phase72a_temporal_label_package_artifacts(phase72a, phase72a_dir)
-    protocol_path = _write_protocol(tmp_path / "protocol.json")
+    fixture_protocol = _protocol_payload()
+    fixture_protocol["models"] = {
+        "logistic_c": [0.1],
+        "logistic_class_weight": ["none"],
+        "hgb_learning_rate": [0.08],
+        "hgb_max_leaf_nodes": [15],
+        "hgb_min_samples_leaf": [2],
+        "hgb_max_iter": 20,
+        "hgb_l2_regularization": [0.0],
+    }
+    fixture_protocol["calibration"] = {
+        "methods": ["none", "sigmoid"],
+        "ece_bins": 4,
+    }
+    fixture_protocol["controls"]["random_projection_dim"] = 10
+    fixture_protocol["bootstrap"] = {"iterations": 100, "seed": 72}
+    protocol_path = tmp_path / "protocol.json"
+    protocol_path.write_text(
+        json.dumps(fixture_protocol), encoding="utf-8"
+    )
     return {
         "protocol_path": protocol_path,
         "region_config": region_config,
@@ -736,3 +755,95 @@ def test_phase72b_gate_emits_all_frozen_statuses():
 
     blocked = build_phase72b_gate(**base, leakage_ok=False)
     assert blocked["phase72b_status"] == "phase72b_inputs_not_ready"
+
+
+def test_phase72b_model_selection_returns_frozen_bundle():
+    from paper11_geofm.phase72b_models import (
+        fit_select_phase72b_model,
+        predict_phase72b_bundle,
+    )
+
+    rng = np.random.default_rng(72)
+    features = rng.normal(size=(120, 3))
+    outcome = (features[:, 0] + 0.8 * features[:, 2] > 0).astype(int)
+    protocol = _protocol_payload()
+    protocol["models"] = {
+        "logistic_c": [0.1, 1.0],
+        "logistic_class_weight": ["none"],
+        "hgb_learning_rate": [0.08],
+        "hgb_max_leaf_nodes": [15],
+        "hgb_min_samples_leaf": [5],
+        "hgb_max_iter": 30,
+        "hgb_l2_regularization": [0.0],
+    }
+    bundle, rows = fit_select_phase72b_model(
+        features[:80],
+        outcome[:80],
+        features[80:],
+        outcome[80:],
+        variant_id="fixture",
+        axis_id="pooled_temporal",
+        protocol=protocol,
+    )
+    probability = predict_phase72b_bundle(bundle, features[80:])
+    assert bundle["variant_id"] == "fixture"
+    assert bundle["calibration_method"] in {
+        "none",
+        "sigmoid",
+        "isotonic",
+    }
+    assert len(rows) > 1
+    assert np.isfinite(probability).all()
+
+
+def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+        write_phase72b_prepared_artifacts,
+    )
+    from paper11_geofm.phase72b_models import (
+        fit_freeze_phase72b_models,
+        load_phase72b_model_bundle,
+    )
+    from paper11_geofm.phase72b_protocol import load_hashed_json
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    prepared_package = prepare_phase72b_information_gain_screen(
+        protocol_path=inputs["protocol_path"],
+        phase72a_region_config=inputs["region_config"],
+        phase72a_package_dir=inputs["phase72a_dir"],
+        embedding_dirs=inputs["embedding_dirs"],
+        label_dirs=inputs["label_dirs"],
+        terrain_dir=inputs["terrain_dir"],
+    )
+    prepared_dir = tmp_path / "prepared"
+    write_phase72b_prepared_artifacts(prepared_package, prepared_dir)
+    frozen_dir = tmp_path / "frozen"
+    selected, paths = fit_freeze_phase72b_models(
+        prepared_dir=prepared_dir, output_dir=frozen_dir
+    )
+    assert selected["status"] == "phase72b_models_frozen"
+    assert set(selected["axes"]) >= {
+        "pooled_temporal",
+        "bishan_to_dongxing",
+        "dongxing_to_bishan",
+    }
+    loaded = load_hashed_json(
+        paths["selected_models_json"], paths["selected_models_hash"]
+    )
+    assert loaded["status"] == "phase72b_models_frozen"
+    assert all(
+        len(record["bundle_sha256"]) == 64
+        for record in selected["bundle_records"]
+    )
+    record = selected["bundle_records"][0]
+    bundle_path = frozen_dir / record["bundle_path"]
+    load_phase72b_model_bundle(bundle_path, record["bundle_sha256"])
+    original = bundle_path.read_bytes()
+    bundle_path.write_bytes(original + b"changed")
+    try:
+        load_phase72b_model_bundle(bundle_path, record["bundle_sha256"])
+    except ValueError as exc:
+        assert "hash" in str(exc).lower()
+    else:
+        raise AssertionError("Expected a modified model bundle to be rejected")
