@@ -626,3 +626,113 @@ def test_phase72b_prepare_separates_confirmation_targets_and_freezes_protocol(
     )
     assert frozen["status"] == "phase72b_protocol_frozen"
     assert package["leakage_audit"]["status"] == "leakage_audit_passed"
+
+
+def test_phase72b_metrics_match_hand_computable_brier_and_ece():
+    from paper11_geofm.phase72b_metrics import phase72b_metrics
+
+    result = phase72b_metrics(
+        np.array([0, 1, 1, 0]),
+        np.array([0.1, 0.8, 0.6, 0.2]),
+        threshold=0.5,
+        budgets=(0.10, 0.20),
+        ece_bins=2,
+    )
+    assert result["brier"] == 0.0625
+    assert result["ece"] == 0.225
+    assert result["balanced_accuracy"] == 1.0
+
+
+def test_phase72b_block_bootstrap_uses_paired_blocks():
+    from paper11_geofm.phase72b_metrics import paired_block_bootstrap
+
+    rows = [
+        {"region_id": "a", "spatial_block_id": "a0"},
+        {"region_id": "a", "spatial_block_id": "a0"},
+        {"region_id": "a", "spatial_block_id": "a1"},
+        {"region_id": "a", "spatial_block_id": "a1"},
+    ]
+    y = np.array([0, 1, 0, 1])
+    explicit = np.array([0.4, 0.6, 0.4, 0.6])
+    geofm = np.array([0.1, 0.9, 0.2, 0.8])
+    result = paired_block_bootstrap(
+        y, explicit, geofm, rows, iterations=100, seed=72
+    )
+    assert result["ap_delta_mean"] >= 0
+    assert result["brier_delta_mean"] > 0
+    assert result["n_clusters"] == 2
+
+
+def _gate_inputs():
+    return {
+        "pooled_delta": {
+            "ap_delta": 0.020,
+            "brier_delta": 0.006,
+            "ece_delta": 0.002,
+        },
+        "pooled_bootstrap": {
+            "ap_delta_ci_low": 0.001,
+            "brier_delta_ci_low": -0.001,
+        },
+        "control_rows": [
+            {"control_id": name, "ap_delta": 0.006, "brier_delta": 0.003}
+            for name in (
+                "temporal_order_shuffle",
+                "spatial_shuffle",
+                "random_projection",
+            )
+        ],
+        "transfer_rows": [
+            {
+                "axis_id": "bishan_to_dongxing",
+                "ap_delta": 0.006,
+                "brier_delta": 0.0,
+            },
+            {
+                "axis_id": "dongxing_to_bishan",
+                "ap_delta": 0.0,
+                "brier_delta": 0.003,
+            },
+        ],
+        "spatial_rows": [
+            {"region_id": "bishan", "ap_delta": 0.001, "brier_delta": 0.0},
+            {"region_id": "dongxing", "ap_delta": 0.0, "brier_delta": 0.001},
+        ],
+        "gates": _protocol_payload()["gates"],
+    }
+
+
+def test_phase72b_gate_emits_all_frozen_statuses():
+    from paper11_geofm.phase72b_metrics import build_phase72b_gate
+
+    base = _gate_inputs()
+    supported = build_phase72b_gate(**base, leakage_ok=True)
+    assert supported["phase72b_status"] == "geofm_information_supported"
+
+    mixed_inputs = {**base, "transfer_rows": [*base["transfer_rows"]]}
+    mixed_inputs["transfer_rows"][-1] = {
+        "axis_id": "dongxing_to_bishan",
+        "ap_delta": -0.006,
+        "brier_delta": -0.003,
+    }
+    mixed = build_phase72b_gate(**mixed_inputs, leakage_ok=True)
+    assert mixed["phase72b_status"] == "geofm_information_mixed"
+
+    unsupported_inputs = {
+        **base,
+        "pooled_delta": {
+            "ap_delta": 0.001,
+            "brier_delta": 0.001,
+            "ece_delta": 0.001,
+        },
+    }
+    unsupported = build_phase72b_gate(
+        **unsupported_inputs, leakage_ok=True
+    )
+    assert (
+        unsupported["phase72b_status"]
+        == "geofm_information_not_supported"
+    )
+
+    blocked = build_phase72b_gate(**base, leakage_ok=False)
+    assert blocked["phase72b_status"] == "phase72b_inputs_not_ready"
