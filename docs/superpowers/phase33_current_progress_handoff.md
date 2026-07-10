@@ -1882,3 +1882,107 @@ Start next by reading this handoff and the Phase 71 result note:
 docs/superpowers/phase33_current_progress_handoff.md
 paper/phase28_results/37_phase71_component_supervised_ranker.md
 ```
+
+## Phase 72A Independent Temporal Label Package - 2026-07-10 17:18 +08:00
+
+Phase 72A was executed on the isolated branch
+`phase72a-temporal-label-package`. Formal manuscript files under
+`paper/submission/final/*` were not changed.
+
+Tracked implementation and evidence files:
+
+```text
+experiments/phase72a_temporal_label_package/phase72a_regions.json
+experiments/phase72a_temporal_label_package/fetch_phase72a_esri_lulc.py
+experiments/phase72a_temporal_label_package/run_phase72a_temporal_label_package.py
+src/paper11_geofm/phase72a_label_sources.py
+src/paper11_geofm/phase72a_temporal_samples.py
+src/paper11_geofm/phase72a_review_frame.py
+src/paper11_geofm/phase72a_temporal_label_package.py
+tests/test_phase72a_temporal_label_package.py
+paper/phase28_results/38_phase72a_temporal_label_package.md
+```
+
+Real ignored outputs:
+
+```text
+experiments/phase72a_temporal_label_package/outputs/esri_labels
+experiments/phase72a_temporal_label_package/outputs/bishan_dongxing_esri_2017_2024
+```
+
+Real acquisition result:
+
+```text
+source: ESRI Global LULC 10 m Time Series
+collection: projects/sat-io/open-datasets/landcover/ESRI_Global-LULC_10m_TS
+scale: 500 m
+Dongxing annual fetch: complete, 8 records, 0 failures
+Dongxing label shape: 91 x 99 for every year 2017-2024
+```
+
+Real package status and core counts:
+
+```text
+phase72a_status: phase72a_label_inputs_ready
+region audits: Bishan ready; Dongxing ready
+annual manifest rows: 32
+sample rows: 31,627
+manual-review rows: 560
+one-year persistence: 23,333 / 31,627 = 0.73775572
+one-year conversion: 8,294 / 31,627
+two-year eligible rows: 28,586
+two-year persistence: 18,827 / 28,586 = 0.65860911
+continuous two-year persistence: 16,460 / 28,586 = 0.57580634
+```
+
+Regional one-year evidence:
+
+```text
+Bishan: 6,444 / 8,535 persistent = 0.75500879
+Dongxing: 16,889 / 23,092 persistent = 0.73137883
+all 14 region-origin-year cohorts contain both one-year outcome classes
+```
+
+Independent artifact verification:
+
+```text
+all 32 manifest hashes have 64 hexadecimal characters
+all annual shapes match the tracked region contract
+sample indexes are contiguous
+tensor shape is 31,627 x 8 x 64
+history masks stop at the prediction origin year
+future history slots are false and zero-filled
+NPZ and CSV one-year labels match exactly
+manual review decision fields remain blank
+```
+
+Gate decision:
+
+```text
+Phase 72A passes. Phase 72B may now be designed and implemented as the
+leakage-free low-cost information-gain screen. Do not train GeoFM-STaR or alter
+the planning reward until Phase 72B shows independent GeoFM information against
+explicit, shuffle, and same-dimension random controls.
+```
+
+Claim boundary:
+
+```text
+Phase 72A establishes an audited independent product-label package only. It
+does not prove GeoFM predictive value, agronomic suitability, causal land-use
+change, planning improvement, or submission-level claims.
+```
+
+Next entry point:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl
+```
+
+Read next:
+
+```text
+docs/superpowers/phase33_current_progress_handoff.md
+paper/phase28_results/38_phase72a_temporal_label_package.md
+docs/superpowers/specs/2026-07-10-phase72-geofm-star-future-stability-planning-design.md
+```
