@@ -128,3 +128,109 @@ def test_phase72a_asset_audit_blocks_shape_mismatch(tmp_path):
     )
     assert audit["status"] == "label_inputs_not_ready"
     assert "shape" in " ".join(audit["errors"]).lower()
+
+
+def test_phase72a_samples_are_temporally_truncated_and_build_endpoints():
+    from paper11_geofm.phase72a_label_sources import Phase72ARegionSpec
+    from paper11_geofm.phase72a_temporal_samples import (
+        build_phase72a_temporal_samples,
+    )
+
+    region = Phase72ARegionSpec(
+        "alpha",
+        (100.0, 20.0, 101.0, 21.0),
+        (2017, 2018, 2019, 2020),
+        (1, 2),
+        2,
+        "alpha_emb_{year}.npy",
+        "alpha_lulc_{year}.npy",
+    )
+    embeddings = {
+        year: np.full((1, 2, 2), float(year), dtype=np.float32)
+        for year in region.years
+    }
+    labels = {
+        2017: np.array([[5, 7]], dtype=np.int32),
+        2018: np.array([[5, 5]], dtype=np.int32),
+        2019: np.array([[7, 5]], dtype=np.int32),
+        2020: np.array([[5, 7]], dtype=np.int32),
+    }
+    samples = build_phase72a_temporal_samples(
+        region,
+        embeddings=embeddings,
+        labels=labels,
+        crop_class_code=5,
+        source_id="esri_global_lulc_10m_ts",
+        source_role="independent_annual_product_label",
+        max_history_years=4,
+        spatial_block_size=2,
+    )
+    first = next(
+        row
+        for row in samples["sample_rows"]
+        if row["unit_id"] == "r0000_c0000"
+        and row["origin_year"] == 2017
+    )
+    index = int(first["sample_index"])
+    assert (
+        first["y_1y"],
+        first["y_2y"],
+        first["y_continuous_2y"],
+    ) == (1, 0, 0)
+    assert samples["tensors"]["history_mask"][index].tolist() == [
+        True,
+        False,
+        False,
+        False,
+    ]
+    assert samples["tensors"]["embedding_history"][index, 0].tolist() == [
+        2017.0,
+        2017.0,
+    ]
+    assert (
+        float(
+            samples["tensors"]["embedding_history"][index, 1:].sum()
+        )
+        == 0.0
+    )
+
+
+def test_phase72a_samples_mark_unavailable_two_year_target():
+    from paper11_geofm.phase72a_label_sources import Phase72ARegionSpec
+    from paper11_geofm.phase72a_temporal_samples import (
+        build_phase72a_temporal_samples,
+    )
+
+    region = Phase72ARegionSpec(
+        "alpha",
+        (100.0, 20.0, 101.0, 21.0),
+        (2018, 2019, 2020),
+        (1, 1),
+        1,
+        "alpha_emb_{year}.npy",
+        "alpha_lulc_{year}.npy",
+    )
+    samples = build_phase72a_temporal_samples(
+        region,
+        embeddings={
+            year: np.array([[[float(year)]]], dtype=np.float32)
+            for year in region.years
+        },
+        labels={
+            year: np.array([[5]], dtype=np.int32) for year in region.years
+        },
+        crop_class_code=5,
+        source_id="esri_global_lulc_10m_ts",
+        source_role="independent_annual_product_label",
+        max_history_years=3,
+        spatial_block_size=1,
+    )
+    latest = next(
+        row
+        for row in samples["sample_rows"]
+        if row["origin_year"] == 2019
+    )
+    index = int(latest["sample_index"])
+    assert latest["y_1y"] == 1
+    assert latest["y_2y"] == ""
+    assert samples["tensors"]["y_2y"][index] == -1
