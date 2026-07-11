@@ -25,6 +25,7 @@ from .phase72b_protocol import (
     load_hashed_json,
     write_hashed_json,
 )
+from .phase72b_prepared import load_verified_phase72b_prepared
 from .phase72b_terrain import _file_sha256
 
 
@@ -634,14 +635,16 @@ def fit_freeze_phase72b_models(
     output = Path(output_dir)
     bundles_dir = output / "bundles"
     bundles_dir.mkdir(parents=True, exist_ok=True)
-    frozen_protocol = load_hashed_json(
-        prepared / "phase72b_frozen_protocol.json",
-        prepared / "phase72b_frozen_protocol.sha256",
+    verified_prepared = load_verified_phase72b_prepared(
+        prepared,
+        deferred_names={
+            "phase72b_development_targets.npz",
+            "phase72b_confirmation_targets.npz",
+        },
     )
+    frozen_protocol = dict(verified_prepared["frozen_protocol"])
     protocol = dict(frozen_protocol["tracked_protocol"])
-    protocol_hash = (
-        prepared / "phase72b_frozen_protocol.sha256"
-    ).read_text(encoding="ascii").strip()
+    protocol_hash = str(verified_prepared["protocol_hash"])
     development_target_path = prepared / "phase72b_development_targets.npz"
     if _target_npz_sha256(development_target_path) != str(
         frozen_protocol.get("development_targets_sha256", "")
@@ -651,16 +654,9 @@ def fit_freeze_phase72b_models(
     progress = _load_fit_progress(
         progress_path, protocol_hash=protocol_hash
     )
-    feature_rows = pd.read_csv(
-        prepared / "phase72b_feature_rows.csv", keep_default_na=False
-    ).to_dict(orient="records")
-    with np.load(prepared / "phase72b_feature_matrices.npz") as loaded:
-        matrices = {name: loaded[name] for name in loaded.files}
-    split_registry = json.loads(
-        (prepared / "phase72b_split_registry.json").read_text(
-            encoding="utf-8"
-        )
-    )
+    feature_rows = list(verified_prepared["feature_rows"])
+    matrices = dict(verified_prepared["matrices"])
+    split_registry = dict(verified_prepared["split_registry"])
     outcomes = _development_outcome(
         development_target_path
     )

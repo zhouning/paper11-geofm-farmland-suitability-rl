@@ -1042,6 +1042,105 @@ def _prepare_and_freeze(tmp_path: Path):
     return inputs, prepared_dir, frozen_dir
 
 
+def _prepare_only(tmp_path: Path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+        write_phase72b_prepared_artifacts,
+    )
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    package = prepare_phase72b_information_gain_screen(
+        protocol_path=inputs["protocol_path"],
+        phase72a_region_config=inputs["region_config"],
+        phase72a_package_dir=inputs["phase72a_dir"],
+        embedding_dirs=inputs["embedding_dirs"],
+        label_dirs=inputs["label_dirs"],
+        terrain_dir=inputs["terrain_dir"],
+    )
+    prepared_dir = tmp_path / "prepared"
+    write_phase72b_prepared_artifacts(package, prepared_dir)
+    return inputs, prepared_dir
+
+
+def test_phase72b_fit_freeze_rejects_tampered_prepared_matrix(tmp_path):
+    from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
+
+    _, prepared_dir = _prepare_only(tmp_path)
+    matrix_path = prepared_dir / "phase72b_feature_matrices.npz"
+    with np.load(matrix_path) as loaded:
+        matrices = {name: loaded[name].copy() for name in loaded.files}
+    matrices["explicit_static"][0, 0] += 1.0
+    np.savez_compressed(matrix_path, **matrices)
+    try:
+        fit_freeze_phase72b_models(
+            prepared_dir=prepared_dir, output_dir=tmp_path / "frozen"
+        )
+    except ValueError as exc:
+        assert "prepared artifact hash mismatch" in str(exc).lower()
+    else:
+        raise AssertionError("Expected tampered prepared matrix rejection")
+
+
+def test_phase72b_fit_freeze_rejects_tampered_split_registry(tmp_path):
+    from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
+
+    _, prepared_dir = _prepare_only(tmp_path)
+    split_path = prepared_dir / "phase72b_split_registry.json"
+    split_registry = json.loads(split_path.read_text(encoding="utf-8"))
+    split_registry["pooled_temporal"]["train"] = split_registry[
+        "pooled_temporal"
+    ]["train"][1:]
+    split_path.write_text(json.dumps(split_registry), encoding="utf-8")
+    try:
+        fit_freeze_phase72b_models(
+            prepared_dir=prepared_dir, output_dir=tmp_path / "frozen"
+        )
+    except ValueError as exc:
+        assert "prepared artifact hash mismatch" in str(exc).lower()
+    else:
+        raise AssertionError("Expected tampered split registry rejection")
+
+
+def test_phase72b_confirmation_rejects_tampered_feature_rows(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    row_path = prepared_dir / "phase72b_feature_rows.csv"
+    rows = pd.read_csv(row_path, keep_default_na=False)
+    rows.loc[0, "spatial_block_id"] = "bishan_br999_bc999"
+    rows.to_csv(row_path, index=False)
+    try:
+        confirm_phase72b_information_gain_screen(
+            prepared_dir=prepared_dir, frozen_dir=frozen_dir
+        )
+    except ValueError as exc:
+        assert "prepared artifact hash mismatch" in str(exc).lower()
+    else:
+        raise AssertionError("Expected tampered feature-row rejection")
+
+
+def test_phase72b_confirmation_rejects_tampered_leakage_audit(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    audit_path = prepared_dir / "phase72b_leakage_audit.json"
+    audit = json.loads(audit_path.read_text(encoding="utf-8"))
+    audit["invalid_spatial_axes"] = ["spatial_bishan_fold0"]
+    audit_path.write_text(json.dumps(audit), encoding="utf-8")
+    try:
+        confirm_phase72b_information_gain_screen(
+            prepared_dir=prepared_dir, frozen_dir=frozen_dir
+        )
+    except ValueError as exc:
+        assert "prepared artifact hash mismatch" in str(exc).lower()
+    else:
+        raise AssertionError("Expected tampered leakage-audit rejection")
+
+
 def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
     from paper11_geofm.phase72b_information_gain_screen import (
         confirm_phase72b_information_gain_screen,

@@ -37,6 +37,10 @@ from .phase72b_protocol import (
     load_phase72b_protocol,
     write_hashed_json,
 )
+from .phase72b_prepared import (
+    PREPARED_ARTIFACT_NAMES,
+    load_verified_phase72b_prepared,
+)
 from .phase72b_splits import (
     audit_phase72b_splits,
     build_phase72b_split_registry,
@@ -382,6 +386,8 @@ def write_phase72b_prepared_artifacts(
         "leakage_audit_json": output / "phase72b_leakage_audit.json",
         "protocol_json": output / "phase72b_frozen_protocol.json",
         "protocol_hash": output / "phase72b_frozen_protocol.sha256",
+        "prepared_manifest_json": output / "phase72b_prepared_artifacts.json",
+        "prepared_manifest_hash": output / "phase72b_prepared_artifacts.sha256",
     }
     _write_csv(
         paths["terrain_manifest_csv"],
@@ -448,6 +454,21 @@ def write_phase72b_prepared_artifacts(
     )
     paths["protocol_json"] = protocol_json
     paths["protocol_hash"] = protocol_hash
+    prepared_manifest = {
+        "status": "phase72b_prepared_artifacts_frozen",
+        "frozen_protocol_sha256": protocol_hash.read_text(
+            encoding="ascii"
+        ).strip().lower(),
+        "artifacts": [
+            {"name": name, "sha256": _file_sha256(output / name)}
+            for name in PREPARED_ARTIFACT_NAMES
+        ],
+    }
+    manifest_json, manifest_hash = write_hashed_json(
+        paths["prepared_manifest_json"], prepared_manifest
+    )
+    paths["prepared_manifest_json"] = manifest_json
+    paths["prepared_manifest_hash"] = manifest_hash
     return paths
 
 
@@ -562,13 +583,15 @@ def confirm_phase72b_information_gain_screen(
     prepared = Path(prepared_dir)
     frozen = Path(frozen_dir)
 
-    frozen_protocol = load_hashed_json(
-        prepared / "phase72b_frozen_protocol.json",
-        prepared / "phase72b_frozen_protocol.sha256",
+    verified_prepared = load_verified_phase72b_prepared(
+        prepared,
+        deferred_names={
+            "phase72b_development_targets.npz",
+            "phase72b_confirmation_targets.npz",
+        },
     )
-    protocol_hash = (
-        prepared / "phase72b_frozen_protocol.sha256"
-    ).read_text(encoding="ascii").strip().lower()
+    frozen_protocol = dict(verified_prepared["frozen_protocol"])
+    protocol_hash = str(verified_prepared["protocol_hash"])
     selected = load_hashed_json(
         frozen / "phase72b_selected_models.json",
         frozen / "phase72b_selected_models.sha256",
@@ -582,42 +605,10 @@ def confirm_phase72b_information_gain_screen(
         )
 
     protocol = dict(frozen_protocol["tracked_protocol"])
-    split_registry = json.loads(
-        (prepared / "phase72b_split_registry.json").read_text(encoding="utf-8")
-    )
-    expected_split_hash = str(frozen_protocol["split_registry_sha256"])
-    if canonical_json_sha256(split_registry) != expected_split_hash:
-        raise ValueError("Phase 72B split registry hash mismatch")
-    feature_registry = json.loads(
-        (prepared / "phase72b_feature_registry.json").read_text(encoding="utf-8")
-    )
-    if canonical_json_sha256(feature_registry) != str(
-        frozen_protocol["feature_registry_sha256"]
-    ):
-        raise ValueError("Phase 72B feature registry hash mismatch")
-    feature_rows = pd.read_csv(
-        prepared / "phase72b_feature_rows.csv", keep_default_na=False
-    ).to_dict(orient="records")
-    if [int(row["sample_index"]) for row in feature_rows] != list(
-        range(len(feature_rows))
-    ):
-        raise ValueError("Phase 72B feature row alignment failed")
-    matrices = _load_npz(prepared / "phase72b_feature_matrices.npz")
-    expected_matrices = {
-        str(row["matrix_id"]): str(row["sha256"])
-        for row in frozen_protocol["feature_manifest_rows"]
-    }
-    if set(matrices) != set(expected_matrices):
-        raise ValueError("Phase 72B feature matrix manifest mismatch")
-    for matrix_id, expected_hash in expected_matrices.items():
-        if _array_sha256(matrices[matrix_id]) != expected_hash:
-            raise ValueError(
-                f"Phase 72B feature matrix hash mismatch: {matrix_id}"
-            )
-
-    leakage_audit = json.loads(
-        (prepared / "phase72b_leakage_audit.json").read_text(encoding="utf-8")
-    )
+    split_registry = dict(verified_prepared["split_registry"])
+    feature_rows = list(verified_prepared["feature_rows"])
+    matrices = dict(verified_prepared["matrices"])
+    leakage_audit = dict(verified_prepared["leakage_audit"])
     invalid_spatial_axes = list(leakage_audit.get("invalid_spatial_axes", []))
     blockers = []
     if leakage_audit.get("status") != "leakage_audit_passed":
