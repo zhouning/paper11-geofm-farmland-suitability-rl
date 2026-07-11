@@ -603,6 +603,12 @@ def confirm_phase72b_information_gain_screen(
         raise ValueError(
             "Phase 72B frozen protocol hash mismatch between prepared and selected models"
         )
+    if str(selected.get("prepared_artifacts_sha256", "")).lower() != str(
+        verified_prepared["manifest_sha256"]
+    ).lower():
+        raise ValueError(
+            "Phase 72B prepared artifact manifest hash mismatch between prepared and selected models"
+        )
 
     protocol = dict(frozen_protocol["tracked_protocol"])
     split_registry = dict(verified_prepared["split_registry"])

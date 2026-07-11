@@ -545,13 +545,14 @@ def _bundle_filename(
 
 
 def _load_fit_progress(
-    path: Path, *, protocol_hash: str
+    path: Path, *, protocol_hash: str, prepared_artifacts_hash: str
 ) -> dict[str, object]:
     hash_path = path.with_suffix(".sha256")
     if not path.exists() and not hash_path.exists():
         progress = {
             "status": "phase72b_fit_in_progress",
             "frozen_protocol_sha256": protocol_hash,
+            "prepared_artifacts_sha256": prepared_artifacts_hash,
             "entries": {},
         }
         write_hashed_json(path, progress)
@@ -561,6 +562,13 @@ def _load_fit_progress(
     progress = load_hashed_json(path, hash_path)
     if str(progress.get("frozen_protocol_sha256", "")) != protocol_hash:
         raise ValueError("Phase 72B fit progress protocol hash mismatch")
+    if (
+        str(progress.get("prepared_artifacts_sha256", ""))
+        != prepared_artifacts_hash
+    ):
+        raise ValueError(
+            "Phase 72B prepared artifact manifest hash mismatch in fit progress"
+        )
     if not isinstance(progress.get("entries"), dict):
         raise ValueError("Phase 72B fit progress entries are invalid")
     return progress
@@ -652,7 +660,11 @@ def fit_freeze_phase72b_models(
         raise ValueError("Phase 72B development target hash mismatch")
     progress_path = output / "phase72b_fit_progress.json"
     progress = _load_fit_progress(
-        progress_path, protocol_hash=protocol_hash
+        progress_path,
+        protocol_hash=protocol_hash,
+        prepared_artifacts_hash=str(
+            verified_prepared["manifest_sha256"]
+        ),
     )
     feature_rows = list(verified_prepared["feature_rows"])
     matrices = dict(verified_prepared["matrices"])
@@ -878,6 +890,9 @@ def fit_freeze_phase72b_models(
     selected = {
         "status": "phase72b_models_frozen",
         "frozen_protocol_sha256": protocol_hash,
+        "prepared_artifacts_sha256": str(
+            verified_prepared["manifest_sha256"]
+        ),
         "axes": axes,
         "selected_control_seeds": selected_control_seeds,
         "bundle_records": bundle_records,

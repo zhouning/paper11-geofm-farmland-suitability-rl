@@ -1141,6 +1141,51 @@ def test_phase72b_confirmation_rejects_tampered_leakage_audit(tmp_path):
         raise AssertionError("Expected tampered leakage-audit rejection")
 
 
+def test_phase72b_fit_and_confirmation_bind_prepared_manifest(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+    from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
+    from paper11_geofm.phase72b_protocol import (
+        load_hashed_json,
+        write_hashed_json,
+    )
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    prepared_hash = (
+        prepared_dir / "phase72b_prepared_artifacts.sha256"
+    ).read_text(encoding="ascii").strip()
+    progress = load_hashed_json(
+        frozen_dir / "phase72b_fit_progress.json",
+        frozen_dir / "phase72b_fit_progress.sha256",
+    )
+    selected = load_hashed_json(
+        frozen_dir / "phase72b_selected_models.json",
+        frozen_dir / "phase72b_selected_models.sha256",
+    )
+    assert progress["prepared_artifacts_sha256"] == prepared_hash
+    assert selected["prepared_artifacts_sha256"] == prepared_hash
+
+    manifest_path = prepared_dir / "phase72b_prepared_artifacts.json"
+    manifest = load_hashed_json(manifest_path)
+    manifest["integrity_revision"] = "changed"
+    write_hashed_json(manifest_path, manifest)
+    for operation in (
+        lambda: fit_freeze_phase72b_models(
+            prepared_dir=prepared_dir, output_dir=frozen_dir
+        ),
+        lambda: confirm_phase72b_information_gain_screen(
+            prepared_dir=prepared_dir, frozen_dir=frozen_dir
+        ),
+    ):
+        try:
+            operation()
+        except ValueError as exc:
+            assert "prepared artifact manifest hash mismatch" in str(exc).lower()
+        else:
+            raise AssertionError("Expected prepared-manifest binding rejection")
+
+
 def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
     from paper11_geofm.phase72b_information_gain_screen import (
         confirm_phase72b_information_gain_screen,
