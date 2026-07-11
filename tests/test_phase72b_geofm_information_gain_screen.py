@@ -653,6 +653,59 @@ def test_phase72b_prepare_separates_confirmation_targets_and_freezes_protocol(
     assert package["leakage_audit"]["status"] == "leakage_audit_passed"
 
 
+def test_phase72b_prepare_rejects_tampered_phase72a_sample_csv(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+    )
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    sample_path = (
+        inputs["phase72a_dir"] / "phase72a_temporal_sample_index.csv"
+    )
+    rows = pd.read_csv(sample_path, keep_default_na=False)
+    rows.loc[0, "y_1y"] = 1 - int(rows.loc[0, "y_1y"])
+    rows.to_csv(sample_path, index=False)
+    try:
+        prepare_phase72b_information_gain_screen(
+            protocol_path=inputs["protocol_path"],
+            phase72a_region_config=inputs["region_config"],
+            phase72a_package_dir=inputs["phase72a_dir"],
+            embedding_dirs=inputs["embedding_dirs"],
+            label_dirs=inputs["label_dirs"],
+            terrain_dir=inputs["terrain_dir"],
+        )
+    except ValueError as exc:
+        assert "phase 72a derived sample mismatch" in str(exc).lower()
+    else:
+        raise AssertionError("Expected tampered Phase 72A CSV to be rejected")
+
+
+def test_phase72b_prepare_rejects_tampered_phase72a_tensor_npz(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+    )
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    tensor_path = inputs["phase72a_dir"] / "phase72a_temporal_samples.npz"
+    with np.load(tensor_path) as loaded:
+        tensors = {name: loaded[name].copy() for name in loaded.files}
+    tensors["embedding_history"][0, 0, 0] += 1.0
+    np.savez_compressed(tensor_path, **tensors)
+    try:
+        prepare_phase72b_information_gain_screen(
+            protocol_path=inputs["protocol_path"],
+            phase72a_region_config=inputs["region_config"],
+            phase72a_package_dir=inputs["phase72a_dir"],
+            embedding_dirs=inputs["embedding_dirs"],
+            label_dirs=inputs["label_dirs"],
+            terrain_dir=inputs["terrain_dir"],
+        )
+    except ValueError as exc:
+        assert "phase 72a derived tensor mismatch" in str(exc).lower()
+    else:
+        raise AssertionError("Expected tampered Phase 72A NPZ to be rejected")
+
+
 def test_phase72b_metrics_match_hand_computable_brier_and_ece():
     from paper11_geofm.phase72b_metrics import phase72b_metrics
 

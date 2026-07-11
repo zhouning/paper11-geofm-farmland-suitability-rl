@@ -15,6 +15,9 @@ from .phase72a_label_sources import (
     audit_phase72a_region_assets,
     load_phase72a_region_contract,
 )
+from .phase72a_temporal_label_package import (
+    build_phase72a_temporal_label_package,
+)
 from .phase72b_explicit_features import build_phase72b_explicit_features
 from .phase72b_geofm_features import build_phase72b_geofm_features
 from .phase72b_metrics import (
@@ -147,6 +150,57 @@ def prepare_phase72b_information_gain_screen(
     asset_errors.extend(terrain_audit["errors"])
     if asset_errors:
         raise ValueError("Phase 72B inputs not ready: " + " | ".join(asset_errors))
+
+    rebuilt_phase72a = build_phase72a_temporal_label_package(
+        region_config=phase72a_region_config,
+        embedding_dirs=embedding_dirs,
+        label_dirs=label_dirs,
+        spatial_block_size=protocol.spatial_block_size,
+    )
+    if rebuilt_phase72a.get("phase72a_status") != "phase72a_label_inputs_ready":
+        raise ValueError("Phase 72A source-derived rebuild is not ready")
+    if {region.region_id for region in contract.regions} != {
+        "bishan",
+        "dongxing",
+    }:
+        raise ValueError("Phase 72B requires exact Bishan-Dongxing regions")
+    expected_rows = int(
+        dict(phase72a_package.get("row_counts", {})).get("sample_rows", -1)
+    )
+    if expected_rows != len(sample_rows):
+        raise ValueError("Phase 72A derived sample count mismatch")
+    if canonical_json_sha256(
+        {"rows": rebuilt_phase72a.get("manifest_rows", [])}
+    ) != canonical_json_sha256(
+        {"rows": phase72a_package.get("manifest_rows", [])}
+    ):
+        raise ValueError("Phase 72A source manifest mismatch")
+    rebuilt_rows = list(rebuilt_phase72a.get("sample_rows", []))
+    if len(rebuilt_rows) != len(sample_rows):
+        raise ValueError("Phase 72A derived sample count mismatch")
+    for index, (actual, expected) in enumerate(
+        zip(sample_rows, rebuilt_rows)
+    ):
+        comparable_keys = sorted(set(expected) - {"spatial_block_id"})
+        if any(
+            str(actual.get(key, "")) != str(expected.get(key, ""))
+            for key in comparable_keys
+        ):
+            raise ValueError(
+                f"Phase 72A derived sample mismatch at row {index}"
+            )
+    rebuilt_tensors = dict(rebuilt_phase72a.get("tensors", {}))
+    if set(tensors) != set(rebuilt_tensors):
+        raise ValueError("Phase 72A derived tensor mismatch: array names")
+    for name, expected in rebuilt_tensors.items():
+        actual = np.asarray(tensors[name])
+        expected_array = np.asarray(expected)
+        if (
+            actual.dtype != expected_array.dtype
+            or actual.shape != expected_array.shape
+            or not np.array_equal(actual, expected_array)
+        ):
+            raise ValueError(f"Phase 72A derived tensor mismatch: {name}")
 
     labels = {}
     terrain = {}
