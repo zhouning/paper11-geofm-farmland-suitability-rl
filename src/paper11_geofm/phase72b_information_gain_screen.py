@@ -545,6 +545,7 @@ def _blocked_confirmation_result(
     *,
     protocol_hash: str,
     selected_hash: str,
+    prepared_artifacts_hash: str,
     bundle_hashes: list[dict[str, object]],
     blockers: list[str],
     invalid_spatial_axes: list[str],
@@ -557,6 +558,7 @@ def _blocked_confirmation_result(
         "invalid_spatial_axes": sorted(set(invalid_spatial_axes)),
         "frozen_protocol_sha256": protocol_hash,
         "selected_models_sha256": selected_hash,
+        "prepared_artifacts_sha256": prepared_artifacts_hash,
         "bundle_hashes": bundle_hashes,
         "counts": {
             "confirmation_rows": 0,
@@ -575,6 +577,28 @@ def _blocked_confirmation_result(
         "next_action": "Remain in Phase 72B and resolve the recorded input or audit blocker.",
         "claim_boundary": PHASE72B_CLAIM_BOUNDARY,
     }
+
+
+def _audit_phase72b_spatial_confirmation_coverage(
+    expected_spatial_axes: list[str],
+    groups: Mapping[tuple[str, str, int | None], Mapping[str, object]],
+) -> tuple[list[str], list[str]]:
+    valid_axes = []
+    blockers = []
+    for axis_id in expected_spatial_axes:
+        explicit_group = groups.get((axis_id, _EXPLICIT_VARIANT, None))
+        primary_group = groups.get((axis_id, _PRIMARY_VARIANT, None))
+        if (
+            explicit_group is None
+            or primary_group is None
+            or len(np.unique(primary_group["outcome"])) != 2
+        ):
+            blockers.append(
+                f"incomplete spatial confirmation coverage: {axis_id}"
+            )
+            continue
+        valid_axes.append(axis_id)
+    return valid_axes, blockers
 
 
 def confirm_phase72b_information_gain_screen(
@@ -703,6 +727,9 @@ def confirm_phase72b_information_gain_screen(
         return _blocked_confirmation_result(
             protocol_hash=protocol_hash,
             selected_hash=selected_hash,
+            prepared_artifacts_hash=str(
+                verified_prepared["manifest_sha256"]
+            ),
             bundle_hashes=bundle_hashes,
             blockers=blockers,
             invalid_spatial_axes=invalid_spatial_axes,
@@ -839,10 +866,20 @@ def confirm_phase72b_information_gain_screen(
         elif len(np.unique(primary_group["outcome"])) != 2:
             blockers.append(f"missing confirmation class support: {axis_id}")
 
+    valid_spatial_axes, spatial_coverage_blockers = (
+        _audit_phase72b_spatial_confirmation_coverage(
+            expected_spatial_axes, groups
+        )
+    )
+    blockers.extend(spatial_coverage_blockers)
+
     if blockers:
         blocked = _blocked_confirmation_result(
             protocol_hash=protocol_hash,
             selected_hash=selected_hash,
+            prepared_artifacts_hash=str(
+                verified_prepared["manifest_sha256"]
+            ),
             bundle_hashes=bundle_hashes,
             blockers=blockers,
             invalid_spatial_axes=invalid_spatial_axes,
@@ -979,15 +1016,9 @@ def confirm_phase72b_information_gain_screen(
         )
 
     spatial_rows = []
-    for axis_id in expected_spatial_axes:
-        explicit_group = groups.get((axis_id, _EXPLICIT_VARIANT, None))
-        primary_group = groups.get((axis_id, _PRIMARY_VARIANT, None))
-        if explicit_group is None or primary_group is None:
-            invalid_spatial_axes.append(axis_id)
-            continue
-        if len(np.unique(primary_group["outcome"])) != 2:
-            invalid_spatial_axes.append(axis_id)
-            continue
+    for axis_id in valid_spatial_axes:
+        explicit_group = groups[(axis_id, _EXPLICIT_VARIANT, None)]
+        primary_group = groups[(axis_id, _PRIMARY_VARIANT, None)]
         region_id = axis_id.removeprefix("spatial_").split("_fold", 1)[0]
         spatial_rows.append(
             {
@@ -1037,6 +1068,9 @@ def confirm_phase72b_information_gain_screen(
         "invalid_spatial_axes": sorted(set(invalid_spatial_axes)),
         "frozen_protocol_sha256": protocol_hash,
         "selected_models_sha256": selected_hash,
+        "prepared_artifacts_sha256": str(
+            verified_prepared["manifest_sha256"]
+        ),
         "bundle_hashes": bundle_hashes,
         "counts": {
             "confirmation_rows": len(confirmation_outcomes),
@@ -1091,7 +1125,7 @@ def write_phase72b_confirmation_artifacts(
     result: Mapping[str, object], output_dir: Path | str
 ) -> dict[str, Path]:
     output = Path(output_dir)
-    output.mkdir(parents=True, exist_ok=True)
+    output.mkdir(parents=True, exist_ok=False)
     paths = {
         "metrics_csv": output / "phase72b_metrics.csv",
         "predictions_csv": output / "phase72b_predictions.csv",
@@ -1101,6 +1135,8 @@ def write_phase72b_confirmation_artifacts(
         "transfer_csv": output / "phase72b_transfer_summary.csv",
         "screen_json": output / "phase72b_information_gain_screen.json",
         "screen_md": output / "phase72b_information_gain_screen.md",
+        "receipt_json": output / "phase72b_confirmation_receipt.json",
+        "receipt_hash": output / "phase72b_confirmation_receipt.sha256",
     }
     _write_frame(
         paths["metrics_csv"],
@@ -1174,4 +1210,42 @@ def write_phase72b_confirmation_artifacts(
         "",
     ]
     paths["screen_md"].write_text("\n".join(lines), encoding="utf-8")
+    receipt_artifact_keys = (
+        "metrics_csv",
+        "predictions_csv",
+        "calibration_csv",
+        "bootstrap_csv",
+        "control_csv",
+        "transfer_csv",
+        "screen_json",
+        "screen_md",
+    )
+    receipt = {
+        "status": "phase72b_confirmation_recorded",
+        "phase72b_status": str(result["phase72b_status"]),
+        "frozen_protocol_sha256": str(
+            result.get("frozen_protocol_sha256", "")
+        ),
+        "prepared_artifacts_sha256": str(
+            result.get("prepared_artifacts_sha256", "")
+        ),
+        "selected_models_sha256": str(
+            result.get("selected_models_sha256", "")
+        ),
+        "artifacts": [
+            {
+                "name": paths[key].name,
+                "sha256": _file_sha256(paths[key]),
+            }
+            for key in receipt_artifact_keys
+        ],
+        "claim_boundary": str(
+            result.get("claim_boundary", PHASE72B_CLAIM_BOUNDARY)
+        ),
+    }
+    receipt_json, receipt_hash = write_hashed_json(
+        paths["receipt_json"], receipt
+    )
+    paths["receipt_json"] = receipt_json
+    paths["receipt_hash"] = receipt_hash
     return paths

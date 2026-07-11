@@ -1208,6 +1208,8 @@ def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
         "transfer_csv",
         "screen_json",
         "screen_md",
+        "receipt_json",
+        "receipt_hash",
     }
     assert result["phase72b_status"] in {
         "phase72b_inputs_not_ready",
@@ -1215,6 +1217,12 @@ def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
         "geofm_information_mixed",
         "geofm_information_supported",
     }
+    try:
+        write_phase72b_confirmation_artifacts(result, tmp_path / "confirm")
+    except FileExistsError:
+        pass
+    else:
+        raise AssertionError("Expected confirmation output reuse rejection")
     target_path = prepared_dir / "phase72b_confirmation_targets.npz"
     with np.load(target_path) as loaded:
         changed = {name: loaded[name].copy() for name in loaded.files}
@@ -1311,7 +1319,8 @@ def test_phase72b_runner_executes_modes_and_rejects_changed_manifest(tmp_path):
         text=True,
         check=False,
     )
-    assert confirmed.returncode == 0, confirmed.stderr
+    assert confirmed.returncode == 1, confirmed.stderr
+    assert "phase72b_inputs_not_ready" in confirmed.stdout
     selected_path = frozen_dir / "phase72b_selected_models.json"
     changed = json.loads(selected_path.read_text(encoding="utf-8"))
     changed["changed_after_freeze"] = True
@@ -1336,3 +1345,35 @@ def test_phase72b_runner_executes_modes_and_rejects_changed_manifest(tmp_path):
     )
     assert rejected.returncode == 1
     assert "hash mismatch" in rejected.stderr.lower()
+
+
+def test_phase72b_spatial_coverage_requires_every_expected_axis():
+    from paper11_geofm.phase72b_information_gain_screen import (
+        _audit_phase72b_spatial_confirmation_coverage,
+    )
+
+    groups = {
+        ("spatial_bishan_fold0", "explicit_history", None): {
+            "outcome": np.asarray([0, 1])
+        },
+        (
+            "spatial_bishan_fold0",
+            "explicit_plus_geofm_temporal_full",
+            None,
+        ): {"outcome": np.asarray([0, 1])},
+        ("spatial_bishan_fold1", "explicit_history", None): {
+            "outcome": np.asarray([1, 1])
+        },
+        (
+            "spatial_bishan_fold1",
+            "explicit_plus_geofm_temporal_full",
+            None,
+        ): {"outcome": np.asarray([1, 1])},
+    }
+    valid_axes, blockers = _audit_phase72b_spatial_confirmation_coverage(
+        ["spatial_bishan_fold0", "spatial_bishan_fold1"], groups
+    )
+    assert valid_axes == ["spatial_bishan_fold0"]
+    assert blockers == [
+        "incomplete spatial confirmation coverage: spatial_bishan_fold1"
+    ]

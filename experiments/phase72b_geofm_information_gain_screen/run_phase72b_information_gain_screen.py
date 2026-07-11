@@ -118,6 +118,8 @@ def main(argv: list[str] | None = None) -> int:
             print(f"Blockers: {result['blockers']}")
             print(f"Next action: {result['next_action']}")
             print(f"Claim boundary: {result['claim_boundary']}")
+            if result["phase72b_status"] == "phase72b_inputs_not_ready":
+                return 1
     except (KeyError, OSError, RuntimeError, ValueError) as exc:
         print(f"Error: {exc}", file=sys.stderr)
         return 1
