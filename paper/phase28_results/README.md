@@ -101,6 +101,7 @@ base-reward protocol.
 - `36_phase70_standardized_set_policy_rerun.md`: standardized set-policy rerun testing whether train-tile-fitted model-input standardization strengthens the bounded low-dimensional set-policy route.
 - `37_phase71_component_supervised_ranker.md`: component-supervised listwise ranker testing whether direct base-reward ranking improves the algorithm route beyond Phase 63 and Phase 70 while keeping GeoFM-specific claims secondary.
 - `38_phase72a_temporal_label_package.md`: audited Bishan-Dongxing independent annual ESRI label package with leakage-free one- and two-year farmland-persistence samples for the Phase 72B information-gain screen.
+- `39_phase72b_geofm_information_gain_screen.md`: Bishan-Dongxing information-gain screen whose archived confirmation yielded `geofm_information_not_supported`; a clean prepared-manifest-bound refit and receipt-bound confirmation are in progress before the evidence note is finalized.
 
 ## Reproduction Link
 

@@ -1986,3 +1986,234 @@ docs/superpowers/phase33_current_progress_handoff.md
 paper/phase28_results/38_phase72a_temporal_label_package.md
 docs/superpowers/specs/2026-07-10-phase72-geofm-star-future-stability-planning-design.md
 ```
+
+## Phase 72B Integrity-Repair Window Save - 2026-07-11 12:40 +08:00
+
+This checkpoint supersedes the archived Phase 72B completion wording later in
+this file.
+The archived confirmation remains numerically informative, but the official
+integrity-verified fit and confirmation are not complete yet.
+
+Integrity repairs committed in this window:
+
+```text
+73e861f fix: verify Phase 72B source provenance
+c3806f3 fix: freeze Phase 72B prepared artifacts
+93cd1cc fix: bind Phase 72B fits to prepared inputs
+acb7e65 fix: enforce Phase 72B confirmation integrity
+3ee474b fix: normalize Phase 72B source manifest identity
+```
+
+The repairs add:
+
+```text
+exact Phase 72A source-to-derived CSV/NPZ reconstruction checks
+hashed coverage of every Phase 72B prepared artifact
+prepared-manifest binding in fit progress and selected-model manifests
+matrix, split, feature-row, and leakage-audit tamper rejection
+complete expected spatial-confirmation coverage
+exit code 1 for phase72b_inputs_not_ready
+exclusive confirmation output directories
+hashed confirmation receipts
+path-independent Phase 72A manifest identity checks
+```
+
+Fresh Phase 72B verification before the real regeneration:
+
+```text
+28 passed in 319.91s
+relocation plus Phase 72A CSV/NPZ tamper checks: 3 passed in 6.58s
+```
+
+Archived ignored outputs were preserved under:
+
+```text
+experiments/phase72b_geofm_information_gain_screen/outputs/prepared_pre_integrity_repair_20260711
+experiments/phase72b_geofm_information_gain_screen/outputs/frozen_pre_integrity_repair_20260711
+experiments/phase72b_geofm_information_gain_screen/outputs/confirmation_pre_integrity_repair_20260711
+experiments/phase72b_geofm_information_gain_screen/outputs/prepared_relative_path_regen_20260711
+```
+
+The official regenerated prepared package is present at:
+
+```text
+experiments/phase72b_geofm_information_gain_screen/outputs/prepared
+```
+
+Its locked hashes are:
+
+```text
+frozen protocol SHA256: b51a8b45050579a7741d43d2244571815ef752304483184de30cb18a9cc1f864
+prepared-artifact manifest SHA256: 24aa98caf23bbcb5c28c120d1f0f3c94cfa6e1c47e41be4f93dfeabc8a5b1149
+development rows: 28,586
+confirmation rows: 3,041
+```
+
+Clean fit state at 2026-07-11 12:40 +08:00:
+
+```text
+status: phase72b_fit_in_progress
+started: 2026-07-11 12:23:59 +08:00
+fit command parent PID: 27016
+Python PIDs observed: 808, 35456
+checkpoint entries: 0
+bundle files: 0
+legacy progress/bundles reused: no
+```
+
+The running command is:
+
+```powershell
+D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_screen\run_phase72b_information_gain_screen.py --mode fit-freeze --prepared-dir experiments\phase72b_geofm_information_gain_screen\outputs\prepared --output-dir experiments\phase72b_geofm_information_gain_screen\outputs\frozen
+```
+
+If the process is no longer alive after reopening, run the same command. The
+checkpoint loader will resume only if both the frozen protocol and prepared
+manifest hashes match; otherwise it refuses the resume.
+
+After fit-freeze completes:
+
+1. Record the new selected-model hash and confirm it is bound to prepared hash
+   `24aa98caf23bbcb5c28c120d1f0f3c94cfa6e1c47e41be4f93dfeabc8a5b1149`.
+2. Verify that `outputs/confirmation` does not exist.
+3. Run confirmation once into `outputs/confirmation`.
+4. Verify `phase72b_confirmation_receipt.json` and its `.sha256` sidecar,
+   all eight artifact hashes, all 10 spatial axes, and zero blockers.
+5. Compare the official metrics with
+   `confirmation_pre_integrity_repair_20260711`; explain any difference.
+6. Finalize `39_phase72b_geofm_information_gain_screen.md` and replace the
+   archived/provisional wording only after the receipt is verified.
+7. Run adjacent tests, the full suite, smoke check, `git diff --check`, and
+   the formal-manuscript zero-diff check before the final result commit.
+
+Git state before this checkpoint commit:
+
+```text
+branch: phase72b-geofm-information-gain-screen
+HEAD before progress commit: 3ee474b
+origin/main divergence: 0 behind, 26 ahead
+formal manuscript: unchanged
+generated outputs: ignored and present locally only
+```
+
+Do not begin Phase 72C. Do not treat the archived negative status as the final
+official gate until the receipt-bound confirmation is complete.
+
+## Phase 72B GeoFM Information-Gain Screen - 2026-07-11 10:40 +08:00
+
+Phase 72B was completed on the isolated branch
+`phase72b-geofm-information-gain-screen`. Formal manuscript files under
+`paper/submission/final/*` were not changed.
+
+Tracked implementation and evidence files:
+
+```text
+experiments/phase72b_geofm_information_gain_screen/fetch_phase72b_terrain.py
+experiments/phase72b_geofm_information_gain_screen/phase72b_protocol.json
+experiments/phase72b_geofm_information_gain_screen/run_phase72b_information_gain_screen.py
+src/paper11_geofm/phase72b_explicit_features.py
+src/paper11_geofm/phase72b_geofm_features.py
+src/paper11_geofm/phase72b_information_gain_screen.py
+src/paper11_geofm/phase72b_metrics.py
+src/paper11_geofm/phase72b_models.py
+src/paper11_geofm/phase72b_protocol.py
+src/paper11_geofm/phase72b_splits.py
+src/paper11_geofm/phase72b_terrain.py
+tests/test_phase72b_geofm_information_gain_screen.py
+paper/phase28_results/39_phase72b_geofm_information_gain_screen.md
+```
+
+Real ignored outputs:
+
+```text
+experiments/phase72b_geofm_information_gain_screen/outputs/terrain
+experiments/phase72b_geofm_information_gain_screen/outputs/prepared
+experiments/phase72b_geofm_information_gain_screen/outputs/frozen
+experiments/phase72b_geofm_information_gain_screen/outputs/confirmation
+```
+
+Frozen state and confirmation coverage:
+
+```text
+protocol SHA256: b51a8b45050579a7741d43d2244571815ef752304483184de30cb18a9cc1f864
+selected-model SHA256: 0476dc525d302f1c08d6b1469b158fc186b054a184255c70e8c9a1b2eab5ade0
+development rows: 28,586
+confirmation rows: 3,041
+prediction rows: 155,091
+metric rows: 153
+valid spatial axes: 10
+invalid spatial axes: 0
+blockers: none
+```
+
+Real Phase 72B status:
+
+```text
+geofm_information_not_supported
+```
+
+Core pooled evidence:
+
+```text
+explicit-history AP / Brier / ECE: 0.446926399333 / 0.159201942852 / 0.135765732022
+temporal-GeoFM AP / Brier / ECE: 0.479935630218 / 0.135867713995 / 0.043965456329
+favorable deltas: AP +0.033009230885, Brier +0.023334228857, ECE +0.091800275693
+bootstrap AP delta mean and CI95: +0.032544250173 [0.002717295271, 0.062074205092]
+bootstrap Brier delta mean and CI95: +0.023332824458 [0.014780303261, 0.032000531884]
+bootstrap replicates: 2,000 / 2,000 valid over 214 clusters
+```
+
+Strict-control evidence:
+
+```text
+temporal-order shuffle: AP +0.000529157576, Brier +0.000987420911, selected seed 76
+spatial shuffle: AP +0.008391128471, Brier +0.012669512479, selected seed 74
+random projection: AP +0.014150381739, Brier +0.039950202911, selected seed 74
+frozen per-control requirements: AP >= 0.005 and Brier >= 0.002
+```
+
+The temporal-order comparison missed both frozen margins. Transfer was also
+heterogeneous: Bishan-to-Dongxing AP/Brier deltas were
+`-0.016801606373 / +0.026115464037`, while Dongxing-to-Bishan deltas were
+`+0.000851525829 / -0.001755600472`. Several buffered spatial folds harmed
+both AP and Brier. The pooled gain therefore cannot be promoted to a
+representation-specific, transferable, or spatially stable GeoFM claim.
+
+Transition decision:
+
+```text
+Do not begin Phase 72C.
+Stop the GeoFM-STaR route at the Phase 72B gate.
+Proceed only with the approved Phase 72 exhaustion analysis.
+Do not change thresholds, metrics, regions, seeds, or folds post hoc.
+```
+
+Claim boundary:
+
+```text
+Phase 72B is a leakage-free low-cost information-gain screen using independent
+annual product labels. It does not establish representation-specific GeoFM
+information, implement GeoFM-STaR, alter planning rewards, run planning, or
+revise the formal manuscript.
+```
+
+Next entry point:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl
+```
+
+Read next:
+
+```text
+paper/phase28_results/39_phase72b_geofm_information_gain_screen.md
+docs/superpowers/specs/2026-07-10-phase72-geofm-star-future-stability-planning-design.md
+```
+
+## Current Authoritative Resume Marker
+
+The authoritative state is the `Phase 72B Integrity-Repair Window Save` at
+2026-07-11 12:40 +08:00. The archived Phase 72B completion section immediately
+above records the pre-repair numerical run only. The clean prepared-manifest-
+bound refit is still in progress, the official receipt-bound confirmation is
+pending, and Phase 72C remains blocked.
