@@ -2212,8 +2212,34 @@ docs/superpowers/specs/2026-07-10-phase72-geofm-star-future-stability-planning-d
 
 ## Current Authoritative Resume Marker
 
-The authoritative state is the `Phase 72B Integrity-Repair Window Save` at
-2026-07-11 12:40 +08:00. The archived Phase 72B completion section immediately
-above records the pre-repair numerical run only. The clean prepared-manifest-
-bound refit is still in progress, the official receipt-bound confirmation is
-pending, and Phase 72C remains blocked.
+The authoritative state is the integrity-repaired Phase 72B fit checkpoint at
+2026-07-11 19:01 +08:00. The archived Phase 72B completion section immediately
+above records the pre-repair numerical run only.
+
+The clean prepared-manifest-bound refit completed normally with 153 of 153
+bundles across 13 axes and 4,806 validation metric rows. The hashed fit
+progress reports `phase72b_fit_complete`, the selected-model package reports
+`phase72b_models_frozen`, and both packages bind to the same selected-model
+SHA256:
+
+```text
+64038e0baad8b216964cab2bf0fbedd108a75f2b33ee0420d50176996b6376f5
+```
+
+The prepared and protocol identities remain:
+
+```text
+prepared artifacts: 24aa98caf23bbcb5c28c120d1f0f3c94cfa6e1c47e41be4f93dfeabc8a5b1149
+frozen protocol: b51a8b45050579a7741d43d2244571815ef752304483184de30cb18a9cc1f864
+```
+
+The official receipt-bound confirmation has not run yet. Resume with:
+
+```powershell
+D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_screen\run_phase72b_information_gain_screen.py --mode confirm --prepared-dir experiments\phase72b_geofm_information_gain_screen\outputs\prepared --frozen-dir experiments\phase72b_geofm_information_gain_screen\outputs\frozen --output-dir experiments\phase72b_geofm_information_gain_screen\outputs\confirmation
+```
+
+Do not treat the archived confirmation as official, and do not begin Phase 72C
+before the new receipt-bound confirmation is complete and reviewed. Generated
+Phase 72B outputs remain local under the intentionally Git-ignored `outputs/`
+tree.
