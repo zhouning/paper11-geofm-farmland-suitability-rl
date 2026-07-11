@@ -1,4 +1,5 @@
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -704,6 +705,37 @@ def test_phase72b_prepare_rejects_tampered_phase72a_tensor_npz(tmp_path):
         assert "phase 72a derived tensor mismatch" in str(exc).lower()
     else:
         raise AssertionError("Expected tampered Phase 72A NPZ to be rejected")
+
+
+def test_phase72b_prepare_accepts_equivalent_relocated_phase72a_assets(
+    tmp_path,
+):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+    )
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    relocated_embeddings = {}
+    relocated_labels = {}
+    for region_id in ("bishan", "dongxing"):
+        relocated_embeddings[region_id] = tmp_path / f"moved_{region_id}_emb"
+        relocated_labels[region_id] = tmp_path / f"moved_{region_id}_labels"
+        shutil.copytree(
+            inputs["embedding_dirs"][region_id],
+            relocated_embeddings[region_id],
+        )
+        shutil.copytree(
+            inputs["label_dirs"][region_id], relocated_labels[region_id]
+        )
+    package = prepare_phase72b_information_gain_screen(
+        protocol_path=inputs["protocol_path"],
+        phase72a_region_config=inputs["region_config"],
+        phase72a_package_dir=inputs["phase72a_dir"],
+        embedding_dirs=relocated_embeddings,
+        label_dirs=relocated_labels,
+        terrain_dir=inputs["terrain_dir"],
+    )
+    assert package["frozen_protocol"]["development_target_rows"] > 0
 
 
 def test_phase72b_metrics_match_hand_computable_brier_and_ece():

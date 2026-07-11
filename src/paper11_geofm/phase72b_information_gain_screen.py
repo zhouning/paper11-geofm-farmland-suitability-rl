@@ -80,6 +80,23 @@ def _target_arrays_sha256(arrays: Mapping[str, np.ndarray]) -> str:
     )
 
 
+def _phase72a_manifest_identity(
+    rows: list[Mapping[str, object]],
+) -> list[dict[str, object]]:
+    normalized = [
+        {key: value for key, value in dict(row).items() if key != "path"}
+        for row in rows
+    ]
+    return sorted(
+        normalized,
+        key=lambda row: (
+            str(row.get("region_id", "")),
+            int(row.get("year", 0)),
+            str(row.get("asset_type", "")),
+        ),
+    )
+
+
 def _load_phase72a_inputs(
     package_dir: Path,
 ) -> tuple[dict[str, object], list[dict[str, object]], dict[str, np.ndarray]]:
@@ -174,9 +191,17 @@ def prepare_phase72b_information_gain_screen(
     if expected_rows != len(sample_rows):
         raise ValueError("Phase 72A derived sample count mismatch")
     if canonical_json_sha256(
-        {"rows": rebuilt_phase72a.get("manifest_rows", [])}
+        {
+            "rows": _phase72a_manifest_identity(
+                list(rebuilt_phase72a.get("manifest_rows", []))
+            )
+        }
     ) != canonical_json_sha256(
-        {"rows": phase72a_package.get("manifest_rows", [])}
+        {
+            "rows": _phase72a_manifest_identity(
+                list(phase72a_package.get("manifest_rows", []))
+            )
+        }
     ):
         raise ValueError("Phase 72A source manifest mismatch")
     rebuilt_rows = list(rebuilt_phase72a.get("sample_rows", []))
