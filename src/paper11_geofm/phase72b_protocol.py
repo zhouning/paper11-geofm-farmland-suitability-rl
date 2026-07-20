@@ -27,6 +27,9 @@ class Phase72BProtocol:
     test_years: tuple[int, ...]
     control_seeds: tuple[int, ...]
     random_projection_dim: int
+    control_partition_local: bool
+    learned_transform_fit_scope: str
+    reuse_phase8_d4_tables: bool
     spatial_block_size: int
     spatial_folds: int
     buffer_rings: int
@@ -106,6 +109,16 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         76,
     ):
         raise ValueError("Phase 72B control seeds are frozen")
+    if controls.get("partition_local") is not True:
+        raise ValueError("Phase 72B controls must be partition-local")
+    if controls.get("learned_transform_fit_scope") != "training_rows_only":
+        raise ValueError(
+            "Phase 72B learned transforms must fit training rows only"
+        )
+    if controls.get("reuse_phase8_d4_tables") is not False:
+        raise ValueError(
+            "Phase 72B must not reuse transductive Phase 8 D4 tables"
+        )
 
     return Phase72BProtocol(
         seed=int(payload["seed"]),
@@ -121,6 +134,11 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         test_years=tuple(int(value) for value in years["test"]),
         control_seeds=tuple(int(value) for value in controls["seeds"]),
         random_projection_dim=int(controls["random_projection_dim"]),
+        control_partition_local=bool(controls["partition_local"]),
+        learned_transform_fit_scope=str(
+            controls["learned_transform_fit_scope"]
+        ),
+        reuse_phase8_d4_tables=bool(controls["reuse_phase8_d4_tables"]),
         spatial_block_size=int(spatial["block_size"]),
         spatial_folds=int(spatial["folds"]),
         buffer_rings=int(spatial["buffer_rings"]),

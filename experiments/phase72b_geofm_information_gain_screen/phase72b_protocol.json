@@ -24,7 +24,10 @@
   },
   "controls": {
     "seeds": [72, 73, 74, 75, 76],
-    "random_projection_dim": 320
+    "random_projection_dim": 320,
+    "partition_local": true,
+    "learned_transform_fit_scope": "training_rows_only",
+    "reuse_phase8_d4_tables": false
   },
   "spatial": {
     "block_size": 8,

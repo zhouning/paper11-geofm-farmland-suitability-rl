@@ -40,6 +40,9 @@ def _protocol_payload() -> dict:
         "controls": {
             "seeds": [72, 73, 74, 75, 76],
             "random_projection_dim": 320,
+            "partition_local": True,
+            "learned_transform_fit_scope": "training_rows_only",
+            "reuse_phase8_d4_tables": False,
         },
         "spatial": {"block_size": 8, "folds": 5, "buffer_rings": 1},
         "bootstrap": {"iterations": 2000, "seed": 72},
@@ -97,6 +100,64 @@ def test_phase72b_protocol_loads_frozen_thresholds(tmp_path):
     assert protocol.terrain_features[-1] == "local_relief"
     assert protocol.train_years == (2017, 2018, 2019, 2020, 2021)
     assert protocol.gates["ap_vs_explicit"] == 0.015
+    assert protocol.control_partition_local is True
+    assert protocol.learned_transform_fit_scope == "training_rows_only"
+    assert protocol.reuse_phase8_d4_tables is False
+
+
+def test_phase72b_protocol_rejects_nonlocal_control_partition(tmp_path):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    payload["controls"]["partition_local"] = False
+    path = tmp_path / "protocol.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        load_phase72b_protocol(path)
+    except ValueError as exc:
+        assert "partition-local" in str(exc).lower()
+    else:
+        raise AssertionError("Expected nonlocal controls to be rejected")
+
+
+def test_phase72b_protocol_rejects_nontraining_transform_fit(tmp_path):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    payload["controls"]["learned_transform_fit_scope"] = "all_rows"
+    path = tmp_path / "protocol.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        load_phase72b_protocol(path)
+    except ValueError as exc:
+        assert "training rows only" in str(exc).lower()
+    else:
+        raise AssertionError(
+            "Expected nontraining transform fitting to be rejected"
+        )
+
+
+def test_phase72b_protocol_rejects_phase8_d4_table_reuse(tmp_path):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    payload["controls"]["reuse_phase8_d4_tables"] = True
+    path = tmp_path / "protocol.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        load_phase72b_protocol(path)
+    except ValueError as exc:
+        assert "must not reuse" in str(exc).lower()
+    else:
+        raise AssertionError("Expected Phase 8 D4 table reuse to be rejected")
+
+
+def test_phase72b_canonical_json_hash_is_key_order_independent():
+    from paper11_geofm.phase72b_protocol import canonical_json_sha256
+
+    first = {"status": "frozen", "seed": 72}
+    second = {"seed": 72, "status": "frozen"}
+    assert canonical_json_sha256(first) == canonical_json_sha256(second)
 
 
 def test_phase72b_hashed_json_rejects_modified_payload(tmp_path):
@@ -115,7 +176,7 @@ def test_phase72b_hashed_json_rejects_modified_payload(tmp_path):
     try:
         load_hashed_json(json_path, hash_path)
     except ValueError as exc:
-        assert "hash" in str(exc).lower()
+        assert "hash mismatch" in str(exc).lower()
     else:
         raise AssertionError(
             "Expected a modified frozen payload to be rejected"
