@@ -1875,20 +1875,6 @@ def test_phase72b_gate_emits_all_frozen_statuses():
             ]
         },
         {
-            "spatial_rows": [
-                {
-                    "axis_id": f"spatial_{region_id}_fold00",
-                    "region_id": region_id,
-                    "rows": 10,
-                    "ap_delta": 0.001,
-                    "brier_delta": 0.001,
-                    "ece_delta": 0.001,
-                }
-                for region_id in ("bishan", "dongxing")
-                for _ in (0, 1)
-            ]
-        },
-        {
             "gates": {
                 **_protocol_payload()["gates"],
                 "ap_vs_explicit": 0.0,
@@ -1900,7 +1886,6 @@ def test_phase72b_gate_emits_all_frozen_statuses():
         "duplicate-transfer-axis",
         "missing-spatial-region",
         "one-fold-per-region",
-        "non-canonical-spatial-axis",
         "mutated-gate-threshold",
     ),
 )
@@ -1912,6 +1897,34 @@ def test_phase72b_gate_rejects_incomplete_evidence_identity(replacement):
     assert result["phase72b_status"] == "phase72b_inputs_not_ready"
     assert result["checks"]["input_ready"] is False
     assert result["evidence"]["input_blockers"]
+
+
+def test_phase72b_gate_rejects_noncanonical_spatial_axis_identity():
+    from paper11_geofm.phase72b_metrics import build_phase72b_gate
+
+    inputs = {
+        **_gate_inputs(),
+        "spatial_rows": [
+            {
+                "axis_id": f"spatial_{region_id}_fold{fold}",
+                "region_id": region_id,
+                "rows": 10,
+                "ap_delta": 0.001,
+                "brier_delta": 0.001,
+                "ece_delta": 0.001,
+            }
+            for region_id in ("bishan", "dongxing")
+            for fold in ("00", "1")
+        ],
+    }
+    result = build_phase72b_gate(**inputs, leakage_ok=True)
+
+    assert result["phase72b_status"] == "phase72b_inputs_not_ready"
+    assert result["checks"]["input_ready"] is False
+    assert {
+        "non-canonical spatial fold identity: spatial_bishan_fold00",
+        "non-canonical spatial fold identity: spatial_dongxing_fold00",
+    } <= set(result["evidence"]["input_blockers"])
 
 
 def test_phase72b_gate_audits_every_delta_and_preserves_pooled_direction():
