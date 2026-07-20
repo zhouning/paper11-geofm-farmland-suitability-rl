@@ -13,6 +13,21 @@ PHASE72B_CLAIM_BOUNDARY = (
     "alter planning rewards, run planning, or revise the formal manuscript."
 )
 
+PHASE72B_TERRAIN_SOURCE_ID = "copernicus_dem_glo30"
+PHASE72B_TERRAIN_COLLECTION = "COPERNICUS/DEM/GLO30"
+PHASE72B_TERRAIN_BAND = "DEM"
+PHASE72B_TERRAIN_SCALE_M = 500
+PHASE72B_TERRAIN_FEATURES = (
+    "elevation_mean",
+    "elevation_std",
+    "elevation_min",
+    "elevation_max",
+    "slope_mean",
+    "slope_std",
+    "slope_max",
+    "local_relief",
+)
+
 
 @dataclass(frozen=True)
 class Phase72BProtocol:
@@ -85,7 +100,10 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
     if payload.get("phase") != "phase72b_geofm_information_gain_screen":
         raise ValueError("Invalid Phase 72B protocol phase")
 
-    terrain = dict(payload["terrain"])
+    raw_terrain = payload.get("terrain")
+    if not isinstance(raw_terrain, dict):
+        raise ValueError("Phase 72B frozen terrain contract is missing")
+    terrain = dict(raw_terrain)
     years = dict(payload["years"])
     controls = dict(payload["controls"])
     spatial = dict(payload["spatial"])
@@ -94,6 +112,34 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         str(key): float(value)
         for key, value in dict(payload["gates"]).items()
     }
+    expected_terrain = {
+        "source_id": PHASE72B_TERRAIN_SOURCE_ID,
+        "collection": PHASE72B_TERRAIN_COLLECTION,
+        "band": PHASE72B_TERRAIN_BAND,
+        "scale_m": PHASE72B_TERRAIN_SCALE_M,
+    }
+    for field, expected in expected_terrain.items():
+        if field not in terrain:
+            raise ValueError(
+                f"Phase 72B frozen terrain contract missing field: {field}"
+            )
+        if terrain[field] != expected:
+            raise ValueError(
+                f"Phase 72B frozen terrain contract mismatch for {field}: "
+                f"expected {expected}, got {terrain[field]}"
+            )
+    terrain_feature_names = terrain.get("feature_names")
+    if not isinstance(terrain_feature_names, list):
+        raise ValueError(
+            "Phase 72B frozen terrain contract missing field: feature_names"
+        )
+    if (
+        tuple(str(value) for value in terrain_feature_names)
+        != PHASE72B_TERRAIN_FEATURES
+    ):
+        raise ValueError(
+            "Phase 72B frozen terrain contract mismatch for feature_names"
+        )
     partition = [
         int(value)
         for name in ("train", "validation", "test")

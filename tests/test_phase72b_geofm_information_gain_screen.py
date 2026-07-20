@@ -152,6 +152,78 @@ def test_phase72b_protocol_rejects_phase8_d4_table_reuse(tmp_path):
         raise AssertionError("Expected Phase 8 D4 table reuse to be rejected")
 
 
+def test_phase72b_protocol_rejects_mutated_copernicus_contract(tmp_path):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    mutations = {
+        "source_id": "other_dem",
+        "collection": "OTHER/DEM",
+        "band": "elevation",
+        "scale_m": 250,
+        "feature_names": list(
+            reversed(_protocol_payload()["terrain"]["feature_names"])
+        ),
+    }
+    for field, value in mutations.items():
+        payload = _protocol_payload()
+        payload["terrain"][field] = value
+        path = tmp_path / f"protocol_{field}.json"
+        path.write_text(json.dumps(payload), encoding="utf-8")
+        try:
+            load_phase72b_protocol(path)
+        except ValueError as exc:
+            assert "terrain" in str(exc).lower()
+        else:
+            raise AssertionError(
+                f"Expected frozen Copernicus contract refusal for {field}"
+            )
+
+
+def test_phase72b_protocol_rejects_missing_copernicus_contract_field(tmp_path):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    del payload["terrain"]["band"]
+    path = tmp_path / "protocol_missing_band.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        load_phase72b_protocol(path)
+    except ValueError as exc:
+        assert "terrain" in str(exc).lower()
+    else:
+        raise AssertionError("Expected missing terrain field refusal")
+
+
+def test_phase72b_protocol_rejects_missing_terrain_section(tmp_path):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    del payload["terrain"]
+    path = tmp_path / "protocol_missing_terrain.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        load_phase72b_protocol(path)
+    except ValueError as exc:
+        assert "terrain" in str(exc).lower()
+    else:
+        raise AssertionError("Expected missing terrain section refusal")
+
+
+def test_phase72b_protocol_rejects_null_terrain_feature_names(tmp_path):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    payload["terrain"]["feature_names"] = None
+    path = tmp_path / "protocol_null_features.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    try:
+        load_phase72b_protocol(path)
+    except ValueError as exc:
+        assert "terrain" in str(exc).lower()
+    else:
+        raise AssertionError("Expected null terrain feature names refusal")
+
+
 def test_phase72b_canonical_json_hash_is_key_order_independent():
     from paper11_geofm.phase72b_protocol import canonical_json_sha256
 
@@ -284,6 +356,162 @@ def test_phase72b_terrain_fetch_and_audit_use_exact_grid(tmp_path):
     assert len(audit["rows"][0]["sha256"]) == 64
 
 
+def test_phase72b_terrain_fetch_rejects_unexpected_extractor_key(tmp_path):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import fetch_phase72b_terrain
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+
+    def extractor(**_kwargs):
+        arrays = {
+            name: np.zeros((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        }
+        arrays["fallback_slope_proxy"] = np.zeros((2, 3), dtype=np.float32)
+        return arrays
+
+    manifest = fetch_phase72b_terrain(
+        protocol,
+        regions,
+        output_dir=tmp_path / "terrain",
+        extractor=extractor,
+    )
+    assert manifest["status"] == "failed"
+    assert not manifest["records"]
+    assert "unexpected" in manifest["failures"][0]["reason"].lower()
+
+
+def test_phase72b_terrain_audit_requires_fetch_manifest(tmp_path):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import audit_phase72b_terrain_assets
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+    terrain = tmp_path / "terrain"
+    terrain.mkdir()
+    np.savez_compressed(
+        terrain / "alpha_terrain.npz",
+        **{
+            name: np.zeros((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        },
+    )
+
+    audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+    assert audit["status"] == "phase72b_inputs_not_ready"
+    assert "manifest" in " ".join(audit["errors"]).lower()
+
+
+def test_phase72b_terrain_audit_binds_every_record_provenance_field(tmp_path):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import (
+        audit_phase72b_terrain_assets,
+        fetch_phase72b_terrain,
+    )
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+    terrain = tmp_path / "terrain"
+
+    def extractor(**_kwargs):
+        return {
+            name: np.zeros((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        }
+
+    fetch_phase72b_terrain(
+        protocol, regions, output_dir=terrain, extractor=extractor
+    )
+    manifest_path = terrain / "phase72b_terrain_fetch_manifest.json"
+    original = json.loads(manifest_path.read_text(encoding="utf-8"))
+    mutations = {
+        "source_id": "other_dem",
+        "collection": "OTHER/DEM",
+        "band": "elevation",
+        "feature_derivations": {},
+        "scale_m": 250,
+        "bbox": [0.0, 0.0, 1.0, 1.0],
+        "path": "wrong.npz",
+        "shape": "3x2",
+        "dtype": "float64",
+        "sha256": "0" * 64,
+    }
+    for field, value in mutations.items():
+        payload = json.loads(json.dumps(original))
+        payload["records"][0][field] = value
+        manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+        audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+        assert audit["status"] == "phase72b_inputs_not_ready", field
+    missing_payload = json.loads(json.dumps(original))
+    del missing_payload["records"][0]["source_id"]
+    manifest_path.write_text(
+        json.dumps(missing_payload), encoding="utf-8"
+    )
+    missing_audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+    assert missing_audit["status"] == "phase72b_inputs_not_ready"
+    assert "missing" in " ".join(missing_audit["errors"]).lower()
+    manifest_path.write_text(json.dumps(original), encoding="utf-8")
+
+
+def test_phase72b_terrain_audit_rejects_duplicate_records(tmp_path):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import (
+        audit_phase72b_terrain_assets,
+        fetch_phase72b_terrain,
+    )
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+    terrain = tmp_path / "terrain"
+
+    fetch_phase72b_terrain(
+        protocol,
+        regions,
+        output_dir=terrain,
+        extractor=lambda **_kwargs: {
+            name: np.zeros((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        },
+    )
+    manifest_path = terrain / "phase72b_terrain_fetch_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    payload["records"].append(dict(payload["records"][0]))
+    manifest_path.write_text(json.dumps(payload), encoding="utf-8")
+
+    audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+    assert audit["status"] == "phase72b_inputs_not_ready"
+    assert "duplicate" in " ".join(audit["errors"]).lower()
+
+
 def test_phase72b_terrain_audit_blocks_wrong_shape(tmp_path):
     from paper11_geofm.phase72a_label_sources import (
         load_phase72a_region_contract,
@@ -308,7 +536,9 @@ def test_phase72b_terrain_audit_blocks_wrong_shape(tmp_path):
     )
     audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
     assert audit["status"] == "phase72b_inputs_not_ready"
-    assert "shape" in " ".join(audit["errors"]).lower()
+    errors = " ".join(audit["errors"]).lower()
+    assert "manifest" in errors
+    assert "shape" in errors
 
 
 def test_phase72b_terrain_audit_blocks_unexpected_proxy_feature(tmp_path):
@@ -335,7 +565,9 @@ def test_phase72b_terrain_audit_blocks_unexpected_proxy_feature(tmp_path):
 
     audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
     assert audit["status"] == "phase72b_inputs_not_ready"
-    assert "unexpected" in " ".join(audit["errors"]).lower()
+    errors = " ".join(audit["errors"]).lower()
+    assert "manifest" in errors
+    assert "unexpected" in errors
 
 
 def test_phase72b_terrain_audit_rejects_fetch_manifest_hash_mismatch(
@@ -767,6 +999,7 @@ def _phase72b_prepare_fixture(tmp_path: Path):
     label_dirs = {}
     terrain_dir = tmp_path / "terrain"
     terrain_dir.mkdir()
+    terrain_arrays = {}
     validation_conversion = [5, 7, 5, 7, 5, 5, 7, 7]
     test_conversion = [5, 5, 5, 5, 5, 5, 5, 7]
     training_conversion = [5, 7, 5, 7, 5, 5, 5, 5]
@@ -809,9 +1042,7 @@ def _phase72b_prepare_fixture(tmp_path: Path):
                 _protocol_payload()["terrain"]["feature_names"]
             )
         }
-        np.savez_compressed(
-            terrain_dir / f"{region_id}_terrain.npz", **terrain
-        )
+        terrain_arrays[region_id] = terrain
     region_config = tmp_path / "regions.json"
     region_config.write_text(
         json.dumps(regions_payload), encoding="utf-8"
@@ -845,6 +1076,31 @@ def _phase72b_prepare_fixture(tmp_path: Path):
     protocol_path.write_text(
         json.dumps(fixture_protocol), encoding="utf-8"
     )
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import fetch_phase72b_terrain
+
+    terrain_protocol = load_phase72b_protocol(protocol_path)
+    terrain_contract = load_phase72a_region_contract(region_config)
+
+    def terrain_extractor(*, bbox, **_kwargs):
+        region_id = next(
+            region.region_id
+            for region in terrain_contract.regions
+            if region.bbox == tuple(bbox)
+        )
+        return terrain_arrays[region_id]
+
+    terrain_manifest = fetch_phase72b_terrain(
+        terrain_protocol,
+        terrain_contract,
+        output_dir=terrain_dir,
+        extractor=terrain_extractor,
+    )
+    if terrain_manifest["status"] != "complete":
+        raise AssertionError("Phase 72B terrain fixture fetch failed")
     return {
         "protocol_path": protocol_path,
         "region_config": region_config,
@@ -887,6 +1143,25 @@ def test_phase72b_prepare_separates_confirmation_targets_and_freezes_protocol(
     )
     assert frozen["status"] == "phase72b_protocol_frozen"
     assert package["leakage_audit"]["status"] == "leakage_audit_passed"
+    terrain_manifest = pd.read_csv(
+        paths["terrain_manifest_csv"], keep_default_na=False
+    )
+    assert {
+        "region_id",
+        "source_id",
+        "collection",
+        "band",
+        "feature_derivations_json",
+        "scale_m",
+        "bbox_json",
+        "path",
+        "shape",
+        "dtype",
+        "sha256",
+    }.issubset(terrain_manifest.columns)
+    assert frozen["terrain_manifest"][0]["source_id"] == (
+        "copernicus_dem_glo30"
+    )
 
 
 def test_phase72b_prepare_rejects_tampered_phase72a_sample_csv(tmp_path):
@@ -1327,6 +1602,39 @@ def _prepare_only(tmp_path: Path):
     prepared_dir = tmp_path / "prepared"
     write_phase72b_prepared_artifacts(package, prepared_dir)
     return inputs, prepared_dir
+
+
+def test_phase72b_prepared_loader_rejects_downgraded_terrain_manifest(
+    tmp_path,
+):
+    from paper11_geofm.phase72b_prepared import (
+        load_verified_phase72b_prepared,
+    )
+    from paper11_geofm.phase72b_protocol import (
+        load_hashed_json,
+        write_hashed_json,
+    )
+    from paper11_geofm.phase72b_terrain import _file_sha256
+
+    _, prepared_dir = _prepare_only(tmp_path)
+    terrain_path = prepared_dir / "phase72b_terrain_manifest.csv"
+    terrain_rows = pd.read_csv(terrain_path, keep_default_na=False)
+    terrain_rows[["region_id", "path", "shape", "sha256"]].to_csv(
+        terrain_path, index=False
+    )
+    manifest_path = prepared_dir / "phase72b_prepared_artifacts.json"
+    manifest = load_hashed_json(manifest_path)
+    for record in manifest["artifacts"]:
+        if record["name"] == terrain_path.name:
+            record["sha256"] = _file_sha256(terrain_path)
+    write_hashed_json(manifest_path, manifest)
+
+    try:
+        load_verified_phase72b_prepared(prepared_dir)
+    except ValueError as exc:
+        assert "terrain manifest" in str(exc).lower()
+    else:
+        raise AssertionError("Expected terrain provenance downgrade rejection")
 
 
 def test_phase72b_fit_freeze_rejects_tampered_prepared_matrix(tmp_path):

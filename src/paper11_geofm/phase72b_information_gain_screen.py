@@ -39,6 +39,7 @@ from .phase72b_protocol import (
 )
 from .phase72b_prepared import (
     PREPARED_ARTIFACT_NAMES,
+    TERRAIN_MANIFEST_CSV_FIELDS,
     load_verified_phase72b_prepared,
 )
 from .phase72b_splits import (
@@ -417,7 +418,7 @@ def write_phase72b_prepared_artifacts(
     _write_csv(
         paths["terrain_manifest_csv"],
         list(package["terrain_manifest_rows"]),
-        ["region_id", "path", "shape", "sha256"],
+        list(TERRAIN_MANIFEST_CSV_FIELDS),
     )
     _write_csv(
         paths["feature_manifest_csv"],

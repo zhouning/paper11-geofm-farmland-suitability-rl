@@ -28,6 +28,20 @@ PREPARED_ARTIFACT_NAMES = (
     "phase72b_frozen_protocol.sha256",
 )
 
+TERRAIN_MANIFEST_CSV_FIELDS = (
+    "region_id",
+    "source_id",
+    "collection",
+    "band",
+    "feature_derivations_json",
+    "scale_m",
+    "bbox_json",
+    "path",
+    "shape",
+    "dtype",
+    "sha256",
+)
+
 
 def _array_sha256(array: np.ndarray) -> str:
     value = np.ascontiguousarray(array)
@@ -65,6 +79,64 @@ def verify_phase72b_prepared_artifact(
         )
 
 
+def _terrain_manifest_identity(row: Mapping[str, object]) -> dict[str, object]:
+    try:
+        feature_derivations = row.get("feature_derivations")
+        if not isinstance(feature_derivations, dict):
+            feature_derivations = json.loads(
+                str(row["feature_derivations_json"])
+            )
+        bbox = row.get("bbox")
+        if not isinstance(bbox, list):
+            bbox = json.loads(str(row["bbox_json"]))
+        return {
+            "region_id": str(row["region_id"]),
+            "source_id": str(row["source_id"]),
+            "collection": str(row["collection"]),
+            "band": str(row["band"]),
+            "feature_derivations": dict(feature_derivations),
+            "scale_m": int(row["scale_m"]),
+            "bbox": [float(value) for value in bbox],
+            "path": str(row["path"]),
+            "shape": str(row["shape"]),
+            "dtype": str(row["dtype"]),
+            "sha256": str(row["sha256"]).lower(),
+        }
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Phase 72B terrain manifest provenance is invalid: {exc}"
+        ) from exc
+
+
+def _verify_terrain_manifest_provenance(
+    prepared: Path, frozen_protocol: Mapping[str, object]
+) -> None:
+    terrain_path = prepared / "phase72b_terrain_manifest.csv"
+    terrain_frame = pd.read_csv(terrain_path, keep_default_na=False)
+    terrain_rows = terrain_frame.to_dict(orient="records")
+    missing = set(TERRAIN_MANIFEST_CSV_FIELDS) - set(terrain_frame.columns)
+    if missing:
+        raise ValueError(
+            "Phase 72B terrain manifest provenance fields missing: "
+            f"{sorted(missing)}"
+        )
+    expected_rows = frozen_protocol.get("terrain_manifest")
+    if not isinstance(expected_rows, list) or not expected_rows:
+        raise ValueError("Phase 72B frozen terrain manifest is missing")
+    actual_identity = [
+        _terrain_manifest_identity(row) for row in terrain_rows
+    ]
+    expected_identity = [
+        _terrain_manifest_identity(row) for row in expected_rows
+    ]
+    if canonical_json_sha256({"rows": actual_identity}) != canonical_json_sha256(
+        {"rows": expected_identity}
+    ):
+        raise ValueError(
+            "Phase 72B terrain manifest provenance mismatch"
+        )
+
+
 def load_verified_phase72b_prepared(
     prepared_dir: Path | str,
     *,
@@ -94,6 +166,7 @@ def load_verified_phase72b_prepared(
     if str(manifest.get("frozen_protocol_sha256", "")).lower() != protocol_hash:
         raise ValueError("Phase 72B prepared manifest protocol hash mismatch")
     protocol = dict(frozen_protocol["tracked_protocol"])
+    _verify_terrain_manifest_provenance(prepared, frozen_protocol)
 
     split_registry = json.loads(
         (prepared / "phase72b_split_registry.json").read_text(encoding="utf-8")

@@ -62,6 +62,13 @@ def fetch_phase72b_terrain(
             ]
             if missing:
                 raise ValueError(f"missing terrain features: {missing}")
+            unexpected = sorted(
+                set(arrays) - set(protocol.terrain_features)
+            )
+            if unexpected:
+                raise ValueError(
+                    f"unexpected terrain features: {unexpected}"
+                )
             normalized = {}
             for name in protocol.terrain_features:
                 value = np.asarray(arrays[name], dtype=np.float32)
@@ -88,7 +95,7 @@ def fetch_phase72b_terrain(
                     ),
                     "scale_m": protocol.terrain_scale_m,
                     "bbox": list(region.bbox),
-                    "path": str(path),
+                    "path": path.name,
                     "shape": "x".join(map(str, region.grid_shape)),
                     "dtype": "float32",
                     "sha256": _file_sha256(path),
@@ -133,10 +140,10 @@ def _audit_fetch_manifest(
     protocol: Phase72BProtocol,
     regions: Phase72ARegionContract,
     root: Path,
-) -> tuple[dict[str, str], list[str]]:
+) -> tuple[dict[str, dict[str, object]], list[str]]:
     manifest_path = root / "phase72b_terrain_fetch_manifest.json"
     if not manifest_path.exists():
-        return {}, []
+        return {}, [f"missing terrain fetch manifest: {manifest_path}"]
 
     try:
         payload = json.loads(manifest_path.read_text(encoding="utf-8"))
@@ -146,7 +153,8 @@ def _audit_fetch_manifest(
         return {}, [f"unreadable terrain fetch manifest: {exc}"]
 
     errors = []
-    expected_ids = {region.region_id for region in regions.regions}
+    expected_region_ids = [region.region_id for region in regions.regions]
+    region_specs = {region.region_id: region for region in regions.regions}
     if payload.get("status") != "complete":
         errors.append(
             "terrain fetch manifest is not complete: "
@@ -166,32 +174,71 @@ def _audit_fetch_manifest(
             )
 
     declared_ids = payload.get("declared_region_ids")
-    if (
-        not isinstance(declared_ids, list)
-        or set(map(str, declared_ids)) != expected_ids
-    ):
+    if not isinstance(declared_ids, list) or [
+        str(value) for value in declared_ids
+    ] != expected_region_ids:
         errors.append("terrain fetch manifest declared regions mismatch")
 
     records = payload.get("records")
     if not isinstance(records, list):
         return {}, [*errors, "terrain fetch manifest records must be a list"]
-    hashes = {}
+    record_by_region = {}
+    observed_region_ids = []
     for raw_record in records:
         if not isinstance(raw_record, dict):
             errors.append("terrain fetch manifest record must be an object")
             continue
         region_id = str(raw_record.get("region_id", ""))
-        if not region_id or region_id in hashes:
+        observed_region_ids.append(region_id)
+        if not region_id or region_id in record_by_region:
             errors.append(
                 f"terrain fetch manifest duplicate or blank region: {region_id}"
             )
             continue
-        hashes[region_id] = str(raw_record.get("sha256", "")).lower()
-    if set(hashes) != expected_ids:
+        record_by_region[region_id] = dict(raw_record)
+        if region_id not in region_specs:
+            errors.append(
+                f"terrain fetch manifest unexpected region: {region_id}"
+            )
+            continue
+        region = region_specs[region_id]
+        expected_record = {
+            "source_id": protocol.terrain_source_id,
+            "collection": protocol.terrain_collection,
+            "band": protocol.terrain_band,
+            "feature_derivations": _feature_derivations(
+                protocol.terrain_band
+            ),
+            "scale_m": protocol.terrain_scale_m,
+            "bbox": list(region.bbox),
+            "path": f"{region.region_id}_terrain.npz",
+            "shape": "x".join(map(str, region.grid_shape)),
+            "dtype": "float32",
+        }
+        for field, expected in expected_record.items():
+            if field not in raw_record:
+                errors.append(
+                    f"terrain fetch manifest record missing {region_id} "
+                    f"{field}"
+                )
+            elif raw_record[field] != expected:
+                errors.append(
+                    f"terrain fetch manifest record {field} mismatch "
+                    f"{region_id}: expected {expected}, "
+                    f"got {raw_record[field]}"
+                )
+        expected_hash = str(raw_record.get("sha256", "")).lower()
+        if len(expected_hash) != 64 or any(
+            value not in "0123456789abcdef" for value in expected_hash
+        ):
+            errors.append(
+                f"terrain fetch manifest record sha256 invalid: {region_id}"
+            )
+    if observed_region_ids != expected_region_ids:
         errors.append("terrain fetch manifest record regions mismatch")
     if payload.get("failures"):
         errors.append("terrain fetch manifest contains failures")
-    return hashes, errors
+    return record_by_region, errors
 
 
 def audit_phase72b_terrain_assets(
@@ -201,7 +248,7 @@ def audit_phase72b_terrain_assets(
 ) -> dict[str, object]:
     root = Path(terrain_dir)
     rows = []
-    manifest_hashes, errors = _audit_fetch_manifest(
+    manifest_records, errors = _audit_fetch_manifest(
         protocol, regions, root
     )
 
@@ -238,22 +285,52 @@ def audit_phase72b_terrain_assets(
                         errors.append(
                             f"non-finite terrain values {region.region_id} {name}"
                         )
+                    if value.dtype != np.dtype("float32"):
+                        errors.append(
+                            f"terrain dtype mismatch {region.region_id} {name}: "
+                            f"expected float32, got {value.dtype}"
+                        )
             actual_hash = _file_sha256(path)
-            expected_hash = manifest_hashes.get(region.region_id)
+            manifest_record = manifest_records.get(region.region_id)
+            expected_hash = (
+                str(manifest_record.get("sha256", "")).lower()
+                if manifest_record is not None
+                else None
+            )
             if expected_hash is not None and expected_hash != actual_hash:
                 errors.append(
                     f"terrain fetch manifest hash mismatch "
                     f"{region.region_id}: expected {expected_hash}, "
                     f"got {actual_hash}"
                 )
-            rows.append(
-                {
-                    "region_id": region.region_id,
-                    "path": str(path),
-                    "shape": "x".join(map(str, region.grid_shape)),
-                    "sha256": actual_hash,
-                }
-            )
+            if manifest_record is not None:
+                feature_derivations = _feature_derivations(
+                    protocol.terrain_band
+                )
+                bbox = list(region.bbox)
+                rows.append(
+                    {
+                        "region_id": region.region_id,
+                        "source_id": protocol.terrain_source_id,
+                        "collection": protocol.terrain_collection,
+                        "band": protocol.terrain_band,
+                        "feature_derivations": feature_derivations,
+                        "feature_derivations_json": json.dumps(
+                            feature_derivations,
+                            sort_keys=True,
+                            separators=(",", ":"),
+                        ),
+                        "scale_m": protocol.terrain_scale_m,
+                        "bbox": bbox,
+                        "bbox_json": json.dumps(
+                            bbox, separators=(",", ":")
+                        ),
+                        "path": f"{region.region_id}_terrain.npz",
+                        "shape": "x".join(map(str, region.grid_shape)),
+                        "dtype": "float32",
+                        "sha256": actual_hash,
+                    }
+                )
         except (OSError, ValueError) as exc:
             errors.append(
                 f"unreadable terrain package {region.region_id}: {exc}"
