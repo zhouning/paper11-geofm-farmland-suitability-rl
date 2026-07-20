@@ -1875,6 +1875,20 @@ def test_phase72b_gate_emits_all_frozen_statuses():
             ]
         },
         {
+            "spatial_rows": [
+                {
+                    "axis_id": f"spatial_{region_id}_fold00",
+                    "region_id": region_id,
+                    "rows": 10,
+                    "ap_delta": 0.001,
+                    "brier_delta": 0.001,
+                    "ece_delta": 0.001,
+                }
+                for region_id in ("bishan", "dongxing")
+                for _ in (0, 1)
+            ]
+        },
+        {
             "gates": {
                 **_protocol_payload()["gates"],
                 "ap_vs_explicit": 0.0,
@@ -1886,6 +1900,7 @@ def test_phase72b_gate_emits_all_frozen_statuses():
         "duplicate-transfer-axis",
         "missing-spatial-region",
         "one-fold-per-region",
+        "non-canonical-spatial-axis",
         "mutated-gate-threshold",
     ),
 )

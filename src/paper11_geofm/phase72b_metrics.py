@@ -465,6 +465,10 @@ def build_phase72b_gate(
             else:
                 if fold_id not in range(5):
                     blockers.append(f"invalid spatial fold identity: {axis_id}")
+                elif axis_id != f"spatial_{region_id}_fold{fold_id}":
+                    blockers.append(
+                        f"non-canonical spatial fold identity: {axis_id}"
+                    )
                 else:
                     folds_by_region[region_id].add(fold_id)
         rows = _gate_number(
