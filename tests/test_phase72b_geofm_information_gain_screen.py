@@ -1070,20 +1070,31 @@ def test_phase72b_fit_control_materialization_never_reads_test_rows(
 
     def guarded(*args, **kwargs):
         partitions = list(kwargs["partition_ids"])
-        calls.append(partitions)
+        sample_indexes = [int(row["sample_index"]) for row in args[3]]
+        calls.append((partitions, sample_indexes))
         assert len(set(partitions)) == 1
         assert not partitions[0].endswith(":test")
+        assert not ({900, 901} & set(sample_indexes))
         return original(*args, **kwargs)
 
     monkeypatch.setattr(models, "build_phase72b_control_features", guarded)
     histories, masks, rows = _geofm_control_fixture()
+    histories = np.concatenate(
+        [histories, np.full((2, 4, 2), 900, dtype=np.float32)]
+    )
+    masks = np.concatenate([masks, np.ones((2, 4), dtype=bool)])
+    rows = [
+        *rows,
+        {"sample_index": 900, "region_id": "test", "origin_year": 2023},
+        {"sample_index": 901, "region_id": "test", "origin_year": 2023},
+    ]
     matrices = {
-        "explicit_history": np.ones((4, 1), dtype=np.float32),
+        "explicit_history": np.ones((6, 1), dtype=np.float32),
         "embedding_history": histories,
         "history_mask": masks,
-        "geofm_temporal_full": np.ones((4, 10), dtype=np.float32),
+        "geofm_temporal_full": np.ones((6, 10), dtype=np.float32),
     }
-    matrix = models._fit_control_variant_matrix(
+    train_matrix, validation_matrix = models._fit_control_variant_matrices(
         "explicit_plus_spatial_shuffle",
         matrices,
         rows,
@@ -1092,10 +1103,12 @@ def test_phase72b_fit_control_materialization_never_reads_test_rows(
         axis_id="pooled_temporal",
         seed=72,
     )
-    assert matrix.shape == (4, 11)
+    assert train_matrix.shape == validation_matrix.shape == (2, 11)
+    assert np.isfinite(train_matrix).all()
+    assert np.isfinite(validation_matrix).all()
     assert calls == [
-        ["pooled_temporal:train"] * 2,
-        ["pooled_temporal:validation"] * 2,
+        (["pooled_temporal:train"] * 2, [0, 1]),
+        (["pooled_temporal:validation"] * 2, [2, 3]),
     ]
 
 
@@ -2103,6 +2116,41 @@ def test_phase72b_confirmation_rejects_tampered_leakage_audit(tmp_path):
         assert "prepared artifact hash mismatch" in str(exc).lower()
     else:
         raise AssertionError("Expected tampered leakage-audit rejection")
+
+
+def test_phase72b_confirmation_controls_only_read_axis_test_rows(
+    tmp_path, monkeypatch
+):
+    import paper11_geofm.phase72b_information_gain_screen as screen
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    split_registry = json.loads(
+        (prepared_dir / "phase72b_split_registry.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    expected = {
+        f"{axis_id}:test": [int(value) for value in axis["test"]]
+        for axis_id, axis in split_registry.items()
+    }
+    original = screen.build_phase72b_control_features
+    calls = []
+
+    def guarded(*args, **kwargs):
+        partitions = list(kwargs["partition_ids"])
+        sample_indexes = [int(row["sample_index"]) for row in args[3]]
+        assert len(set(partitions)) == 1
+        partition_id = partitions[0]
+        assert partition_id.endswith(":test")
+        assert sample_indexes == expected[partition_id]
+        calls.append((partition_id, sample_indexes))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(screen, "build_phase72b_control_features", guarded)
+    screen.confirm_phase72b_information_gain_screen(
+        prepared_dir=prepared_dir, frozen_dir=frozen_dir
+    )
+    assert calls
 
 
 def test_phase72b_fit_and_confirmation_bind_prepared_manifest(tmp_path):
