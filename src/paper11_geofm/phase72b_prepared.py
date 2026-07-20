@@ -8,7 +8,11 @@ from typing import Iterable, Mapping
 import numpy as np
 import pandas as pd
 
-from .phase72b_protocol import canonical_json_sha256, load_hashed_json
+from .phase72b_protocol import (
+    canonical_json_sha256,
+    load_hashed_json,
+    validate_phase72b_protocol_payload,
+)
 from .phase72b_splits import audit_phase72b_splits
 from .phase72b_terrain import _file_sha256
 
@@ -263,6 +267,7 @@ def load_verified_phase72b_prepared(
             "Phase 72B control materialization was not deferred"
         )
     protocol = dict(frozen_protocol["tracked_protocol"])
+    validate_phase72b_protocol_payload(protocol)
     _verify_terrain_manifest_provenance(prepared, frozen_protocol)
     _verify_feature_manifest_contract(prepared, frozen_protocol)
 

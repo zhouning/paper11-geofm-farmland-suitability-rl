@@ -1,3 +1,4 @@
+import importlib.util
 import json
 import shutil
 import subprocess
@@ -123,6 +124,141 @@ def test_phase72b_protocol_rejects_mutated_frozen_gates(tmp_path, mutation):
     path = tmp_path / "protocol.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="gate"):
+        load_phase72b_protocol(path)
+
+
+@pytest.mark.parametrize(
+    ("mutation", "section"),
+    [
+        (lambda payload: payload.__setitem__("seed", 73), "seed"),
+        (
+            lambda payload: payload["years"].update(
+                {
+                    "train": [2017, 2018, 2019, 2020, 2022],
+                    "validation": [2021],
+                }
+            ),
+            "years",
+        ),
+        (lambda payload: payload.pop("years"), "top-level"),
+        (
+            lambda payload: payload["controls"].__setitem__(
+                "random_projection_dim", 64
+            ),
+            "controls",
+        ),
+        (
+            lambda payload: payload["terrain"].__setitem__(
+                "undeclared_field", "changed"
+            ),
+            "terrain",
+        ),
+        (
+            lambda payload: payload["spatial"].__setitem__("block_size", 4),
+            "spatial",
+        ),
+        (
+            lambda payload: payload["spatial"].__setitem__("folds", 4),
+            "spatial",
+        ),
+        (
+            lambda payload: payload["spatial"].__setitem__(
+                "buffer_rings", 0
+            ),
+            "spatial",
+        ),
+        (
+            lambda payload: payload["bootstrap"].__setitem__(
+                "iterations", 100
+            ),
+            "bootstrap",
+        ),
+        (
+            lambda payload: payload["bootstrap"].__setitem__("seed", 73),
+            "bootstrap",
+        ),
+        (
+            lambda payload: payload["models"].__setitem__(
+                "logistic_c", [0.1]
+            ),
+            "models",
+        ),
+        (
+            lambda payload: payload["models"].__setitem__(
+                "undeclared_family", [1]
+            ),
+            "models",
+        ),
+        (
+            lambda payload: payload["calibration"].__setitem__(
+                "methods", ["none"]
+            ),
+            "calibration",
+        ),
+        (
+            lambda payload: payload["calibration"].__setitem__(
+                "ece_bins", 4
+            ),
+            "calibration",
+        ),
+        (
+            lambda payload: payload.__setitem__("budgets", [0.20, 0.10]),
+            "budgets",
+        ),
+        (
+            lambda payload: payload.__setitem__(
+                "variants", list(reversed(payload["variants"]))
+            ),
+            "variants",
+        ),
+        (
+            lambda payload: payload["variants"].pop(),
+            "variants",
+        ),
+        (
+            lambda payload: payload.__setitem__("undeclared_section", {}),
+            "top-level",
+        ),
+        (
+            lambda payload: payload["gates"].__setitem__(
+                "ap_vs_explicit", "0.015"
+            ),
+            "gate",
+        ),
+    ],
+    ids=(
+        "seed",
+        "exact-year-roles",
+        "missing-years-section",
+        "random-projection-dimension",
+        "extra-terrain-field",
+        "spatial-block-size",
+        "spatial-fold-count",
+        "spatial-buffer-rings",
+        "bootstrap-iterations",
+        "bootstrap-seed",
+        "model-grid",
+        "extra-model-field",
+        "calibration-methods",
+        "calibration-bins",
+        "budget-order",
+        "variant-order",
+        "missing-variant",
+        "extra-top-level-field",
+        "gate-number-type",
+    ),
+)
+def test_phase72b_protocol_rejects_any_mutation_to_frozen_contract(
+    tmp_path, mutation, section
+):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    mutation(payload)
+    path = tmp_path / "protocol.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ValueError, match=section):
         load_phase72b_protocol(path)
 
 
@@ -1342,7 +1478,7 @@ def _phase72b_prepare_fixture(tmp_path: Path):
                 "bbox": [100 + region_index, 20, 101 + region_index, 21],
                 "years": years,
                 "grid_shape": [2, 3],
-                "embedding_dim": 2,
+                "embedding_dim": 64,
                 "embedding_pattern": f"{region_id}_emb_{{year}}.npy",
                 "label_pattern": f"{region_id}_lulc_{{year}}.npy",
             }
@@ -1354,7 +1490,7 @@ def _phase72b_prepare_fixture(tmp_path: Path):
         embedding_dirs[region_id] = embedding_dir
         label_dirs[region_id] = label_dir
         for offset, year in enumerate(years):
-            embedding = np.zeros((2, 3, 2), dtype=np.float32)
+            embedding = np.zeros((2, 3, 64), dtype=np.float32)
             embedding[..., 0] = year + region_index
             embedding[..., 1] = np.arange(6).reshape(2, 3)
             labels = np.full((2, 3), 7, dtype=np.int32)
@@ -1389,21 +1525,6 @@ def _phase72b_prepare_fixture(tmp_path: Path):
     )
     phase72a_dir = tmp_path / "phase72a"
     write_phase72a_temporal_label_package_artifacts(phase72a, phase72a_dir)
-    fixture_protocol["models"] = {
-        "logistic_c": [0.1],
-        "logistic_class_weight": ["none"],
-        "hgb_learning_rate": [0.08],
-        "hgb_max_leaf_nodes": [15],
-        "hgb_min_samples_leaf": [2],
-        "hgb_max_iter": 20,
-        "hgb_l2_regularization": [0.0],
-    }
-    fixture_protocol["calibration"] = {
-        "methods": ["none", "sigmoid"],
-        "ece_bins": 4,
-    }
-    fixture_protocol["controls"]["random_projection_dim"] = 10
-    fixture_protocol["bootstrap"] = {"iterations": 100, "seed": 72}
     protocol_path = tmp_path / "protocol.json"
     protocol_path.write_text(
         json.dumps(fixture_protocol), encoding="utf-8"
@@ -2007,6 +2128,16 @@ def test_phase72b_model_selection_returns_frozen_bundle():
     assert np.isfinite(probability).all()
 
 
+def test_phase72b_frozen_model_grid_expands_to_all_candidates():
+    from paper11_geofm.phase72b_models import _candidate_configs
+
+    candidates = _candidate_configs(_protocol_payload())
+
+    assert len(candidates) == 24
+    assert sum(row["model_family"] == "logistic" for row in candidates) == 8
+    assert sum(row["model_family"] == "hgb" for row in candidates) == 16
+
+
 def test_phase72b_model_fit_limits_native_threads(monkeypatch):
     import paper11_geofm.phase72b_models as models
 
@@ -2078,6 +2209,43 @@ def test_phase72b_model_search_uses_bounded_thread_parallelism(monkeypatch):
     assert captured == {"n_jobs": 4, "prefer": "threads"}
 
 
+def _install_phase72b_fast_pipeline(monkeypatch):
+    import paper11_geofm.phase72b_geofm_features as geofm_features
+    import paper11_geofm.phase72b_information_gain_screen as screen
+    import paper11_geofm.phase72b_models as models
+
+    monkeypatch.setattr(
+        models,
+        "_candidate_configs",
+        lambda _protocol: [
+            {
+                "model_family": "logistic",
+                "C": 0.1,
+                "class_weight": None,
+            }
+        ],
+    )
+
+    def fast_projection(*, input_dim, output_dim, seed):
+        del seed
+        projection = np.zeros((int(input_dim), int(output_dim)), np.float32)
+        projection[: int(output_dim), :] = np.eye(
+            int(output_dim), dtype=np.float32
+        )
+        return projection
+
+    monkeypatch.setattr(
+        geofm_features, "build_phase72b_random_projection", fast_projection
+    )
+    full_bootstrap = screen.paired_block_bootstrap
+
+    def fast_bootstrap(*args, iterations, **kwargs):
+        del iterations
+        return full_bootstrap(*args, iterations=100, **kwargs)
+
+    monkeypatch.setattr(screen, "paired_block_bootstrap", fast_bootstrap)
+
+
 def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path, monkeypatch):
     from paper11_geofm.phase72b_information_gain_screen import (
         prepare_phase72b_information_gain_screen,
@@ -2089,6 +2257,7 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path, monkeypatch):
     )
     from paper11_geofm.phase72b_protocol import load_hashed_json
 
+    _install_phase72b_fast_pipeline(monkeypatch)
     inputs = _phase72b_prepare_fixture(tmp_path)
     prepared_package = prepare_phase72b_information_gain_screen(
         protocol_path=inputs["protocol_path"],
@@ -2169,13 +2338,14 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path, monkeypatch):
         raise AssertionError("Expected a modified model bundle to be rejected")
 
 
-def _prepare_and_freeze(tmp_path: Path):
+def _prepare_and_freeze(tmp_path: Path, monkeypatch):
     from paper11_geofm.phase72b_information_gain_screen import (
         prepare_phase72b_information_gain_screen,
         write_phase72b_prepared_artifacts,
     )
     from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
 
+    _install_phase72b_fast_pipeline(monkeypatch)
     inputs = _phase72b_prepare_fixture(tmp_path)
     package = prepare_phase72b_information_gain_screen(
         protocol_path=inputs["protocol_path"],
@@ -2315,12 +2485,63 @@ def test_phase72b_fit_freeze_rejects_tampered_split_registry(tmp_path):
         raise AssertionError("Expected tampered split registry rejection")
 
 
-def test_phase72b_confirmation_rejects_tampered_feature_rows(tmp_path):
+def test_phase72b_fit_and_confirm_reject_resigned_protocol_mutation(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+    from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
+    from paper11_geofm.phase72b_prepared import (
+        load_verified_phase72b_prepared,
+    )
+    from paper11_geofm.phase72b_protocol import (
+        load_hashed_json,
+        write_hashed_json,
+    )
+    from paper11_geofm.phase72b_terrain import _file_sha256
+
+    _, prepared_dir = _prepare_only(tmp_path)
+    protocol_path = prepared_dir / "phase72b_frozen_protocol.json"
+    protocol_hash_path = prepared_dir / "phase72b_frozen_protocol.sha256"
+    frozen_protocol = load_hashed_json(protocol_path, protocol_hash_path)
+    frozen_protocol["tracked_protocol"]["bootstrap"]["iterations"] = 100
+    write_hashed_json(protocol_path, frozen_protocol)
+
+    manifest_path = prepared_dir / "phase72b_prepared_artifacts.json"
+    manifest = load_hashed_json(manifest_path)
+    manifest["frozen_protocol_sha256"] = protocol_hash_path.read_text(
+        encoding="ascii"
+    ).strip()
+    for record in manifest["artifacts"]:
+        if record["name"] in {
+            protocol_path.name,
+            protocol_hash_path.name,
+        }:
+            record["sha256"] = _file_sha256(
+                prepared_dir / record["name"]
+            )
+    write_hashed_json(manifest_path, manifest)
+
+    for operation in (
+        lambda: load_verified_phase72b_prepared(prepared_dir),
+        lambda: fit_freeze_phase72b_models(
+            prepared_dir=prepared_dir, output_dir=tmp_path / "frozen"
+        ),
+        lambda: confirm_phase72b_information_gain_screen(
+            prepared_dir=prepared_dir, frozen_dir=tmp_path / "missing_frozen"
+        ),
+    ):
+        with pytest.raises(ValueError, match="bootstrap"):
+            operation()
+
+
+def test_phase72b_confirmation_rejects_tampered_feature_rows(
+    tmp_path, monkeypatch
+):
     from paper11_geofm.phase72b_information_gain_screen import (
         confirm_phase72b_information_gain_screen,
     )
 
-    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
     row_path = prepared_dir / "phase72b_feature_rows.csv"
     rows = pd.read_csv(row_path, keep_default_na=False)
     rows.loc[0, "spatial_block_id"] = "bishan_br999_bc999"
@@ -2335,12 +2556,14 @@ def test_phase72b_confirmation_rejects_tampered_feature_rows(tmp_path):
         raise AssertionError("Expected tampered feature-row rejection")
 
 
-def test_phase72b_confirmation_rejects_tampered_leakage_audit(tmp_path):
+def test_phase72b_confirmation_rejects_tampered_leakage_audit(
+    tmp_path, monkeypatch
+):
     from paper11_geofm.phase72b_information_gain_screen import (
         confirm_phase72b_information_gain_screen,
     )
 
-    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
     audit_path = prepared_dir / "phase72b_leakage_audit.json"
     audit = json.loads(audit_path.read_text(encoding="utf-8"))
     audit["invalid_spatial_axes"] = ["spatial_bishan_fold0"]
@@ -2360,7 +2583,7 @@ def test_phase72b_confirmation_controls_only_read_axis_test_rows(
 ):
     import paper11_geofm.phase72b_information_gain_screen as screen
 
-    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
     split_registry = json.loads(
         (prepared_dir / "phase72b_split_registry.json").read_text(
             encoding="utf-8"
@@ -2390,7 +2613,9 @@ def test_phase72b_confirmation_controls_only_read_axis_test_rows(
     assert calls
 
 
-def test_phase72b_fit_and_confirmation_bind_prepared_manifest(tmp_path):
+def test_phase72b_fit_and_confirmation_bind_prepared_manifest(
+    tmp_path, monkeypatch
+):
     from paper11_geofm.phase72b_information_gain_screen import (
         confirm_phase72b_information_gain_screen,
     )
@@ -2400,7 +2625,7 @@ def test_phase72b_fit_and_confirmation_bind_prepared_manifest(tmp_path):
         write_hashed_json,
     )
 
-    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
     prepared_hash = (
         prepared_dir / "phase72b_prepared_artifacts.sha256"
     ).read_text(encoding="ascii").strip()
@@ -2435,13 +2660,13 @@ def test_phase72b_fit_and_confirmation_bind_prepared_manifest(tmp_path):
             raise AssertionError("Expected prepared-manifest binding rejection")
 
 
-def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
+def test_phase72b_confirmation_writes_stable_outputs(tmp_path, monkeypatch):
     from paper11_geofm.phase72b_information_gain_screen import (
         confirm_phase72b_information_gain_screen,
         write_phase72b_confirmation_artifacts,
     )
 
-    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path)
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
     result = confirm_phase72b_information_gain_screen(
         prepared_dir=prepared_dir, frozen_dir=frozen_dir
     )
@@ -2489,7 +2714,9 @@ def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
         )
 
 
-def test_phase72b_runner_executes_modes_and_rejects_changed_manifest(tmp_path):
+def test_phase72b_runner_executes_modes_and_rejects_changed_manifest(
+    tmp_path, monkeypatch
+):
     inputs = _phase72b_prepare_fixture(tmp_path)
     script = (
         ROOT
@@ -2533,27 +2760,32 @@ def test_phase72b_runner_executes_modes_and_rejects_changed_manifest(tmp_path):
         check=False,
     )
     assert prepare.returncode == 0, prepare.stderr
-    frozen = subprocess.run(
-        [
-            sys.executable,
-            str(script),
-            "--mode",
-            "fit-freeze",
-            "--prepared-dir",
-            str(prepared_dir),
-            "--output-dir",
-            str(frozen_dir),
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
+    _install_phase72b_fast_pipeline(monkeypatch)
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
     )
-    assert frozen.returncode == 0, frozen.stderr
-    confirmed = subprocess.run(
+    from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
+
+    fit_freeze_phase72b_models(
+        prepared_dir=prepared_dir, output_dir=frozen_dir
+    )
+    result = confirm_phase72b_information_gain_screen(
+        prepared_dir=prepared_dir, frozen_dir=frozen_dir
+    )
+    assert result["phase72b_status"] == "phase72b_inputs_not_ready"
+
+    spec = importlib.util.spec_from_file_location("phase72b_runner", script)
+    runner = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(runner)
+    monkeypatch.setattr(
+        runner, "confirm_phase72b_information_gain_screen", lambda **_: result
+    )
+    monkeypatch.setattr(
+        runner, "write_phase72b_confirmation_artifacts", lambda *_: {}
+    )
+    assert runner.main(
         [
-            sys.executable,
-            str(script),
             "--mode",
             "confirm",
             "--prepared-dir",
@@ -2562,14 +2794,8 @@ def test_phase72b_runner_executes_modes_and_rejects_changed_manifest(tmp_path):
             str(frozen_dir),
             "--output-dir",
             str(confirm_dir),
-        ],
-        cwd=ROOT,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    assert confirmed.returncode == 1, confirmed.stderr
-    assert "phase72b_inputs_not_ready" in confirmed.stdout
+        ]
+    ) == 1
     selected_path = frozen_dir / "phase72b_selected_models.json"
     changed = json.loads(selected_path.read_text(encoding="utf-8"))
     changed["changed_after_freeze"] = True

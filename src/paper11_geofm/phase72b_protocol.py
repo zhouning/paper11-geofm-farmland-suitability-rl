@@ -27,6 +27,13 @@ PHASE72B_TERRAIN_FEATURES = (
     "slope_max",
     "local_relief",
 )
+PHASE72B_TERRAIN = {
+    "source_id": PHASE72B_TERRAIN_SOURCE_ID,
+    "collection": PHASE72B_TERRAIN_COLLECTION,
+    "band": PHASE72B_TERRAIN_BAND,
+    "scale_m": PHASE72B_TERRAIN_SCALE_M,
+    "feature_names": list(PHASE72B_TERRAIN_FEATURES),
+}
 PHASE72B_GATES = {
     "ap_vs_explicit": 0.015,
     "brier_vs_explicit": 0.005,
@@ -37,6 +44,60 @@ PHASE72B_GATES = {
     "transfer_brier_gain": 0.002,
     "transfer_ap_harm": 0.005,
     "transfer_brier_harm": 0.002,
+}
+PHASE72B_SEED = 72
+PHASE72B_YEARS = {
+    "train": [2017, 2018, 2019, 2020, 2021],
+    "validation": [2022],
+    "test": [2023],
+}
+PHASE72B_CONTROLS = {
+    "seeds": [72, 73, 74, 75, 76],
+    "random_projection_dim": 320,
+    "partition_local": True,
+    "learned_transform_fit_scope": "training_rows_only",
+    "reuse_phase8_d4_tables": False,
+}
+PHASE72B_SPATIAL = {"block_size": 8, "folds": 5, "buffer_rings": 1}
+PHASE72B_BOOTSTRAP = {"iterations": 2000, "seed": 72}
+PHASE72B_MODELS = {
+    "logistic_c": [0.01, 0.1, 1.0, 10.0],
+    "logistic_class_weight": ["none", "balanced"],
+    "hgb_learning_rate": [0.03, 0.08],
+    "hgb_max_leaf_nodes": [15, 31],
+    "hgb_min_samples_leaf": [20, 50],
+    "hgb_max_iter": 200,
+    "hgb_l2_regularization": [0.0, 1.0],
+}
+PHASE72B_CALIBRATION = {
+    "methods": ["none", "sigmoid", "isotonic"],
+    "ece_bins": 10,
+}
+PHASE72B_BUDGETS = [0.10, 0.20]
+PHASE72B_VARIANTS = [
+    "explicit_static",
+    "explicit_history",
+    "geofm_current_only",
+    "geofm_temporal_mean_only",
+    "explicit_plus_geofm_current",
+    "explicit_plus_geofm_temporal_full",
+    "explicit_plus_temporal_order_shuffle",
+    "explicit_plus_spatial_shuffle",
+    "explicit_plus_random_projection",
+]
+PHASE72B_TOP_LEVEL_FIELDS = {
+    "phase",
+    "seed",
+    "terrain",
+    "years",
+    "controls",
+    "spatial",
+    "bootstrap",
+    "models",
+    "calibration",
+    "budgets",
+    "variants",
+    "gates",
 }
 
 
@@ -106,19 +167,36 @@ def load_hashed_json(
     return payload
 
 
-def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
-    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+def _require_frozen_value(
+    actual: object, expected: object, *, section: str
+) -> None:
+    if canonical_json_sha256({"value": actual}) != canonical_json_sha256(
+        {"value": expected}
+    ):
+        raise ValueError(f"Phase 72B frozen {section} contract mismatch")
+
+
+def validate_phase72b_protocol_payload(
+    payload: Mapping[str, object],
+) -> Phase72BProtocol:
+    payload = dict(payload)
     if payload.get("phase") != "phase72b_geofm_information_gain_screen":
         raise ValueError("Invalid Phase 72B protocol phase")
+    _require_frozen_value(payload.get("seed"), PHASE72B_SEED, section="seed")
 
     raw_terrain = payload.get("terrain")
     if not isinstance(raw_terrain, dict):
         raise ValueError("Phase 72B frozen terrain contract is missing")
+    if set(payload) != PHASE72B_TOP_LEVEL_FIELDS:
+        raise ValueError("Phase 72B frozen top-level contract mismatch")
     terrain = dict(raw_terrain)
-    years = dict(payload["years"])
-    controls = dict(payload["controls"])
-    spatial = dict(payload["spatial"])
-    bootstrap = dict(payload["bootstrap"])
+    years = dict(payload.get("years", {}))
+    controls = dict(payload.get("controls", {}))
+    spatial = dict(payload.get("spatial", {}))
+    bootstrap = dict(payload.get("bootstrap", {}))
+    _require_frozen_value(
+        payload.get("gates"), PHASE72B_GATES, section="gate thresholds"
+    )
     gates = {
         str(key): float(value)
         for key, value in dict(payload["gates"]).items()
@@ -153,6 +231,7 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         raise ValueError(
             "Phase 72B frozen terrain contract mismatch for feature_names"
         )
+    _require_frozen_value(terrain, PHASE72B_TERRAIN, section="terrain")
     partition = [
         int(value)
         for name in ("train", "validation", "test")
@@ -178,6 +257,26 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         raise ValueError(
             "Phase 72B must not reuse transductive Phase 8 D4 tables"
         )
+    _require_frozen_value(years, PHASE72B_YEARS, section="years")
+    _require_frozen_value(controls, PHASE72B_CONTROLS, section="controls")
+    _require_frozen_value(spatial, PHASE72B_SPATIAL, section="spatial")
+    _require_frozen_value(
+        bootstrap, PHASE72B_BOOTSTRAP, section="bootstrap"
+    )
+    _require_frozen_value(
+        payload.get("models"), PHASE72B_MODELS, section="models"
+    )
+    _require_frozen_value(
+        payload.get("calibration"),
+        PHASE72B_CALIBRATION,
+        section="calibration",
+    )
+    _require_frozen_value(
+        payload.get("budgets"), PHASE72B_BUDGETS, section="budgets"
+    )
+    _require_frozen_value(
+        payload.get("variants"), PHASE72B_VARIANTS, section="variants"
+    )
 
     return Phase72BProtocol(
         seed=int(payload["seed"]),
@@ -206,3 +305,8 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         gates=gates,
         raw=payload,
     )
+
+
+def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
+    payload = json.loads(Path(path).read_text(encoding="utf-8"))
+    return validate_phase72b_protocol_payload(payload)
