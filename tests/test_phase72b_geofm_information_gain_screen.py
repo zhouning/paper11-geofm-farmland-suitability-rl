@@ -1118,7 +1118,10 @@ def test_phase72b_controls_require_frozen_partition_contract():
 
 
 def test_phase72b_splits_lock_years_regions_and_spatial_buffers():
-    from paper11_geofm.phase72b_splits import build_phase72b_split_registry
+    from paper11_geofm.phase72b_splits import (
+        audit_phase72b_splits,
+        build_phase72b_split_registry,
+    )
 
     rows = []
     for region in ("bishan", "dongxing"):
@@ -1132,7 +1135,9 @@ def test_phase72b_splits_lock_years_regions_and_spatial_buffers():
                         "spatial_block_id": (
                             f"{region}_br{br:03d}_bc{bc:03d}"
                         ),
-                        "conversion_1y": (br + bc + year) % 2,
+                        "conversion_1y": (
+                            br // 2 + bc // 2 + year
+                        ) % 2,
                     }
                 )
     registry = build_phase72b_split_registry(
@@ -1165,6 +1170,71 @@ def test_phase72b_splits_lock_years_regions_and_spatial_buffers():
     assert not set(spatial["train_block_ids"]) & set(
         spatial["buffer_block_ids"]
     )
+    assert pooled["region_summary"]["train"] == ["bishan", "dongxing"]
+    assert pooled["year_summary"]["validation"] == [2022]
+    audit = audit_phase72b_splits(
+        rows,
+        registry,
+        train_years=(2017, 2018, 2019, 2020, 2021),
+        validation_year=2022,
+        test_year=2023,
+        spatial_folds=5,
+        control_partition_local=True,
+        reuse_phase8_d4_tables=False,
+    )
+    assert audit["status"] == "leakage_audit_passed"
+
+    unsafe = audit_phase72b_splits(
+        rows,
+        registry,
+        train_years=(2017, 2018, 2019, 2020, 2021),
+        validation_year=2022,
+        test_year=2023,
+        spatial_folds=5,
+        control_partition_local=False,
+        reuse_phase8_d4_tables=True,
+    )
+    assert unsafe["status"] == "phase72b_inputs_not_ready"
+    assert "partition" in " ".join(unsafe["errors"]).lower()
+    assert "phase 8" in " ".join(unsafe["errors"]).lower()
+
+    wrong_transfer = json.loads(json.dumps(registry))
+    wrong_transfer["bishan_to_dongxing"]["test"] = [
+        next(
+            index
+            for index, row in enumerate(rows)
+            if row["region_id"] == "bishan" and row["origin_year"] == 2023
+        )
+    ]
+    wrong_transfer_audit = audit_phase72b_splits(
+        rows,
+        wrong_transfer,
+        train_years=(2017, 2018, 2019, 2020, 2021),
+        validation_year=2022,
+        test_year=2023,
+        spatial_folds=5,
+        control_partition_local=True,
+        reuse_phase8_d4_tables=False,
+    )
+    assert wrong_transfer_audit["status"] == "phase72b_inputs_not_ready"
+    assert "transfer" in " ".join(
+        wrong_transfer_audit["errors"]
+    ).lower()
+
+    invalid_index = json.loads(json.dumps(registry))
+    invalid_index["pooled_temporal"]["train"].append(len(rows))
+    invalid_index_audit = audit_phase72b_splits(
+        rows,
+        invalid_index,
+        train_years=(2017, 2018, 2019, 2020, 2021),
+        validation_year=2022,
+        test_year=2023,
+        spatial_folds=5,
+        control_partition_local=True,
+        reuse_phase8_d4_tables=False,
+    )
+    assert invalid_index_audit["status"] == "phase72b_inputs_not_ready"
+    assert "index" in " ".join(invalid_index_audit["errors"]).lower()
 
 
 def _phase72b_prepare_fixture(tmp_path: Path):
@@ -1333,6 +1403,37 @@ def test_phase72b_prepare_separates_confirmation_targets_and_freezes_protocol(
     )
     assert frozen["status"] == "phase72b_protocol_frozen"
     assert package["leakage_audit"]["status"] == "leakage_audit_passed"
+    assert package["control_materialization_status"] == (
+        "deferred_until_axis_partitions_frozen"
+    )
+    assert frozen["split_before_controls"] is True
+    assert frozen["control_materialization_status"] == (
+        "deferred_until_axis_partitions_frozen"
+    )
+    assert set(frozen["source_file_sha256"]) == {
+        "tracked_protocol",
+        "phase72a_region_config",
+        "phase72a_package",
+        "phase72a_sample_index",
+        "phase72a_tensors",
+    }
+    assert all(
+        len(value) == 64
+        for value in frozen["source_file_sha256"].values()
+    )
+    with np.load(paths["feature_matrices_npz"]) as matrices:
+        assert not any(
+            "shuffle" in name or "random_projection" in name
+            for name in matrices.files
+        )
+    feature_manifest = pd.read_csv(
+        paths["feature_manifest_csv"], keep_default_na=False
+    )
+    assert set(feature_manifest["materialization_status"]) == {
+        "prepared_base_matrix"
+    }
+    assert not feature_manifest["control_id"].any()
+    assert not feature_manifest["partition_id"].any()
     terrain_manifest = pd.read_csv(
         paths["terrain_manifest_csv"], keep_default_na=False
     )
@@ -1825,6 +1926,35 @@ def test_phase72b_prepared_loader_rejects_downgraded_terrain_manifest(
         assert "terrain manifest" in str(exc).lower()
     else:
         raise AssertionError("Expected terrain provenance downgrade rejection")
+
+
+def test_phase72b_prepared_loader_rejects_prepare_time_control_matrix(
+    tmp_path,
+):
+    from paper11_geofm.phase72b_prepared import (
+        load_verified_phase72b_prepared,
+    )
+    from paper11_geofm.phase72b_protocol import (
+        load_hashed_json,
+        write_hashed_json,
+    )
+    from paper11_geofm.phase72b_terrain import _file_sha256
+
+    _, prepared_dir = _prepare_only(tmp_path)
+    feature_path = prepared_dir / "phase72b_feature_manifest.csv"
+    feature_rows = pd.read_csv(feature_path, keep_default_na=False)
+    feature_rows.loc[0, "control_id"] = "spatial_shuffle"
+    feature_rows.loc[0, "partition_id"] = "pooled_temporal:train"
+    feature_rows.to_csv(feature_path, index=False)
+    manifest_path = prepared_dir / "phase72b_prepared_artifacts.json"
+    manifest = load_hashed_json(manifest_path)
+    for record in manifest["artifacts"]:
+        if record["name"] == feature_path.name:
+            record["sha256"] = _file_sha256(feature_path)
+    write_hashed_json(manifest_path, manifest)
+
+    with pytest.raises(ValueError, match="feature manifest"):
+        load_verified_phase72b_prepared(prepared_dir)
 
 
 def test_phase72b_fit_freeze_rejects_tampered_prepared_matrix(tmp_path):

@@ -39,6 +39,7 @@ from .phase72b_protocol import (
     write_hashed_json,
 )
 from .phase72b_prepared import (
+    FEATURE_MANIFEST_CSV_FIELDS,
     PREPARED_ARTIFACT_NAMES,
     TERRAIN_MANIFEST_CSV_FIELDS,
     load_verified_phase72b_prepared,
@@ -233,6 +234,35 @@ def prepare_phase72b_information_gain_screen(
         ):
             raise ValueError(f"Phase 72A derived tensor mismatch: {name}")
 
+    split_rows = []
+    for row in sample_rows:
+        adjusted = dict(row)
+        adjusted["conversion_1y"] = 1 - int(row["y_1y"])
+        split_rows.append(adjusted)
+    split_registry = build_phase72b_split_registry(
+        split_rows,
+        train_years=protocol.train_years,
+        validation_year=protocol.validation_years[0],
+        test_year=protocol.test_years[0],
+        folds=protocol.spatial_folds,
+        buffer_rings=protocol.buffer_rings,
+    )
+    leakage_audit = audit_phase72b_splits(
+        split_rows,
+        split_registry,
+        train_years=protocol.train_years,
+        validation_year=protocol.validation_years[0],
+        test_year=protocol.test_years[0],
+        spatial_folds=protocol.spatial_folds,
+        control_partition_local=protocol.control_partition_local,
+        reuse_phase8_d4_tables=protocol.reuse_phase8_d4_tables,
+    )
+    if leakage_audit["status"] != "leakage_audit_passed":
+        raise ValueError(
+            "Phase 72B leakage audit failed: "
+            + " | ".join(leakage_audit["errors"])
+        )
+
     labels = {}
     terrain = {}
     for region in contract.regions:
@@ -270,32 +300,6 @@ def prepare_phase72b_information_gain_screen(
         **explicit["registry"],
         **_geofm_registry(contract.regions[0].embedding_dim),
     }
-    split_rows = []
-    for row in sample_rows:
-        adjusted = dict(row)
-        adjusted["conversion_1y"] = 1 - int(row["y_1y"])
-        split_rows.append(adjusted)
-    split_registry = build_phase72b_split_registry(
-        split_rows,
-        train_years=protocol.train_years,
-        validation_year=protocol.validation_years[0],
-        test_year=protocol.test_years[0],
-        folds=protocol.spatial_folds,
-        buffer_rings=protocol.buffer_rings,
-    )
-    leakage_audit = audit_phase72b_splits(
-        split_rows,
-        split_registry,
-        train_years=protocol.train_years,
-        validation_year=protocol.validation_years[0],
-        test_year=protocol.test_years[0],
-    )
-    if leakage_audit["status"] != "leakage_audit_passed":
-        raise ValueError(
-            "Phase 72B leakage audit failed: "
-            + " | ".join(leakage_audit["errors"])
-        )
-
     origins = np.asarray(
         [int(row["origin_year"]) for row in split_rows], dtype=np.int16
     )
@@ -324,6 +328,11 @@ def prepare_phase72b_information_gain_screen(
             "shape": "x".join(map(str, value.shape)),
             "dtype": str(value.dtype),
             "sha256": _array_sha256(value),
+            "artifact_role": "base_matrix",
+            "control_id": "",
+            "control_seed": "",
+            "partition_id": "",
+            "materialization_status": "prepared_base_matrix",
         }
         for name, value in matrices.items()
     ]
@@ -346,6 +355,24 @@ def prepare_phase72b_information_gain_screen(
         "status": "phase72b_protocol_frozen",
         "tracked_protocol": protocol.raw,
         "tracked_protocol_sha256": canonical_json_sha256(protocol.raw),
+        "source_file_sha256": {
+            "tracked_protocol": _file_sha256(Path(protocol_path)),
+            "phase72a_region_config": _file_sha256(
+                Path(phase72a_region_config)
+            ),
+            "phase72a_package": _file_sha256(
+                Path(phase72a_package_dir)
+                / "phase72a_temporal_label_package.json"
+            ),
+            "phase72a_sample_index": _file_sha256(
+                Path(phase72a_package_dir)
+                / "phase72a_temporal_sample_index.csv"
+            ),
+            "phase72a_tensors": _file_sha256(
+                Path(phase72a_package_dir)
+                / "phase72a_temporal_samples.npz"
+            ),
+        },
         "phase72a_package_sha256": _file_sha256(
             Path(phase72a_package_dir)
             / "phase72a_temporal_label_package.json"
@@ -356,6 +383,10 @@ def prepare_phase72b_information_gain_screen(
         "feature_registry_sha256": canonical_json_sha256(registry),
         "split_registry_sha256": canonical_json_sha256(split_registry),
         "leakage_status": leakage_audit["status"],
+        "split_before_controls": True,
+        "control_materialization_status": (
+            "deferred_until_axis_partitions_frozen"
+        ),
         "development_target_rows": int(development_mask.sum()),
         "confirmation_target_rows": int(confirmation_mask.sum()),
         "development_targets_sha256": _target_arrays_sha256(
@@ -378,6 +409,9 @@ def prepare_phase72b_information_gain_screen(
         "confirmation_targets": confirmation_targets,
         "split_registry": split_registry,
         "leakage_audit": leakage_audit,
+        "control_materialization_status": (
+            "deferred_until_axis_partitions_frozen"
+        ),
         "frozen_protocol": frozen_protocol,
         "claim_boundary": PHASE72B_CLAIM_BOUNDARY,
     }
@@ -424,7 +458,7 @@ def write_phase72b_prepared_artifacts(
     _write_csv(
         paths["feature_manifest_csv"],
         list(package["feature_manifest_rows"]),
-        ["matrix_id", "shape", "dtype", "sha256"],
+        list(FEATURE_MANIFEST_CSV_FIELDS),
     )
     paths["feature_registry_json"].write_text(
         json.dumps(package["feature_registry"], indent=2, sort_keys=True),

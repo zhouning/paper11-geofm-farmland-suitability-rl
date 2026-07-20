@@ -41,6 +41,26 @@ TERRAIN_MANIFEST_CSV_FIELDS = (
     "dtype",
     "sha256",
 )
+BASE_FEATURE_MATRIX_NAMES = (
+    "explicit_static",
+    "explicit_history",
+    "geofm_current",
+    "geofm_temporal_mean",
+    "geofm_temporal_full",
+    "embedding_history",
+    "history_mask",
+)
+FEATURE_MANIFEST_CSV_FIELDS = (
+    "matrix_id",
+    "shape",
+    "dtype",
+    "sha256",
+    "artifact_role",
+    "control_id",
+    "control_seed",
+    "partition_id",
+    "materialization_status",
+)
 
 
 def _array_sha256(array: np.ndarray) -> str:
@@ -137,6 +157,73 @@ def _verify_terrain_manifest_provenance(
         )
 
 
+def _feature_manifest_identity(
+    row: Mapping[str, object],
+) -> dict[str, object]:
+    try:
+        return {
+            "matrix_id": str(row["matrix_id"]),
+            "shape": str(row["shape"]),
+            "dtype": str(row["dtype"]),
+            "sha256": str(row["sha256"]).lower(),
+            "artifact_role": str(row["artifact_role"]),
+            "control_id": str(row.get("control_id", "")),
+            "control_seed": str(row.get("control_seed", "")),
+            "partition_id": str(row.get("partition_id", "")),
+            "materialization_status": str(
+                row["materialization_status"]
+            ),
+        }
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(
+            f"Phase 72B feature manifest is invalid: {exc}"
+        ) from exc
+
+
+def _verify_feature_manifest_contract(
+    prepared: Path, frozen_protocol: Mapping[str, object]
+) -> None:
+    feature_path = prepared / "phase72b_feature_manifest.csv"
+    frame = pd.read_csv(feature_path, keep_default_na=False)
+    missing = set(FEATURE_MANIFEST_CSV_FIELDS) - set(frame.columns)
+    if missing:
+        raise ValueError(
+            "Phase 72B feature manifest fields missing: "
+            f"{sorted(missing)}"
+        )
+    actual_rows = [
+        _feature_manifest_identity(row)
+        for row in frame.to_dict(orient="records")
+    ]
+    expected_rows = frozen_protocol.get("feature_manifest_rows")
+    if not isinstance(expected_rows, list):
+        raise ValueError("Phase 72B frozen feature manifest is missing")
+    expected_identity = [
+        _feature_manifest_identity(row) for row in expected_rows
+    ]
+    if canonical_json_sha256(
+        {"rows": actual_rows}
+    ) != canonical_json_sha256({"rows": expected_identity}):
+        raise ValueError("Phase 72B feature manifest mismatch")
+    if len(actual_rows) != len(BASE_FEATURE_MATRIX_NAMES) or {
+        row["matrix_id"] for row in actual_rows
+    } != set(BASE_FEATURE_MATRIX_NAMES):
+        raise ValueError(
+            "Phase 72B prepare package must contain only base matrices"
+        )
+    for row in actual_rows:
+        if (
+            row["artifact_role"] != "base_matrix"
+            or row["materialization_status"] != "prepared_base_matrix"
+            or row["control_id"]
+            or row["control_seed"]
+            or row["partition_id"]
+        ):
+            raise ValueError(
+                "Phase 72B prepare package materialized a control matrix"
+            )
+
+
 def load_verified_phase72b_prepared(
     prepared_dir: Path | str,
     *,
@@ -165,8 +252,19 @@ def load_verified_phase72b_prepared(
     ).read_text(encoding="ascii").strip().lower()
     if str(manifest.get("frozen_protocol_sha256", "")).lower() != protocol_hash:
         raise ValueError("Phase 72B prepared manifest protocol hash mismatch")
+    if frozen_protocol.get("split_before_controls") is not True:
+        raise ValueError(
+            "Phase 72B frozen protocol did not split before controls"
+        )
+    if frozen_protocol.get("control_materialization_status") != (
+        "deferred_until_axis_partitions_frozen"
+    ):
+        raise ValueError(
+            "Phase 72B control materialization was not deferred"
+        )
     protocol = dict(frozen_protocol["tracked_protocol"])
     _verify_terrain_manifest_provenance(prepared, frozen_protocol)
+    _verify_feature_manifest_contract(prepared, frozen_protocol)
 
     split_registry = json.loads(
         (prepared / "phase72b_split_registry.json").read_text(encoding="utf-8")
@@ -220,6 +318,13 @@ def load_verified_phase72b_prepared(
         train_years=protocol["years"]["train"],
         validation_year=int(protocol["years"]["validation"][0]),
         test_year=int(protocol["years"]["test"][0]),
+        spatial_folds=int(protocol["spatial"]["folds"]),
+        control_partition_local=(
+            protocol["controls"].get("partition_local") is True
+        ),
+        reuse_phase8_d4_tables=(
+            protocol["controls"].get("reuse_phase8_d4_tables") is True
+        ),
     )
     stored_audit = json.loads(
         (prepared / "phase72b_leakage_audit.json").read_text(encoding="utf-8")
