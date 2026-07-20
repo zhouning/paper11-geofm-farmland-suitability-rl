@@ -2,6 +2,8 @@
 
 Date: 2026-07-10
 
+Strict-review amendment approved: 2026-07-20
+
 Status: approved for implementation planning
 
 ## Objective
@@ -168,6 +170,28 @@ Control seeds are fixed to `72, 73, 74, 75, 76`. The strongest validation
 control seed is frozen for confirmation, and the complete five-seed control
 distribution is reported. The full GeoFM candidate must exceed the strongest
 frozen control, not only an average weak control.
+
+### Partition-Local Control Construction
+
+Every data-dependent control is constructed inside the split partition where
+it is used. Temporal-shuffle, spatial-shuffle, and any empirical distribution
+matching must not exchange embedding histories across training, validation,
+locked-test, buffered-held-out, source-region, or target-region boundaries.
+The split registry is therefore created before these controls are materialized,
+and every derived control records its split identifier and deterministic seed.
+
+The random orthonormal projection matrix is data-independent and may be shared
+across partitions after it is generated from the frozen seed. It must not be
+selected, rotated, or regenerated using validation, test-year, buffered-held-
+out, or target-region outcomes or features. Any learned projection, including
+PCA, is outside the primary Phase 72B candidate set; if added as a sensitivity
+analysis, it must be fitted on training rows only and applied unchanged to all
+other partitions.
+
+This rule closes the transductive-preprocessing weakness identified in the
+earlier D4 pipeline, where a single whole-region covariance basis was created
+before the held-out tile evaluation. Phase 72B does not inherit or reuse those
+D4 tables.
 
 ## Models and Preprocessing
 
@@ -347,9 +371,40 @@ Phase 72B emits exactly one of:
   controls, buffered spatial direction, and both zero-shot transfer gates
   passed.
 
-Only `geofm_information_supported` permits Phase 72C GeoFM-STaR development.
-`geofm_information_mixed` permits only the predeclared heterogeneity audit; it
-cannot support a positive multi-region GeoFM claim.
+Only `geofm_information_supported` permits any next-stage GeoFM algorithm
+development, including a separately reviewed Phase 72C temporal model or a
+subsequent spatial-planner design. Neither stage inherits a positive planning
+or reward claim from Phase 72B. `geofm_information_mixed` permits only the
+predeclared heterogeneity audit; it cannot support a positive multi-region
+GeoFM claim.
+
+## Post-Screen Algorithm Transition
+
+Phase 72B is the first stage of the strict-review improvement sequence. Its
+status determines whether Paper11 may invest in a new planning algorithm:
+
+- `geofm_information_supported` permits a separate reviewed design cycle for
+  the next algorithm stage. That stage must replace the current additive
+  top-k block-selection task with a genuinely spatially coupled planning
+  environment containing explicit area budget, adjacency or contiguity,
+  compactness, action-feasibility, and combination-dependent reward terms. It
+  must compare the learned route against deterministic greedy ranking, an
+  optimization or integer-programming reference where tractable, and a non-RL
+  learned ranker before any manuscript performance claim.
+- `geofm_information_mixed` permits only the frozen heterogeneity analysis. It
+  does not permit GeoFM reward integration or a general cross-region planning
+  claim.
+- `geofm_information_not_supported` stops the GeoFM-specific planning claim.
+  Subsequent work may study generic low-dimensional optimization or report the
+  negative information result, but it must not describe GeoFM as improving
+  farmland planning.
+- `phase72b_inputs_not_ready` permits only input repair and rerun under the
+  unchanged protocol.
+
+No Phase 72B status automatically enables a suitability reward. A future
+spatial planner must retain independent outcome validation and must not treat
+the ESRI conversion product as agronomic suitability, causal policy impact, or
+field-observed planning quality.
 
 ## Artifacts
 
@@ -401,6 +456,8 @@ Implementation follows red-green-refactor TDD and includes:
 - hand-computable explicit LULC-history and neighborhood feature tests;
 - history-mask and no-future-feature tests;
 - deterministic temporal, spatial, and random-projection control tests;
+- partition-local control tests that fail if a permutation or learned
+  transformation crosses a temporal, spatial-fold, or region boundary;
 - split, spatial-buffer, and cross-region isolation tests;
 - train-only preprocessing and calibration tests;
 - protocol and selected-model hash refusal tests;

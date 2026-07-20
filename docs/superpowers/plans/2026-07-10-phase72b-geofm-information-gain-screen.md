@@ -4,7 +4,7 @@
 
 **Goal:** Build and run a locked, leakage-free Bishan-Dongxing screen that tests whether temporal AlphaEarth features improve one-year farmland-conversion prediction beyond strong public-GIS and LULC-history baselines and strict representation controls.
 
-**Architecture:** Keep public terrain acquisition, deterministic feature assembly, split/protocol freezing, model selection, and confirmation evaluation in separate modules. `prepare` writes label-separated development and confirmation packages plus a hashed protocol; `fit-freeze` uses development outcomes only and writes hashed selected model bundles; `confirm` verifies every hash and evaluates the 2023 and zero-shot outcomes once. All primary comparisons use matched feature rows, model search budgets, spatial-block uncertainty, and predefined practical gates.
+**Architecture:** Keep public terrain acquisition, deterministic base-feature assembly, split/protocol freezing, partition-local control materialization, model selection, and confirmation evaluation in separate modules. `prepare` creates the split registry before any data-dependent control and writes label-separated development and confirmation packages plus a hashed protocol; `fit-freeze` constructs train/validation controls inside each declared axis, uses development outcomes only, and writes hashed selected model bundles; `confirm` verifies every hash, constructs test controls inside each declared test partition, and evaluates the 2023 and zero-shot outcomes once. All primary comparisons use matched feature rows, model search budgets, spatial-block uncertainty, and predefined practical gates.
 
 **Tech Stack:** Python 3.11+, NumPy, pandas, SciPy, scikit-learn, joblib, Earth Engine Python API, pytest, CSV/JSON/NPZ artifacts.
 
@@ -38,8 +38,8 @@ sample_rows == 31627
   local package helpers.
 - Create `src/paper11_geofm/phase72b_explicit_features.py`: public-GIS and
   leakage-free LULC-history features.
-- Create `src/paper11_geofm/phase72b_geofm_features.py`: temporal GeoFM summaries
-  and strict controls.
+- Create `src/paper11_geofm/phase72b_geofm_features.py`: temporal GeoFM summaries,
+  data-independent random projection, and partition-local strict controls.
 - Create `src/paper11_geofm/phase72b_splits.py`: pooled, buffered-spatial, and
   zero-shot split registry and leakage audit.
 - Create `src/paper11_geofm/phase72b_metrics.py`: calibration metrics,
@@ -80,11 +80,19 @@ phase72b_frozen_protocol.json
 phase72b_frozen_protocol.sha256
 ```
 
+`phase72b_feature_manifest.csv` records the frozen base matrices. The fit and
+confirmation control manifests use the common fields `axis_id`, `partition_id`,
+`control_id`, `seed`, `index_sha256`, `matrix_sha256`, and
+`cross_partition_count`. Prepared output contains base matrices only;
+fit-freeze and confirmation write separate manifests without rewriting the
+frozen prepared manifest.
+
 Fit-freeze output directory:
 
 ```text
 bundles/*.joblib
 phase72b_validation_metrics.csv
+phase72b_fit_control_manifest.csv
 phase72b_selected_models.json
 phase72b_selected_models.sha256
 ```
@@ -97,6 +105,7 @@ phase72b_predictions.csv
 phase72b_calibration.csv
 phase72b_bootstrap_deltas.csv
 phase72b_control_comparison.csv
+phase72b_confirmation_control_manifest.csv
 phase72b_transfer_summary.csv
 phase72b_information_gain_screen.json
 phase72b_information_gain_screen.md
@@ -124,6 +133,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -145,7 +155,13 @@ def _protocol_payload() -> dict:
             ],
         },
         "years": {"train": [2017, 2018, 2019, 2020, 2021], "validation": [2022], "test": [2023]},
-        "controls": {"seeds": [72, 73, 74, 75, 76], "random_projection_dim": 320},
+        "controls": {
+            "seeds": [72, 73, 74, 75, 76],
+            "random_projection_dim": 320,
+            "partition_local": True,
+            "learned_transform_fit_scope": "training_rows_only",
+            "reuse_phase8_d4_tables": False,
+        },
         "spatial": {"block_size": 8, "folds": 5, "buffer_rings": 1},
         "bootstrap": {"iterations": 2000, "seed": 72},
         "models": {
@@ -189,6 +205,9 @@ def test_phase72b_protocol_loads_frozen_thresholds(tmp_path):
     assert protocol.terrain_features[-1] == "local_relief"
     assert protocol.train_years == (2017, 2018, 2019, 2020, 2021)
     assert protocol.gates["ap_vs_explicit"] == 0.015
+    assert protocol.control_partition_local is True
+    assert protocol.learned_transform_fit_scope == "training_rows_only"
+    assert protocol.reuse_phase8_d4_tables is False
 
 
 def test_phase72b_hashed_json_rejects_modified_payload(tmp_path):
@@ -247,6 +266,9 @@ class Phase72BProtocol:
     test_years: tuple[int, ...]
     control_seeds: tuple[int, ...]
     random_projection_dim: int
+    control_partition_local: bool
+    learned_transform_fit_scope: str
+    reuse_phase8_d4_tables: bool
     spatial_block_size: int
     spatial_folds: int
     buffer_rings: int
@@ -293,6 +315,12 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         raise ValueError("Phase 72B years must partition origins 2017-2023")
     if tuple(controls["seeds"]) != (72, 73, 74, 75, 76):
         raise ValueError("Phase 72B control seeds are frozen")
+    if controls.get("partition_local") is not True:
+        raise ValueError("Phase 72B controls must be partition-local")
+    if controls.get("learned_transform_fit_scope") != "training_rows_only":
+        raise ValueError("Phase 72B learned transforms must fit training rows only")
+    if controls.get("reuse_phase8_d4_tables") is not False:
+        raise ValueError("Phase 72B must not reuse transductive Phase 8 D4 tables")
     return Phase72BProtocol(
         seed=int(payload["seed"]), terrain_source_id=str(terrain["source_id"]),
         terrain_collection=str(terrain["collection"]), terrain_band=str(terrain["band"]),
@@ -302,6 +330,9 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         test_years=tuple(int(v) for v in years["test"]),
         control_seeds=tuple(int(v) for v in controls["seeds"]),
         random_projection_dim=int(controls["random_projection_dim"]),
+        control_partition_local=bool(controls["partition_local"]),
+        learned_transform_fit_scope=str(controls["learned_transform_fit_scope"]),
+        reuse_phase8_d4_tables=bool(controls["reuse_phase8_d4_tables"]),
         spatial_block_size=int(spatial["block_size"]), spatial_folds=int(spatial["folds"]),
         buffer_rings=int(spatial["buffer_rings"]), bootstrap_iterations=int(bootstrap["iterations"]),
         bootstrap_seed=int(bootstrap["seed"]), gates=gates, raw=payload,
@@ -655,7 +686,7 @@ git commit -m "feat: assemble Phase 72B explicit features"
 
 ---
 
-### Task 4: GeoFM Temporal Features and Matched Controls
+### Task 4: GeoFM Temporal Base Features and Partition-Local Controls
 
 **Files:**
 - Create: `src/paper11_geofm/phase72b_geofm_features.py`
@@ -675,29 +706,64 @@ def test_phase72b_geofm_temporal_summary_and_controls_are_deterministic():
     histories[1, :3] = [[3, 1], [4, 2], [5, 4]]
     histories[2, :2] = [[1, 1], [2, 2]]; histories[3, :2] = [[7, 7], [8, 8]]
     rows = [
-        {"region_id": "a", "origin_year": 2019}, {"region_id": "a", "origin_year": 2019},
-        {"region_id": "b", "origin_year": 2018}, {"region_id": "b", "origin_year": 2018},
+        {"sample_index": 0, "region_id": "a", "origin_year": 2019},
+        {"sample_index": 1, "region_id": "a", "origin_year": 2019},
+        {"sample_index": 2, "region_id": "b", "origin_year": 2018},
+        {"sample_index": 3, "region_id": "b", "origin_year": 2018},
     ]
+    partitions = ["pooled:train", "pooled:train", "pooled:validation", "pooled:validation"]
     features = build_phase72b_geofm_features(histories, masks)
     assert features["geofm_current"][0].tolist() == [4.0, 8.0]
     assert features["geofm_temporal_full"].shape == (4, 10)
-    first = build_phase72b_control_features("spatial_shuffle", histories, masks, rows, seed=72, output_dim=10)
-    second = build_phase72b_control_features("spatial_shuffle", histories, masks, rows, seed=72, output_dim=10)
-    assert np.array_equal(first, second)
-    assert sorted(map(tuple, first[:, :2])) == sorted(map(tuple, features["geofm_current"]))
+    first = build_phase72b_control_features("spatial_shuffle", histories, masks, rows, partition_ids=partitions, seed=72, output_dim=10)
+    second = build_phase72b_control_features("spatial_shuffle", histories, masks, rows, partition_ids=partitions, seed=72, output_dim=10)
+    assert np.array_equal(first["matrix"], second["matrix"])
+    assert first["manifest"]["cross_partition_count"] == 0
+    for target, source in enumerate(first["manifest"]["source_index_by_target"]):
+        assert partitions[target] == partitions[source]
 
 
 def test_phase72b_temporal_shuffle_keeps_current_embedding():
     from paper11_geofm.phase72b_geofm_features import build_phase72b_control_features, build_phase72b_geofm_features
     histories = np.array([[[1.0], [2.0], [3.0], [4.0]]], np.float32); masks = np.ones((1, 4), bool)
-    control = build_phase72b_control_features("temporal_order_shuffle", histories, masks, [{"region_id": "a", "origin_year": 2020}], seed=72, output_dim=5)
+    control = build_phase72b_control_features("temporal_order_shuffle", histories, masks, [{"sample_index": 0, "region_id": "a", "origin_year": 2020}], partition_ids=["pooled:test"], seed=72, output_dim=5)
     original = build_phase72b_geofm_features(histories, masks)["geofm_temporal_full"]
-    assert control[0, 0] == 4.0
-    assert not np.array_equal(control, original)
+    assert control["matrix"][0, 0] == 4.0
+    assert not np.array_equal(control["matrix"], original)
+
+
+def test_phase72b_spatial_shuffle_cannot_cross_split_partition():
+    from paper11_geofm.phase72b_geofm_features import build_phase72b_control_features
+    histories = np.arange(16, dtype=np.float32).reshape(4, 2, 2)
+    masks = np.ones((4, 2), bool)
+    rows = [{"sample_index": i, "region_id": "a", "origin_year": 2018} for i in range(4)]
+    partitions = ["axis:train", "axis:train", "axis:test", "axis:test"]
+    result = build_phase72b_control_features("spatial_shuffle", histories, masks, rows, partition_ids=partitions, seed=72, output_dim=10)
+    sources = result["manifest"]["source_index_by_target"]
+    assert all(partitions[target] == partitions[source] for target, source in enumerate(sources))
+    assert result["manifest"]["cross_partition_count"] == 0
+
+
+def test_phase72b_random_projection_is_data_independent_and_orthonormal():
+    from paper11_geofm.phase72b_geofm_features import build_phase72b_random_projection
+    first = build_phase72b_random_projection(input_dim=8, output_dim=3, seed=72)
+    second = build_phase72b_random_projection(input_dim=8, output_dim=3, seed=72)
+    assert np.array_equal(first, second)
+    assert np.allclose(first.T @ first, np.eye(3), atol=1e-6)
+
+
+def test_phase72b_controls_require_nonblank_partition_ids():
+    from paper11_geofm.phase72b_geofm_features import build_phase72b_control_features
+    histories = np.ones((1, 2, 2), np.float32)
+    masks = np.ones((1, 2), bool)
+    rows = [{"sample_index": 0, "region_id": "a", "origin_year": 2018}]
+    with pytest.raises(ValueError, match="partition"):
+        build_phase72b_control_features("spatial_shuffle", histories, masks, rows, partition_ids=[""], seed=72, output_dim=10)
 ```
 
-Add a random-projection test asserting shape `[n, output_dim]`, finite values,
-same seed equality, and different seed inequality.
+Extend the refusal test to assert that omitting `partition_ids` or providing a
+learned-transform fit scope other than `training_rows_only` raises `ValueError`
+before any control matrix is returned.
 
 - [ ] **Step 2: Verify RED**
 
@@ -722,46 +788,95 @@ def build_phase72b_geofm_features(embedding_history: np.ndarray, history_mask: n
     return {"geofm_current": current, "geofm_temporal_mean": mean, "geofm_temporal_full": full}
 
 
-def build_phase72b_control_features(control_id, embedding_history, history_mask, sample_rows, *, seed, output_dim):
-    history = np.asarray(embedding_history, np.float32).copy(); mask = np.asarray(history_mask, bool)
+def build_phase72b_random_projection(*, input_dim, output_dim, seed):
+    if int(output_dim) <= 0 or int(output_dim) > int(input_dim):
+        raise ValueError("Phase 72B random projection requires 0 < output_dim <= input_dim")
     rng = np.random.default_rng(int(seed))
+    matrix = rng.normal(size=(int(input_dim), int(output_dim)))
+    q, _ = np.linalg.qr(matrix, mode="reduced")
+    return np.asarray(q[:, : int(output_dim)], np.float32)
+
+
+def build_phase72b_control_features(control_id, embedding_history, history_mask, sample_rows, *, partition_ids=None, seed, output_dim, learned_transform_fit_scope="training_rows_only"):
+    history = np.asarray(embedding_history, np.float32).copy(); mask = np.asarray(history_mask, bool)
+    if partition_ids is None:
+        raise ValueError("Phase 72B controls require partition IDs")
+    partitions = np.asarray([str(value) for value in partition_ids], dtype=object)
+    if len(history) != len(sample_rows) or len(history) != len(partitions):
+        raise ValueError("Phase 72B controls require aligned histories, rows, and partitions")
+    if any(not value.strip() for value in partitions):
+        raise ValueError("Phase 72B controls require nonblank partition IDs")
+    if learned_transform_fit_scope != "training_rows_only":
+        raise ValueError("Phase 72B learned transforms must fit training rows only")
+    rng = np.random.default_rng(int(seed))
+    source_by_target = list(range(len(history)))
+    data_dependent = control_id in {"temporal_order_shuffle", "spatial_shuffle"}
     if control_id == "temporal_order_shuffle":
         for row_index in range(len(history)):
             valid_indexes = np.flatnonzero(mask[row_index])
             earlier_positions = valid_indexes[:-1]
             if len(earlier_positions) > 1:
                 original = history[row_index, earlier_positions].copy()
-                history[row_index, earlier_positions] = original[
-                    rng.permutation(len(earlier_positions))
-                ]
-        return build_phase72b_geofm_features(history, mask)["geofm_temporal_full"]
-    if control_id == "spatial_shuffle":
+                permutation = rng.permutation(len(earlier_positions))
+                if np.array_equal(permutation, np.arange(len(earlier_positions))):
+                    permutation = np.roll(permutation, 1)
+                history[row_index, earlier_positions] = original[permutation]
+        matrix = build_phase72b_geofm_features(history, mask)["geofm_temporal_full"]
+    elif control_id == "spatial_shuffle":
         groups = {}
-        for index, row in enumerate(sample_rows): groups.setdefault((str(row["region_id"]), int(row["origin_year"])), []).append(index)
-        shuffled = history.copy()
+        for index, row in enumerate(sample_rows):
+            key = (str(partitions[index]), str(row["region_id"]), int(row["origin_year"]))
+            groups.setdefault(key, []).append(index)
+        shuffled = history.copy(); shuffled_mask = mask.copy()
         for indexes in groups.values():
             source = np.asarray(indexes); permuted = rng.permutation(source)
+            if len(source) > 1 and np.array_equal(source, permuted):
+                permuted = np.roll(permuted, 1)
             shuffled[source] = history[permuted]
-        return build_phase72b_geofm_features(shuffled, mask)["geofm_temporal_full"]
-    if control_id == "random_projection":
+            shuffled_mask[source] = mask[permuted]
+            for target, source_index in zip(source.tolist(), permuted.tolist()):
+                source_by_target[target] = source_index
+        matrix = build_phase72b_geofm_features(shuffled, shuffled_mask)["geofm_temporal_full"]
+    elif control_id == "random_projection":
         flattened = (history * mask[..., None]).reshape(len(history), -1)
-        matrix = rng.normal(size=(flattened.shape[1], int(output_dim)))
-        q, _ = np.linalg.qr(matrix, mode="reduced")
-        return np.asarray(flattened @ q[:, : int(output_dim)], np.float32)
-    raise ValueError(f"Unknown Phase 72B control: {control_id}")
+        projection = build_phase72b_random_projection(input_dim=flattened.shape[1], output_dim=int(output_dim), seed=int(seed))
+        matrix = np.asarray(flattened @ projection, np.float32)
+    else:
+        raise ValueError(f"Unknown Phase 72B control: {control_id}")
+    cross_partition_count = sum(
+        partitions[target] != partitions[source]
+        for target, source in enumerate(source_by_target)
+    )
+    if cross_partition_count:
+        raise ValueError("Phase 72B control crossed a split partition")
+    return {
+        "matrix": np.asarray(matrix, np.float32),
+        "manifest": {
+            "control_id": str(control_id), "seed": int(seed),
+            "partition_ids": sorted(set(partitions.tolist())),
+            "data_dependent": bool(data_dependent),
+            "learned_transform_fit_scope": learned_transform_fit_scope,
+            "source_index_by_target": source_by_target,
+            "cross_partition_count": int(cross_partition_count),
+        },
+    }
 ```
 
 The temporal permutation uses only the earlier observed value rows and preserves
-their target positions; it never reads label values. Assert `output_dim` equals
-the full temporal dimension for the tracked protocol.
+their target positions; it never reads label values. Spatial permutations are
+grouped by `partition_id x region_id x origin_year` and therefore cannot move a
+history across train, validation, test, spatial-fold, source-region, or target-
+region boundaries. Assert `output_dim` equals the full temporal dimension for
+temporal/spatial controls under the tracked protocol. Do not import, read, or
+reuse Phase 8 D4 feature tables.
 
 - [ ] **Step 4: Verify GREEN and commit**
 
-Expected cumulative result: `9 passed`.
+Expected: every Phase 72B test through Task 4 passes.
 
 ```powershell
 git add src\paper11_geofm\phase72b_geofm_features.py tests\test_phase72b_geofm_information_gain_screen.py
-git commit -m "feat: add Phase 72B GeoFM controls"
+git commit -m "feat: add partition-local Phase 72B controls"
 ```
 
 ---
@@ -806,6 +921,10 @@ assert set(np.load(paths["development_targets_npz"])["origin_year"]) <= set(rang
 assert set(np.load(paths["confirmation_targets_npz"])["origin_year"]) == {2023}
 assert load_hashed_json(paths["protocol_json"], paths["protocol_hash"])["status"] == "phase72b_protocol_frozen"
 assert package["leakage_audit"]["status"] == "leakage_audit_passed"
+assert package["control_materialization_status"] == "deferred_until_axis_partitions_frozen"
+with np.load(paths["feature_matrices_npz"]) as matrices:
+    assert not any("shuffle" in name or "random_projection" in name for name in matrices.files)
+assert package["frozen_protocol"]["split_before_controls"] is True
 ```
 
 - [ ] **Step 2: Verify RED**
@@ -848,14 +967,16 @@ The function must:
 1. Load and validate both contracts and Phase 72A package status.
 2. Re-audit terrain and all Phase 72A manifest paths/hashes.
 3. Load sample rows and tensors and require contiguous sample indexes.
-4. Build explicit and GeoFM base matrices.
-5. Build the split registry and leakage audit.
-6. Write no model metrics.
+4. Build the split registry and leakage audit before calling any control API.
+5. Build explicit and GeoFM base matrices only; do not materialize temporal-
+   shuffle, spatial-shuffle, or random-projection matrices in `prepare`.
+6. Write no model metrics and no control matrix.
 7. Return separate development targets (`origin_year <= 2022`) and confirmation
    targets (`origin_year == 2023`).
 8. Build a frozen protocol payload containing the tracked protocol, source file
    hashes, matrix shapes/dtypes/hashes, feature registry hash, split registry
-   hash, and leakage status.
+   hash, leakage status, `split_before_controls=true`, and
+   `control_materialization_status=deferred_until_axis_partitions_frozen`.
 
 Implement `write_phase72b_prepared_artifacts(package, output_dir)` with every
 stable prepared filename listed above. `phase72b_feature_rows.csv` contains
@@ -864,9 +985,15 @@ columns. NPZ matrices contain `explicit_static`, `explicit_history`,
 `geofm_current`, `geofm_temporal_mean`, `geofm_temporal_full`,
 `embedding_history`, and `history_mask`.
 
+`phase72b_feature_manifest.csv` contains only these base matrices at prepare
+time. Its control-related fields are blank and its package-level record states
+that control manifests will be written by fit-freeze and confirmation after
+axis partition selection. `audit_phase72b_splits` must fail if the frozen
+protocol does not require partition-local controls or allows Phase 8 D4 reuse.
+
 - [ ] **Step 5: Verify GREEN and commit**
 
-Expected cumulative result: `13 passed`.
+Expected: every Phase 72B test through Task 5 passes.
 
 ```powershell
 git add src\paper11_geofm\phase72b_splits.py src\paper11_geofm\phase72b_information_gain_screen.py tests\test_phase72b_geofm_information_gain_screen.py
@@ -979,7 +1106,7 @@ returned gate.
 
 - [ ] **Step 5: Verify GREEN and commit**
 
-Expected cumulative result: `19 passed`.
+Expected: every Phase 72B test through Task 6 passes.
 
 ```powershell
 git add src\paper11_geofm\phase72b_metrics.py tests\test_phase72b_geofm_information_gain_screen.py
@@ -1011,7 +1138,15 @@ def test_phase72b_model_selection_returns_frozen_bundle():
     assert bundle["calibration_method"] in {"none", "sigmoid", "isotonic"}
     assert len(rows) > 1
     assert np.isfinite(probability).all()
+    assert np.allclose(bundle["scaler"].mean_, x[:80].mean(axis=0)) if bundle["model_family"] == "logistic" else True
 ```
+
+Add a second logistic-only fixture with training features centered at zero and
+validation features shifted by `+100`. Assert the frozen scaler mean equals the
+training mean, not the combined mean. Add a control-materialization fixture
+that fits one axis and asserts every control manifest row has the expected
+`axis_id`, exactly one `partition_id`, the frozen seed, a 64-character index
+hash, and `cross_partition_count == 0`.
 
 Add an integration test that writes a tiny prepared package, runs
 `fit_freeze_phase72b_models`, and verifies:
@@ -1062,12 +1197,22 @@ validation_index_sha256, claim_boundary
 - [ ] **Step 4: Implement `fit_freeze_phase72b_models`**
 
 The orchestration must verify the frozen protocol hash, load development
-targets only, build matrices for every required variant, and fit:
+targets only, load raw embedding histories, and fit:
 
 - full validation search for pooled temporal and both transfer axes;
 - five control seeds for each control, freezing the strongest validation seed;
 - buffered spatial bundles using each variant's pooled selected candidate
   configuration and fold-specific training/validation rows.
+
+For every axis, construct three explicit partition IDs using the exact strings
+`{axis_id}:train`, `{axis_id}:validation`, and `{axis_id}:test`. During
+fit-freeze, call `build_phase72b_control_features` separately on the declared
+training indexes and validation indexes; never concatenate those rows for a
+shuffle. Random-projection matrices are generated from the frozen seed and
+input/output dimensions only. Test controls are not materialized or inspected
+during fit-freeze. Write fit-freeze control-manifest rows with source index
+hashes, matrix hashes, and zero cross-partition counts, and include their hash
+in the selected-model manifest.
 
 Write each selected bundle with joblib, record SHA256, and write
 `phase72b_validation_metrics.csv` plus hashed selected-model JSON. The selected
@@ -1076,7 +1221,7 @@ axis/variant/control.
 
 - [ ] **Step 5: Verify GREEN and commit**
 
-Expected cumulative result: `23 passed`.
+Expected: every Phase 72B test through Task 7 passes.
 
 ```powershell
 git add src\paper11_geofm\phase72b_models.py src\paper11_geofm\phase72b_information_gain_screen.py tests\test_phase72b_geofm_information_gain_screen.py
@@ -1105,7 +1250,7 @@ def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
     paths = write_phase72b_confirmation_artifacts(result, tmp_path / "confirm")
     assert set(paths) == {
         "metrics_csv", "predictions_csv", "calibration_csv",
-        "bootstrap_csv", "control_csv", "transfer_csv",
+        "bootstrap_csv", "control_csv", "control_manifest_csv", "transfer_csv",
         "screen_json", "screen_md",
     }
     assert result["phase72b_status"] in {
@@ -1116,6 +1261,10 @@ def test_phase72b_confirmation_writes_stable_outputs(tmp_path):
 
 Hash-refusal CLI test: change `phase72b_selected_models.json` after its hash is
 written, run `confirm`, assert return code 1 and `hash mismatch` in stderr.
+Add a second refusal test that changes a fit-control manifest partition ID or
+sets `cross_partition_count` to `1` while leaving the selected manifest
+unchanged; confirmation must return `phase72b_inputs_not_ready` before reading
+confirmation outcomes or writing model metrics.
 
 - [ ] **Step 2: Verify RED**
 
@@ -1127,14 +1276,23 @@ Expected: missing confirmation and CLI behavior.
 
 1. Verify frozen protocol, selected manifest, and every bundle hash.
 2. Load confirmation targets only after verification.
-3. Evaluate all required bundles on their declared test indexes.
-4. Write row-level probabilities with sample, axis, variant, control seed,
+3. For each declared axis and frozen control seed, materialize the test control
+   from raw embedding history using exactly one `{axis_id}:test` partition ID;
+   reject any nonzero cross-partition count and write
+   `phase72b_confirmation_control_manifest.csv`.
+4. Evaluate all required bundles on their declared test indexes.
+5. Write row-level probabilities with sample, axis, variant, control seed,
    outcome, calibrated probability, threshold, block, region, and origin year.
-5. Compute core/secondary metrics, calibration-bin rows, paired block bootstrap,
+6. Compute core/secondary metrics, calibration-bin rows, paired block bootstrap,
    control deltas, transfer summaries, and spatial-fold deltas.
-6. Call the frozen gate with no alternative metrics or thresholds.
-7. Return exact source hashes, counts, invalid folds, blockers, status, next
+7. Call the frozen gate with no alternative metrics or thresholds.
+8. Return exact source hashes, counts, invalid folds, blockers, status, next
    action, and claim boundary.
+
+The confirmation result includes both fit and confirmation control-manifest
+hashes. A missing row, unexpected partition ID, changed frozen seed, changed
+index hash, or nonzero `cross_partition_count` returns
+`phase72b_inputs_not_ready` before model metrics are accepted.
 
 The primary comparison is
 `explicit_plus_geofm_temporal_full - explicit_history`. Control comparisons are
@@ -1185,7 +1343,7 @@ counts, hashes, artifact paths, blockers, next action, and claim boundary.
 
 - [ ] **Step 5: Verify GREEN and commit**
 
-Expected cumulative result: `27 passed`.
+Expected: every Phase 72B test through Task 8 passes.
 
 ```powershell
 git add src\paper11_geofm\phase72b_information_gain_screen.py experiments\phase72b_geofm_information_gain_screen\run_phase72b_information_gain_screen.py tests\test_phase72b_geofm_information_gain_screen.py
@@ -1230,7 +1388,9 @@ D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_scre
 
 Inspect matrix shapes, feature names, development/confirmation target year
 separation, every split axis, class support, leakage audit, and protocol hash.
-Do not continue if any blocker occurs.
+Require `split_before_controls=true`, no prepared control matrix, partition-
+local control enforcement, training-only learned transformations, and explicit
+refusal to reuse Phase 8 D4 tables. Do not continue if any blocker occurs.
 
 - [ ] **Step 4: Run `fit-freeze` without confirmation labels**
 
@@ -1240,7 +1400,10 @@ D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_scre
 
 Inspect required axes/variants, selected model families, hyperparameters,
 calibration methods, five-seed controls, bundle hashes, and selected-manifest
-hash. Record the hash before confirmation.
+hash. Inspect `phase72b_fit_control_manifest.csv`: every row must contain one
+train or validation partition, the expected axis and frozen seed, 64-character
+index/matrix hashes, and `cross_partition_count=0`. Record the manifest and
+selected-model hashes before confirmation.
 
 - [ ] **Step 5: Run confirmation exactly once**
 
@@ -1259,6 +1422,9 @@ Import-Csv experiments\phase72b_geofm_information_gain_screen\outputs\confirmati
 
 Confirm exact pooled deltas, confidence intervals, control margins, both
 transfer directions, spatial folds, invalid-fold coverage, and final status.
+Inspect `phase72b_confirmation_control_manifest.csv` and require only declared
+test partitions, the frozen control seeds, matching index hashes, and zero
+cross-partition counts.
 
 - [ ] **Step 6: Write measured documentation**
 
@@ -1271,13 +1437,15 @@ Create `39_phase72b_geofm_information_gain_screen.md` with:
 - pooled AP/Brier/ECE and practical deltas;
 - bootstrap intervals;
 - each control margin and five-seed range;
+- fit and confirmation control-manifest hashes, partition IDs, and proof that
+  no control crossed a temporal, buffered-spatial, or region boundary;
 - both zero-shot directions and buffered spatial results;
 - status, blockers, and exact next-phase decision;
 - exact reproduction commands and claim boundary.
 
 Add one README index line and append the same measured state to the handoff.
-Do not modify the formal manuscript. Do not start Phase 72C unless the status
-is exactly `geofm_information_supported`.
+Do not modify the formal manuscript. Do not start any next-stage GeoFM
+algorithm design unless the status is exactly `geofm_information_supported`.
 
 - [ ] **Step 7: Verify and commit the measured result**
 
@@ -1313,13 +1481,14 @@ confirmation hash, and every bundle hash still matches.
 - [ ] **Step 2: Enforce the next-phase decision**
 
 ```text
-geofm_information_supported -> Phase 72C design may begin
+geofm_information_supported -> a separate reviewed next-stage GeoFM algorithm design may begin; it must include a genuinely spatially coupled planner before any planning-performance claim
 geofm_information_mixed -> only the frozen heterogeneity audit may begin
-geofm_information_not_supported -> stop the GeoFM-STaR route and execute the approved exhaustion analysis
+geofm_information_not_supported -> stop the GeoFM-specific planning claim; only generic low-dimensional optimization or a negative-result route may continue
 phase72b_inputs_not_ready -> remain in Phase 72B and resolve the measured input/audit blocker
 ```
 
-No other status permits Phase 72C.
+No other status permits next-stage GeoFM algorithm development, and no status
+automatically enables a suitability reward.
 
 - [ ] **Step 3: Record final repository state**
 
@@ -1341,11 +1510,22 @@ and whether `paper/submission/final/*` remains unchanged.
   practical thresholds, block bootstrap, freeze hashes, and stable artifacts.
 - Development and confirmation labels are stored separately; fit-freeze does
   not receive the confirmation target path.
+- The split registry is frozen before data-dependent controls. Fit-freeze
+  constructs train and validation controls separately, confirmation constructs
+  test controls separately, and every control manifest requires zero cross-
+  partition exchanges.
+- Random projection is data-independent; any future learned projection must fit
+  training rows only. Phase 8 D4 tables are explicitly excluded.
+- Fit and confirmation control manifests are separate immutable artifacts whose
+  hashes are included in the selected-model and final-result evidence chains.
 - Model/calibrator refitting after 2022 is prohibited; confirmation loads frozen
   bundles.
 - Spatial folds reuse pooled selected candidate configurations but retrain only
   on fold-allowed 2017-2021 rows and recalibrate only on fold-allowed 2022 rows.
 - DLTB, deep temporal neural models, planning, and formal manuscript revision
   are excluded.
+- The final transition gate permits a separately reviewed spatially coupled
+  planning design only after `geofm_information_supported`; mixed, negative,
+  and input-not-ready statuses cannot advance the GeoFM planning claim.
 - All code behavior follows red-green-refactor TDD; real values are measured,
   never predeclared.
