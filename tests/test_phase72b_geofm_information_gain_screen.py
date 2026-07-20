@@ -918,10 +918,10 @@ def _geofm_control_fixture():
     histories[2, :2] = [[1, 1], [2, 2]]
     histories[3, :2] = [[7, 7], [8, 8]]
     rows = [
-        {"region_id": "a", "origin_year": 2019},
-        {"region_id": "a", "origin_year": 2019},
-        {"region_id": "b", "origin_year": 2018},
-        {"region_id": "b", "origin_year": 2018},
+        {"sample_index": 0, "region_id": "a", "origin_year": 2019},
+        {"sample_index": 1, "region_id": "a", "origin_year": 2019},
+        {"sample_index": 2, "region_id": "b", "origin_year": 2018},
+        {"sample_index": 3, "region_id": "b", "origin_year": 2018},
     ]
     return histories, masks, rows
 
@@ -933,6 +933,12 @@ def test_phase72b_geofm_temporal_summary_and_controls_are_deterministic():
     )
 
     histories, masks, rows = _geofm_control_fixture()
+    partitions = [
+        "pooled:train",
+        "pooled:train",
+        "pooled:validation",
+        "pooled:validation",
+    ]
     features = build_phase72b_geofm_features(histories, masks)
     assert features["geofm_current"][0].tolist() == [4.0, 8.0]
     assert features["geofm_temporal_full"].shape == (4, 10)
@@ -941,6 +947,7 @@ def test_phase72b_geofm_temporal_summary_and_controls_are_deterministic():
         histories,
         masks,
         rows,
+        partition_ids=partitions,
         seed=72,
         output_dim=10,
     )
@@ -949,13 +956,19 @@ def test_phase72b_geofm_temporal_summary_and_controls_are_deterministic():
         histories,
         masks,
         rows,
+        partition_ids=partitions,
         seed=72,
         output_dim=10,
     )
-    assert np.array_equal(first, second)
-    assert sorted(map(tuple, first[:, :2])) == sorted(
+    assert np.array_equal(first["matrix"], second["matrix"])
+    assert sorted(map(tuple, first["matrix"][:, :2])) == sorted(
         map(tuple, features["geofm_current"])
     )
+    assert first["manifest"]["cross_partition_count"] == 0
+    for target, source in enumerate(
+        first["manifest"]["source_index_by_target"]
+    ):
+        assert partitions[target] == partitions[source]
 
 
 def test_phase72b_temporal_shuffle_keeps_current_embedding():
@@ -972,51 +985,136 @@ def test_phase72b_temporal_shuffle_keeps_current_embedding():
         "temporal_order_shuffle",
         histories,
         masks,
-        [{"region_id": "a", "origin_year": 2020}],
+        [{"sample_index": 0, "region_id": "a", "origin_year": 2020}],
+        partition_ids=["pooled:test"],
         seed=72,
         output_dim=5,
     )
     original = build_phase72b_geofm_features(histories, masks)[
         "geofm_temporal_full"
     ]
-    assert control[0, 0] == 4.0
-    assert not np.array_equal(control, original)
+    assert control["matrix"][0, 0] == 4.0
+    assert not np.array_equal(control["matrix"], original)
 
 
-def test_phase72b_random_projection_is_seeded_and_same_dimension():
+def test_phase72b_spatial_shuffle_cannot_cross_split_partition():
     from paper11_geofm.phase72b_geofm_features import (
         build_phase72b_control_features,
     )
 
-    histories, masks, rows = _geofm_control_fixture()
-    first = build_phase72b_control_features(
-        "random_projection",
+    histories = np.arange(16, dtype=np.float32).reshape(4, 2, 2)
+    masks = np.ones((4, 2), dtype=bool)
+    rows = [
+        {"sample_index": index, "region_id": "a", "origin_year": 2018}
+        for index in range(4)
+    ]
+    partitions = ["axis:train", "axis:train", "axis:test", "axis:test"]
+    result = build_phase72b_control_features(
+        "spatial_shuffle",
         histories,
         masks,
         rows,
+        partition_ids=partitions,
         seed=72,
-        output_dim=5,
+        output_dim=10,
     )
-    second = build_phase72b_control_features(
-        "random_projection",
-        histories,
-        masks,
-        rows,
-        seed=72,
-        output_dim=5,
+    sources = result["manifest"]["source_index_by_target"]
+    assert all(
+        partitions[target] == partitions[source]
+        for target, source in enumerate(sources)
     )
-    third = build_phase72b_control_features(
-        "random_projection",
-        histories,
-        masks,
-        rows,
-        seed=73,
-        output_dim=5,
+    assert result["manifest"]["cross_partition_count"] == 0
+
+
+def test_phase72b_controls_are_partition_materialization_invariant():
+    from paper11_geofm.phase72b_geofm_features import (
+        build_phase72b_control_features,
     )
-    assert first.shape == (4, 5)
-    assert np.isfinite(first).all()
+
+    histories = np.arange(18, dtype=np.float32).reshape(6, 3, 1)
+    masks = np.ones((6, 3), dtype=bool)
+    rows = [
+        {"sample_index": index, "region_id": "a", "origin_year": 2019}
+        for index in range(6)
+    ]
+    partitions = ["axis:train"] * 3 + ["axis:test"] * 3
+    for control_id in ("temporal_order_shuffle", "spatial_shuffle"):
+        full = build_phase72b_control_features(
+            control_id,
+            histories,
+            masks,
+            rows,
+            partition_ids=partitions,
+            seed=72,
+            output_dim=5,
+        )
+        test_only = build_phase72b_control_features(
+            control_id,
+            histories[3:],
+            masks[3:],
+            rows[3:],
+            partition_ids=partitions[3:],
+            seed=72,
+            output_dim=5,
+        )
+        assert np.array_equal(full["matrix"][3:], test_only["matrix"])
+
+
+def test_phase72b_random_projection_is_data_independent_and_orthonormal():
+    from paper11_geofm.phase72b_geofm_features import (
+        build_phase72b_random_projection,
+    )
+
+    first = build_phase72b_random_projection(
+        input_dim=8, output_dim=3, seed=72
+    )
+    second = build_phase72b_random_projection(
+        input_dim=8, output_dim=3, seed=72
+    )
     assert np.array_equal(first, second)
-    assert not np.array_equal(first, third)
+    assert np.allclose(first.T @ first, np.eye(3), atol=1e-6)
+
+
+def test_phase72b_controls_require_frozen_partition_contract():
+    from paper11_geofm.phase72b_geofm_features import (
+        build_phase72b_control_features,
+    )
+
+    histories = np.ones((1, 2, 2), dtype=np.float32)
+    masks = np.ones((1, 2), dtype=bool)
+    rows = [
+        {"sample_index": 0, "region_id": "a", "origin_year": 2018}
+    ]
+    with pytest.raises(ValueError, match="partition"):
+        build_phase72b_control_features(
+            "spatial_shuffle",
+            histories,
+            masks,
+            rows,
+            seed=72,
+            output_dim=10,
+        )
+    with pytest.raises(ValueError, match="partition"):
+        build_phase72b_control_features(
+            "spatial_shuffle",
+            histories,
+            masks,
+            rows,
+            partition_ids=[""],
+            seed=72,
+            output_dim=10,
+        )
+    with pytest.raises(ValueError, match="training rows only"):
+        build_phase72b_control_features(
+            "random_projection",
+            histories,
+            masks,
+            rows,
+            partition_ids=["axis:train"],
+            seed=72,
+            output_dim=2,
+            learned_transform_fit_scope="all_rows",
+        )
 
 
 def test_phase72b_splits_lock_years_regions_and_spatial_buffers():

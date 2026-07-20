@@ -454,6 +454,7 @@ def _variant_matrix(
     feature_rows: Sequence[Mapping[str, object]],
     *,
     seed: int | None = None,
+    partition_ids: Sequence[str] | None = None,
 ) -> np.ndarray:
     if variant_id == "explicit_static":
         return matrices["explicit_static"]
@@ -479,11 +480,43 @@ def _variant_matrix(
             matrices["embedding_history"],
             matrices["history_mask"],
             feature_rows,
+            partition_ids=partition_ids,
             seed=int(seed),
             output_dim=matrices["geofm_temporal_full"].shape[1],
         )
-        return np.concatenate([matrices["explicit_history"], control], axis=1)
+        return np.concatenate(
+            [matrices["explicit_history"], control["matrix"]], axis=1
+        )
     raise ValueError(f"Unknown Phase 72B variant: {variant_id}")
+
+
+def _axis_partition_ids(
+    axis_id: str,
+    axis: Mapping[str, object],
+    row_count: int,
+) -> list[str]:
+    partitions = [
+        f"{axis_id}:unused:{index}" for index in range(int(row_count))
+    ]
+    assigned: dict[int, str] = {}
+    for split_name in ("train", "validation", "test"):
+        partition_id = f"{axis_id}:{split_name}"
+        for raw_index in axis.get(split_name, []):
+            index = int(raw_index)
+            if index < 0 or index >= int(row_count):
+                raise ValueError(
+                    "Phase 72B axis partition index out of range: "
+                    f"{axis_id}/{split_name}/{index}"
+                )
+            previous = assigned.get(index)
+            if previous is not None and previous != partition_id:
+                raise ValueError(
+                    "Phase 72B axis partition overlap: "
+                    f"{axis_id}/{index}/{previous}/{partition_id}"
+                )
+            assigned[index] = partition_id
+            partitions[index] = partition_id
+    return partitions
 
 
 def _development_outcome(
@@ -685,6 +718,9 @@ def fit_freeze_phase72b_models(
     )
     for axis_id in search_axes:
         axis = split_registry[axis_id]
+        partition_ids = _axis_partition_ids(
+            axis_id, axis, len(feature_rows)
+        )
         train_indexes = [int(value) for value in axis["train"]]
         validation_indexes = [int(value) for value in axis["validation"]]
         train_y = _outcomes_for_indexes(outcomes, train_indexes)
@@ -746,6 +782,7 @@ def fit_freeze_phase72b_models(
                     matrices,
                     feature_rows,
                     seed=int(control_seed),
+                    partition_ids=partition_ids,
                 )
                 resumed = _resume_bundle(
                     progress,
@@ -813,6 +850,9 @@ def fit_freeze_phase72b_models(
             continue
         train_indexes = [int(value) for value in axis["train"]]
         validation_indexes = [int(value) for value in axis["validation"]]
+        partition_ids = _axis_partition_ids(
+            axis_id, axis, len(feature_rows)
+        )
         if not train_indexes or not validation_indexes:
             continue
         train_y = _outcomes_for_indexes(outcomes, train_indexes)
@@ -834,6 +874,11 @@ def fit_freeze_phase72b_models(
                 matrices,
                 feature_rows,
                 seed=control_seed,
+                partition_ids=(
+                    partition_ids
+                    if variant_id in _CONTROL_VARIANTS
+                    else None
+                ),
             )
             config = selected_configs["pooled_temporal"][variant_id]
             resumed = _resume_bundle(

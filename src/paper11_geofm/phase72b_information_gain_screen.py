@@ -26,6 +26,7 @@ from .phase72b_metrics import (
     phase72b_metrics,
 )
 from .phase72b_models import (
+    _axis_partition_ids,
     _variant_matrix,
     load_phase72b_model_bundle,
     predict_phase72b_bundle,
@@ -789,6 +790,12 @@ def confirm_phase72b_information_gain_screen(
     metrics_rows = []
     calibration_rows = []
     groups: dict[tuple[str, str, int | None], dict[str, object]] = {}
+    partition_ids_by_axis = {
+        axis_id: _axis_partition_ids(
+            axis_id, axis, len(feature_rows)
+        )
+        for axis_id, axis in split_registry.items()
+    }
     ece_bins = int(protocol["calibration"]["ece_bins"])
     budgets = tuple(float(value) for value in protocol["budgets"])
     for key, bundle in bundles.items():
@@ -817,7 +824,15 @@ def confirm_phase72b_information_gain_screen(
             dtype=np.int8,
         )
         matrix = _variant_matrix(
-            variant_id, matrices, feature_rows, seed=seed
+            variant_id,
+            matrices,
+            feature_rows,
+            seed=seed,
+            partition_ids=(
+                partition_ids_by_axis[axis_id]
+                if variant_id in _CONTROL_VARIANTS
+                else None
+            ),
         )
         if int(bundle["feature_count"]) != int(matrix.shape[1]):
             raise ValueError(f"Phase 72B bundle feature count mismatch: {key}")
