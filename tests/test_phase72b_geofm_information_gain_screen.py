@@ -1250,7 +1250,8 @@ def test_phase72b_fit_control_materialization_never_reads_test_rows(
         "history_mask": masks,
         "geofm_temporal_full": np.ones((6, 10), dtype=np.float32),
     }
-    train_matrix, validation_matrix = models._fit_control_variant_matrices(
+    train_matrix, validation_matrix, manifest_rows = (
+        models._fit_control_variant_matrices(
         "explicit_plus_spatial_shuffle",
         matrices,
         rows,
@@ -1258,6 +1259,7 @@ def test_phase72b_fit_control_materialization_never_reads_test_rows(
         validation_indexes=[2, 3],
         axis_id="pooled_temporal",
         seed=72,
+        )
     )
     assert train_matrix.shape == validation_matrix.shape == (2, 11)
     assert np.isfinite(train_matrix).all()
@@ -1266,6 +1268,16 @@ def test_phase72b_fit_control_materialization_never_reads_test_rows(
         (["pooled_temporal:train"] * 2, [0, 1]),
         (["pooled_temporal:validation"] * 2, [2, 3]),
     ]
+    assert [row["partition_id"] for row in manifest_rows] == [
+        "pooled_temporal:train",
+        "pooled_temporal:validation",
+    ]
+    assert all(row["axis_id"] == "pooled_temporal" for row in manifest_rows)
+    assert all(row["control_id"] == "spatial_shuffle" for row in manifest_rows)
+    assert all(row["seed"] == 72 for row in manifest_rows)
+    assert all(len(row["index_sha256"]) == 64 for row in manifest_rows)
+    assert all(len(row["matrix_sha256"]) == 64 for row in manifest_rows)
+    assert all(row["cross_partition_count"] == 0 for row in manifest_rows)
 
 
 def test_phase72b_random_projection_is_data_independent_and_orthonormal():
@@ -2128,6 +2140,117 @@ def test_phase72b_model_selection_returns_frozen_bundle():
     assert np.isfinite(probability).all()
 
 
+@pytest.mark.parametrize(
+    ("train_x", "train_y", "validation_x", "validation_y"),
+    [
+        (np.ones((4, 2)), [0, 1, 0.5, 1], np.ones((4, 2)), [0, 1, 0, 1]),
+        (np.ones((4, 2)), [0, 2, 0, 2], np.ones((4, 2)), [0, 1, 0, 1]),
+        (
+            np.ones((4, 2)),
+            np.asarray(["0", "1", "0", "1"]),
+            np.ones((4, 2)),
+            [0, 1, 0, 1],
+        ),
+        (
+            np.asarray([["1", "2"]] * 4),
+            [0, 1, 0, 1],
+            np.ones((4, 2)),
+            [0, 1, 0, 1],
+        ),
+        (np.ones((4, 2)), [0, 1, 0, 1], np.ones((4, 2)), [0, 0, 0, 0]),
+        (
+            np.asarray([[0.0], [1.0], [np.nan], [3.0]]),
+            [0, 1, 0, 1],
+            np.ones((4, 1)),
+            [0, 1, 0, 1],
+        ),
+        (np.ones((3, 2)), [0, 1, 0, 1], np.ones((4, 2)), [0, 1, 0, 1]),
+        (np.ones(4), [0, 1, 0, 1], np.ones((4, 1)), [0, 1, 0, 1]),
+    ],
+    ids=(
+        "fractional-train-label",
+        "nonbinary-train-label",
+        "string-train-label",
+        "string-train-feature",
+        "single-class-validation",
+        "nonfinite-feature",
+        "row-mismatch",
+        "one-dimensional-feature",
+    ),
+)
+def test_phase72b_model_fit_rejects_invalid_inputs(
+    train_x, train_y, validation_x, validation_y
+):
+    from paper11_geofm.phase72b_models import fit_select_phase72b_model
+
+    with pytest.raises(ValueError, match="Phase 72B model"):
+        fit_select_phase72b_model(
+            train_x,
+            train_y,
+            validation_x,
+            validation_y,
+            variant_id="fixture",
+            axis_id="pooled_temporal",
+            protocol=_protocol_payload(),
+        )
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda arrays: arrays["sample_index"].__setitem__(
+            1, arrays["sample_index"][0]
+        ),
+        lambda arrays: arrays["origin_year"].__setitem__(0, 2023),
+        lambda arrays: arrays.__setitem__(
+            "sample_index", np.asarray([0.5, 1.0])
+        ),
+        lambda arrays: arrays.__setitem__(
+            "origin_year", np.asarray([2017.5, 2022.0])
+        ),
+        lambda arrays: arrays["conversion_1y"].__setitem__(0, 2),
+        lambda arrays: arrays.__setitem__(
+            "conversion_1y", np.asarray([0.5, 1.0])
+        ),
+        lambda arrays: arrays.__setitem__("undeclared", np.asarray([1, 2])),
+    ],
+    ids=(
+        "duplicate-index",
+        "wrong-year",
+        "fractional-index",
+        "fractional-year",
+        "nonbinary-label",
+        "fractional-label",
+        "extra-array",
+    ),
+)
+def test_phase72b_development_targets_require_exact_semantics(
+    tmp_path, mutation
+):
+    from paper11_geofm.phase72b_models import _development_outcome
+
+    feature_rows = [
+        {"sample_index": 0, "origin_year": 2017},
+        {"sample_index": 1, "origin_year": 2022},
+        {"sample_index": 2, "origin_year": 2023},
+    ]
+    arrays = {
+        "sample_index": np.asarray([0, 1], np.int32),
+        "origin_year": np.asarray([2017, 2022], np.int16),
+        "conversion_1y": np.asarray([0, 1], np.int8),
+    }
+    mutation(arrays)
+    path = tmp_path / "development.npz"
+    np.savez_compressed(path, **arrays)
+
+    with pytest.raises(ValueError, match="development target"):
+        _development_outcome(
+            path,
+            feature_rows=feature_rows,
+            development_years={2017, 2018, 2019, 2020, 2021, 2022},
+        )
+
+
 def test_phase72b_frozen_model_grid_expands_to_all_candidates():
     from paper11_geofm.phase72b_models import _candidate_configs
 
@@ -2306,6 +2429,27 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path, monkeypatch):
         paths["selected_models_json"], paths["selected_models_hash"]
     )
     assert loaded["status"] == "phase72b_models_frozen"
+    assert len(loaded["fit_control_manifest_sha256"]) == 64
+    assert loaded["fit_implementation_id"]
+    assert paths["fit_control_manifest_csv"].exists()
+    fit_control_rows = pd.read_csv(
+        paths["fit_control_manifest_csv"], keep_default_na=False
+    )
+    assert set(fit_control_rows.columns) == {
+        "axis_id",
+        "partition_id",
+        "control_id",
+        "seed",
+        "index_sha256",
+        "matrix_sha256",
+        "cross_partition_count",
+    }
+    assert len(fit_control_rows) > 0
+    assert (fit_control_rows["cross_partition_count"] == 0).all()
+    assert (
+        loaded["fit_control_manifest_sha256"]
+        == paths["fit_control_manifest_sha256"]
+    )
     assert all(
         len(record["bundle_sha256"]) == 64
         for record in selected["bundle_records"]
@@ -2327,7 +2471,12 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path, monkeypatch):
     )
     record = selected["bundle_records"][0]
     bundle_path = frozen_dir / record["bundle_path"]
-    load_phase72b_model_bundle(bundle_path, record["bundle_sha256"])
+    loaded_bundle = load_phase72b_model_bundle(
+        bundle_path, record["bundle_sha256"]
+    )
+    assert loaded_bundle["fit_implementation_id"] == loaded[
+        "fit_implementation_id"
+    ]
     original = bundle_path.read_bytes()
     bundle_path.write_bytes(original + b"changed")
     try:
@@ -2336,6 +2485,85 @@ def test_phase72b_fit_freeze_writes_hashed_bundles(tmp_path, monkeypatch):
         assert "hash" in str(exc).lower()
     else:
         raise AssertionError("Expected a modified model bundle to be rejected")
+
+
+def test_phase72b_resume_rejects_record_bundle_semantic_mismatch(
+    tmp_path, monkeypatch
+):
+    from paper11_geofm.phase72b_models import fit_freeze_phase72b_models
+    from paper11_geofm.phase72b_protocol import (
+        load_hashed_json,
+        write_hashed_json,
+    )
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
+    progress_path = frozen_dir / "phase72b_fit_progress.json"
+    progress = load_hashed_json(progress_path)
+    first_entry = next(iter(progress["entries"].values()))
+    first_entry["record"]["candidate_id"] = "resigned-mismatch"
+    write_hashed_json(progress_path, progress)
+
+    with pytest.raises(ValueError, match="bundle semantics"):
+        fit_freeze_phase72b_models(
+            prepared_dir=prepared_dir, output_dir=frozen_dir
+        )
+
+
+def test_phase72b_bundle_semantics_bind_control_seed(tmp_path, monkeypatch):
+    from paper11_geofm.phase72b_models import (
+        load_phase72b_model_bundle,
+        validate_phase72b_bundle_record_semantics,
+    )
+
+    _, _, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
+    selected = json.loads(
+        (frozen_dir / "phase72b_selected_models.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    record = next(
+        row for row in selected["bundle_records"] if row["control_seed"] != ""
+    )
+    bundle = load_phase72b_model_bundle(
+        frozen_dir / record["bundle_path"], record["bundle_sha256"]
+    )
+    changed_record = {**record, "control_seed": int(record["control_seed"]) + 1}
+
+    with pytest.raises(ValueError, match="bundle semantics"):
+        validate_phase72b_bundle_record_semantics(changed_record, bundle)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("validation_metrics", None),
+        ("estimator_params", None),
+        ("f1_threshold", None),
+        ("budget_thresholds", None),
+    ],
+)
+def test_phase72b_bundle_semantics_normalizes_malformed_fields(
+    tmp_path, monkeypatch, field, value
+):
+    from paper11_geofm.phase72b_models import (
+        load_phase72b_model_bundle,
+        validate_phase72b_bundle_record_semantics,
+    )
+
+    _, _, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
+    selected = json.loads(
+        (frozen_dir / "phase72b_selected_models.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    record = selected["bundle_records"][0]
+    bundle = load_phase72b_model_bundle(
+        frozen_dir / record["bundle_path"], record["bundle_sha256"]
+    )
+    bundle[field] = value
+
+    with pytest.raises(ValueError, match="bundle semantics"):
+        validate_phase72b_bundle_record_semantics(record, bundle)
 
 
 def _prepare_and_freeze(tmp_path: Path, monkeypatch):
@@ -2578,6 +2806,117 @@ def test_phase72b_confirmation_rejects_tampered_leakage_audit(
         raise AssertionError("Expected tampered leakage-audit rejection")
 
 
+def test_phase72b_confirmation_audits_fit_control_manifest_before_targets(
+    tmp_path, monkeypatch
+):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
+    manifest_path = frozen_dir / "phase72b_fit_control_manifest.csv"
+    rows = pd.read_csv(manifest_path, keep_default_na=False)
+    rows.loc[0, "partition_id"] = "pooled_temporal:test"
+    rows.to_csv(manifest_path, index=False)
+    target_path = prepared_dir / "phase72b_confirmation_targets.npz"
+    with np.load(target_path) as loaded:
+        targets = {name: loaded[name].copy() for name in loaded.files}
+    targets["conversion_1y"][0] = 1 - targets["conversion_1y"][0]
+    np.savez_compressed(target_path, **targets)
+
+    result = confirm_phase72b_information_gain_screen(
+        prepared_dir=prepared_dir, frozen_dir=frozen_dir
+    )
+
+    assert result["phase72b_status"] == "phase72b_inputs_not_ready"
+    assert any("fit control manifest" in row for row in result["blockers"])
+
+
+def test_phase72b_confirmation_recomputes_fit_control_matrix_hash(
+    tmp_path, monkeypatch
+):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+    from paper11_geofm.phase72b_protocol import (
+        load_hashed_json,
+        write_hashed_json,
+    )
+    from paper11_geofm.phase72b_terrain import _file_sha256
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
+    manifest_path = frozen_dir / "phase72b_fit_control_manifest.csv"
+    rows = pd.read_csv(manifest_path, keep_default_na=False)
+    rows.loc[0, "matrix_sha256"] = "0" * 64
+    rows.to_csv(manifest_path, index=False)
+    selected_path = frozen_dir / "phase72b_selected_models.json"
+    selected = load_hashed_json(selected_path)
+    selected["fit_control_manifest_sha256"] = _file_sha256(manifest_path)
+    write_hashed_json(selected_path, selected)
+
+    result = confirm_phase72b_information_gain_screen(
+        prepared_dir=prepared_dir, frozen_dir=frozen_dir
+    )
+
+    assert result["phase72b_status"] == "phase72b_inputs_not_ready"
+    assert any(
+        "fit control manifest matrix mismatch" in blocker
+        for blocker in result["blockers"]
+    )
+
+
+def test_phase72b_confirmation_blocks_missing_fit_control_manifest(
+    tmp_path, monkeypatch
+):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
+    (frozen_dir / "phase72b_fit_control_manifest.csv").unlink()
+
+    result = confirm_phase72b_information_gain_screen(
+        prepared_dir=prepared_dir, frozen_dir=frozen_dir
+    )
+
+    assert result["phase72b_status"] == "phase72b_inputs_not_ready"
+    assert "fit control manifest is missing" in result["blockers"]
+
+
+def test_phase72b_confirmation_rejects_resigned_bundle_partition_identity(
+    tmp_path, monkeypatch
+):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        confirm_phase72b_information_gain_screen,
+    )
+    from paper11_geofm.phase72b_protocol import (
+        load_hashed_json,
+        write_hashed_json,
+    )
+    from paper11_geofm.phase72b_terrain import _file_sha256
+
+    _, prepared_dir, frozen_dir = _prepare_and_freeze(tmp_path, monkeypatch)
+    selected_path = frozen_dir / "phase72b_selected_models.json"
+    selected = load_hashed_json(selected_path)
+    record = selected["bundle_records"][0]
+    bundle_path = frozen_dir / record["bundle_path"]
+    bundle = joblib.load(bundle_path)
+    bundle["train_index_sha256"] = "0" * 64
+    joblib.dump(bundle, bundle_path)
+    record["bundle_sha256"] = _file_sha256(bundle_path)
+    write_hashed_json(selected_path, selected)
+    target_path = prepared_dir / "phase72b_confirmation_targets.npz"
+    with np.load(target_path) as loaded:
+        targets = {name: loaded[name].copy() for name in loaded.files}
+    targets["conversion_1y"][0] = 1 - targets["conversion_1y"][0]
+    np.savez_compressed(target_path, **targets)
+
+    with pytest.raises(ValueError, match="partition identity"):
+        confirm_phase72b_information_gain_screen(
+            prepared_dir=prepared_dir, frozen_dir=frozen_dir
+        )
+
+
 def test_phase72b_confirmation_controls_only_read_axis_test_rows(
     tmp_path, monkeypatch
 ):
@@ -2590,8 +2929,11 @@ def test_phase72b_confirmation_controls_only_read_axis_test_rows(
         )
     )
     expected = {
-        f"{axis_id}:test": [int(value) for value in axis["test"]]
+        f"{axis_id}:{partition_name}": [
+            int(value) for value in axis[partition_name]
+        ]
         for axis_id, axis in split_registry.items()
+        for partition_name in ("train", "validation", "test")
     }
     original = screen.build_phase72b_control_features
     calls = []
@@ -2601,7 +2943,6 @@ def test_phase72b_confirmation_controls_only_read_axis_test_rows(
         sample_indexes = [int(row["sample_index"]) for row in args[3]]
         assert len(set(partitions)) == 1
         partition_id = partitions[0]
-        assert partition_id.endswith(":test")
         assert sample_indexes == expected[partition_id]
         calls.append((partition_id, sample_indexes))
         return original(*args, **kwargs)

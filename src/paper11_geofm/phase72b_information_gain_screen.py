@@ -29,9 +29,12 @@ from .phase72b_metrics import (
     phase72b_metrics,
 )
 from .phase72b_models import (
+    FIT_CONTROL_MANIFEST_FIELDS,
+    PHASE72B_FIT_IMPLEMENTATION_ID,
     _variant_matrix,
     load_phase72b_model_bundle,
     predict_phase72b_bundle,
+    validate_phase72b_bundle_record_semantics,
 )
 from .phase72b_protocol import (
     PHASE72B_CLAIM_BOUNDARY,
@@ -65,6 +68,101 @@ _MANDATORY_AXES = (
     "bishan_to_dongxing",
     "dongxing_to_bishan",
 )
+
+
+def _audit_phase72b_fit_control_manifest(
+    *,
+    frozen_dir: Path,
+    selected: Mapping[str, object],
+    split_registry: Mapping[str, object],
+    matrices: Mapping[str, np.ndarray],
+    feature_rows: list[Mapping[str, object]],
+) -> list[str]:
+    blockers = []
+    manifest_path = frozen_dir / "phase72b_fit_control_manifest.csv"
+    if not manifest_path.is_file():
+        return ["fit control manifest is missing"]
+    expected_hash = str(selected.get("fit_control_manifest_sha256", ""))
+    if len(expected_hash) != 64 or _file_sha256(manifest_path) != expected_hash:
+        return ["fit control manifest hash mismatch"]
+    frame = pd.read_csv(manifest_path, keep_default_na=False)
+    if set(frame.columns) != set(FIT_CONTROL_MANIFEST_FIELDS):
+        return ["fit control manifest fields mismatch"]
+    actual = {}
+    for raw_row in frame.to_dict(orient="records"):
+        row = dict(raw_row)
+        try:
+            key = (
+                str(row["axis_id"]),
+                str(row["partition_id"]),
+                str(row["control_id"]),
+                int(row["seed"]),
+            )
+            normalized = {
+                **row,
+                "seed": int(row["seed"]),
+                "cross_partition_count": int(
+                    row["cross_partition_count"]
+                ),
+            }
+        except (KeyError, TypeError, ValueError):
+            blockers.append("fit control manifest row is invalid")
+            continue
+        if key in actual:
+            blockers.append(f"duplicate fit control manifest row: {key}")
+            continue
+        actual[key] = normalized
+
+    expected = set()
+    for record in selected.get("bundle_records", []):
+        record = dict(record)
+        seed = record.get("control_seed", "")
+        if seed == "":
+            continue
+        axis_id = str(record.get("axis_id", ""))
+        variant_id = str(record.get("variant_id", ""))
+        control_id = _CONTROL_VARIANTS.get(variant_id)
+        if control_id is None or axis_id not in split_registry:
+            continue
+        for split_name in ("train", "validation"):
+            partition_id = f"{axis_id}:{split_name}"
+            key = (axis_id, partition_id, control_id, int(seed))
+            expected.add(key)
+            row = actual.get(key)
+            indexes = np.asarray(
+                split_registry[axis_id][split_name], dtype=np.int64
+            )
+            if row is None:
+                blockers.append(f"missing fit control manifest row: {key}")
+                continue
+            if row["index_sha256"] != _array_sha256(indexes):
+                blockers.append(f"fit control manifest index mismatch: {key}")
+            matrix_hash = str(row["matrix_sha256"]).lower()
+            if len(matrix_hash) != 64 or any(
+                character not in "0123456789abcdef"
+                for character in matrix_hash
+            ):
+                blockers.append(f"fit control manifest matrix hash invalid: {key}")
+            else:
+                subset_rows = [feature_rows[int(index)] for index in indexes]
+                control = build_phase72b_control_features(
+                    control_id,
+                    matrices["embedding_history"][indexes],
+                    matrices["history_mask"][indexes],
+                    subset_rows,
+                    partition_ids=[partition_id] * len(indexes),
+                    seed=int(seed),
+                    output_dim=matrices["geofm_temporal_full"].shape[1],
+                )
+                if matrix_hash != _array_sha256(control["matrix"]):
+                    blockers.append(
+                        f"fit control manifest matrix mismatch: {key}"
+                    )
+            if row["cross_partition_count"] != 0:
+                blockers.append(f"fit control manifest crossed partition: {key}")
+    for key in set(actual) - expected:
+        blockers.append(f"unexpected fit control manifest row: {key}")
+    return blockers
 
 
 def _array_sha256(array: np.ndarray) -> str:
@@ -716,8 +814,21 @@ def confirm_phase72b_information_gain_screen(
     leakage_audit = dict(verified_prepared["leakage_audit"])
     invalid_spatial_axes = list(leakage_audit.get("invalid_spatial_axes", []))
     blockers = []
+    if selected.get("status") != "phase72b_models_frozen":
+        blockers.append("selected models are not frozen")
+    if selected.get("fit_implementation_id") != PHASE72B_FIT_IMPLEMENTATION_ID:
+        blockers.append("fit implementation mismatch")
     if leakage_audit.get("status") != "leakage_audit_passed":
         blockers.append("leakage audit failed")
+    blockers.extend(
+        _audit_phase72b_fit_control_manifest(
+            frozen_dir=frozen,
+            selected=selected,
+            split_registry=split_registry,
+            matrices=matrices,
+            feature_rows=feature_rows,
+        )
+    )
 
     records = [dict(record) for record in selected.get("bundle_records", [])]
     record_by_key: dict[tuple[str, str, int | None], dict[str, object]] = {}
@@ -739,6 +850,28 @@ def confirm_phase72b_information_gain_screen(
             or str(bundle.get("variant_id")) != key[1]
         ):
             raise ValueError(f"Phase 72B model bundle identity mismatch: {key}")
+        try:
+            validate_phase72b_bundle_record_semantics(record, bundle)
+        except ValueError as exc:
+            raise ValueError(
+                f"Phase 72B model bundle semantics mismatch: {key}"
+            ) from exc
+        if key[0] not in split_registry:
+            raise ValueError(
+                f"Phase 72B model bundle references unknown axis: {key[0]}"
+            )
+        axis = dict(split_registry[key[0]])
+        if (
+            bundle.get("train_index_sha256")
+            != _array_sha256(np.asarray(axis["train"], dtype=np.int64))
+            or bundle.get("validation_index_sha256")
+            != _array_sha256(
+                np.asarray(axis["validation"], dtype=np.int64)
+            )
+        ):
+            raise ValueError(
+                f"Phase 72B model bundle partition identity mismatch: {key}"
+            )
         record_by_key[key] = record
         bundles[key] = bundle
         bundle_hashes.append(

@@ -43,6 +43,18 @@ _CONTROL_VARIANTS = {
     "explicit_plus_spatial_shuffle": "spatial_shuffle",
     "explicit_plus_random_projection": "random_projection",
 }
+PHASE72B_FIT_IMPLEMENTATION_ID = (
+    "phase72b_fit_v2_partition_local_control_manifest"
+)
+FIT_CONTROL_MANIFEST_FIELDS = (
+    "axis_id",
+    "partition_id",
+    "control_id",
+    "seed",
+    "index_sha256",
+    "matrix_sha256",
+    "cross_partition_count",
+)
 
 
 def _array_sha256(array: np.ndarray) -> str:
@@ -288,6 +300,46 @@ def _fit_candidate(
     )
 
 
+def _validate_model_fit_inputs(
+    train_x: np.ndarray,
+    train_y: np.ndarray,
+    validation_x: np.ndarray,
+    validation_y: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    raw_train_x = np.asarray(train_x)
+    raw_validation_x = np.asarray(validation_x)
+    raw_train_y = np.asarray(train_y)
+    raw_validation_y = np.asarray(validation_y)
+    if (
+        raw_train_x.ndim != 2
+        or raw_validation_x.ndim != 2
+        or raw_train_x.shape[1] != raw_validation_x.shape[1]
+        or raw_train_x.dtype.kind not in "biuf"
+        or raw_validation_x.dtype.kind not in "biuf"
+        or raw_train_y.ndim != 1
+        or raw_validation_y.ndim != 1
+        or raw_train_y.dtype.kind not in "biuf"
+        or raw_validation_y.dtype.kind not in "biuf"
+        or len(raw_train_x) != len(raw_train_y)
+        or len(raw_validation_x) != len(raw_validation_y)
+        or not np.isfinite(raw_train_x).all()
+        or not np.isfinite(raw_validation_x).all()
+    ):
+        raise ValueError("Phase 72B model features are invalid")
+    train_values = {float(value) for value in raw_train_y.tolist()}
+    validation_values = {float(value) for value in raw_validation_y.tolist()}
+    if train_values != {0.0, 1.0} or validation_values != {0.0, 1.0}:
+        raise ValueError(
+            "Phase 72B model selection requires binary labels and both classes"
+        )
+    return (
+        raw_train_x.astype(np.float32),
+        raw_train_y.astype(np.int8),
+        raw_validation_x.astype(np.float32),
+        raw_validation_y.astype(np.int8),
+    )
+
+
 def fit_select_phase72b_model(
     train_x: np.ndarray,
     train_y: np.ndarray,
@@ -300,12 +352,9 @@ def fit_select_phase72b_model(
     train_indexes: Sequence[int] | None = None,
     validation_indexes: Sequence[int] | None = None,
 ) -> tuple[dict[str, object], list[dict[str, object]]]:
-    train_x = np.asarray(train_x, dtype=np.float32)
-    validation_x = np.asarray(validation_x, dtype=np.float32)
-    train_y = np.asarray(train_y, dtype=np.int8)
-    validation_y = np.asarray(validation_y, dtype=np.int8)
-    if len(np.unique(train_y)) != 2 or len(np.unique(validation_y)) != 2:
-        raise ValueError("Phase 72B model selection requires both classes")
+    train_x, train_y, validation_x, validation_y = _validate_model_fit_inputs(
+        train_x, train_y, validation_x, validation_y
+    )
     calibration = dict(protocol["calibration"])
     budgets = tuple(float(value) for value in protocol["budgets"])
     candidate_results = []
@@ -341,6 +390,7 @@ def fit_select_phase72b_model(
         ),
     )
     bundle = {
+        "fit_implementation_id": PHASE72B_FIT_IMPLEMENTATION_ID,
         "variant_id": str(variant_id),
         "axis_id": str(axis_id),
         "model_family": selected["config"]["model_family"],
@@ -386,12 +436,15 @@ def fit_fixed_phase72b_model(
     train_indexes: Sequence[int],
     validation_indexes: Sequence[int],
 ) -> tuple[dict[str, object], list[dict[str, object]]]:
+    train_x, train_y, validation_x, validation_y = _validate_model_fit_inputs(
+        train_x, train_y, validation_x, validation_y
+    )
     calibration = dict(protocol["calibration"])
     selected, rows = _fit_candidate(
-        np.asarray(train_x, dtype=np.float32),
-        np.asarray(train_y, dtype=np.int8),
-        np.asarray(validation_x, dtype=np.float32),
-        np.asarray(validation_y, dtype=np.int8),
+        train_x,
+        train_y,
+        validation_x,
+        validation_y,
         config=candidate_config,
         calibration_methods=tuple(calibration["methods"]),
         budgets=tuple(float(value) for value in protocol["budgets"]),
@@ -399,6 +452,7 @@ def fit_fixed_phase72b_model(
         seed=int(protocol["seed"]),
     )
     bundle = {
+        "fit_implementation_id": PHASE72B_FIT_IMPLEMENTATION_ID,
         "variant_id": str(variant_id),
         "axis_id": str(axis_id),
         "model_family": selected["config"]["model_family"],
@@ -481,12 +535,13 @@ def _fit_control_variant_matrices(
     validation_indexes: Sequence[int],
     axis_id: str,
     seed: int,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, np.ndarray, list[dict[str, object]]]:
     if variant_id not in _CONTROL_VARIANTS:
         raise ValueError(
             f"Phase 72B fit control variant is unknown: {variant_id}"
         )
     result = []
+    manifest_rows = []
     for split_name, raw_indexes in (
         ("train", train_indexes),
         ("validation", validation_indexes),
@@ -512,19 +567,68 @@ def _fit_control_variant_matrices(
                 axis=1,
             )
         )
-    return result[0], result[1]
+        manifest_rows.append(
+            {
+                "axis_id": str(axis_id),
+                "partition_id": f"{axis_id}:{split_name}",
+                "control_id": _CONTROL_VARIANTS[variant_id],
+                "seed": int(seed),
+                "index_sha256": _array_sha256(indexes),
+                "matrix_sha256": _array_sha256(control["matrix"]),
+                "cross_partition_count": int(
+                    control["manifest"]["cross_partition_count"]
+                ),
+            }
+        )
+    return result[0], result[1], manifest_rows
 
 
 def _development_outcome(
     target_path: Path,
+    *,
+    feature_rows: Sequence[Mapping[str, object]],
+    development_years: set[int],
 ) -> dict[int, int]:
     with np.load(target_path) as loaded:
-        return {
-            int(index): int(outcome)
-            for index, outcome in zip(
-                loaded["sample_index"], loaded["conversion_1y"]
-            )
-        }
+        if set(loaded.files) != {
+            "sample_index",
+            "origin_year",
+            "conversion_1y",
+        }:
+            raise ValueError("Phase 72B development target arrays mismatch")
+        indexes = np.asarray(loaded["sample_index"])
+        years = np.asarray(loaded["origin_year"])
+        outcomes = np.asarray(loaded["conversion_1y"])
+    if (
+        indexes.ndim != 1
+        or years.ndim != 1
+        or outcomes.ndim != 1
+        or indexes.dtype.kind not in "iu"
+        or years.dtype.kind not in "iu"
+        or not (len(indexes) == len(years) == len(outcomes))
+    ):
+        raise ValueError("Phase 72B development target alignment mismatch")
+    expected_rows = [
+        row
+        for row in feature_rows
+        if int(row["origin_year"]) in development_years
+    ]
+    expected_indexes = [int(row["sample_index"]) for row in expected_rows]
+    expected_years = [int(row["origin_year"]) for row in expected_rows]
+    actual_indexes = [int(value) for value in indexes.tolist()]
+    actual_years = [int(value) for value in years.tolist()]
+    if (
+        len(set(actual_indexes)) != len(actual_indexes)
+        or actual_indexes != expected_indexes
+        or actual_years != expected_years
+    ):
+        raise ValueError("Phase 72B development target identity mismatch")
+    if outcomes.dtype.kind not in "biuf" or not np.isin(
+        outcomes, (0, 1)
+    ).all():
+        raise ValueError("Phase 72B development target labels must be binary")
+    actual_outcomes = [int(value) for value in outcomes.tolist()]
+    return dict(zip(actual_indexes, actual_outcomes))
 
 
 def _outcomes_for_indexes(
@@ -548,8 +652,13 @@ def _save_bundle(
 ) -> dict[str, object]:
     filename = _bundle_filename(axis_id, variant_id, seed)
     path = bundles_dir / filename
-    joblib.dump(dict(bundle), path)
+    persisted_bundle = {
+        **dict(bundle),
+        "control_seed": "" if seed is None else int(seed),
+    }
+    joblib.dump(persisted_bundle, path)
     return {
+        "fit_implementation_id": PHASE72B_FIT_IMPLEMENTATION_ID,
         "axis_id": axis_id,
         "variant_id": variant_id,
         "control_seed": "" if seed is None else int(seed),
@@ -573,6 +682,53 @@ def _bundle_filename(
     return f"{axis_id}__{variant_id}{suffix}.joblib"
 
 
+def validate_phase72b_bundle_record_semantics(
+    record: Mapping[str, object], bundle: Mapping[str, object]
+) -> None:
+    try:
+        validation = dict(bundle.get("validation_metrics", {}))
+        estimator_params = dict(bundle.get("estimator_params", {}))
+        threshold = float(bundle.get("f1_threshold", float("nan")))
+        budget_thresholds = dict(bundle.get("budget_thresholds", {}))
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Phase 72B bundle semantics mismatch") from exc
+    expected = {
+        "fit_implementation_id": PHASE72B_FIT_IMPLEMENTATION_ID,
+        "control_seed": bundle.get("control_seed"),
+        "candidate_id": bundle.get("candidate_id"),
+        "model_family": bundle.get("model_family"),
+        "calibration_method": bundle.get("calibration_method"),
+        "validation_average_precision": validation.get(
+            "average_precision"
+        ),
+        "validation_brier": validation.get("brier"),
+        "validation_ece": validation.get("ece"),
+    }
+    actual = {key: record.get(key) for key in expected}
+    if actual != expected:
+        raise ValueError("Phase 72B bundle semantics mismatch")
+    if (
+        bundle.get("fit_implementation_id")
+        != PHASE72B_FIT_IMPLEMENTATION_ID
+        or bundle.get("claim_boundary") != PHASE72B_CLAIM_BOUNDARY
+        or estimator_params.get("model_family") != bundle.get("model_family")
+        or _candidate_id(estimator_params) != bundle.get("candidate_id")
+        or bundle.get("calibration_method")
+        not in {"none", "sigmoid", "isotonic"}
+    ):
+        raise ValueError("Phase 72B bundle semantics mismatch")
+    if (
+        not np.isfinite(threshold)
+        or not 0.0 <= threshold <= 1.0
+        or set(budget_thresholds) != {"10pct", "20pct"}
+        or any(
+            not np.isfinite(float(value)) or not 0.0 <= float(value) <= 1.0
+            for value in budget_thresholds.values()
+        )
+    ):
+        raise ValueError("Phase 72B bundle semantics mismatch")
+
+
 def _load_fit_progress(
     path: Path, *, protocol_hash: str, prepared_artifacts_hash: str
 ) -> dict[str, object]:
@@ -580,6 +736,7 @@ def _load_fit_progress(
     if not path.exists() and not hash_path.exists():
         progress = {
             "status": "phase72b_fit_in_progress",
+            "fit_implementation_id": PHASE72B_FIT_IMPLEMENTATION_ID,
             "frozen_protocol_sha256": protocol_hash,
             "prepared_artifacts_sha256": prepared_artifacts_hash,
             "entries": {},
@@ -589,6 +746,8 @@ def _load_fit_progress(
     if not path.exists() or not hash_path.exists():
         raise ValueError("Phase 72B fit progress hash pair is incomplete")
     progress = load_hashed_json(path, hash_path)
+    if progress.get("fit_implementation_id") != PHASE72B_FIT_IMPLEMENTATION_ID:
+        raise ValueError("Phase 72B fit implementation mismatch")
     if str(progress.get("frozen_protocol_sha256", "")) != protocol_hash:
         raise ValueError("Phase 72B fit progress protocol hash mismatch")
     if (
@@ -635,6 +794,12 @@ def _resume_bundle(
     bundle = load_phase72b_model_bundle(
         bundles_dir / filename, str(record["bundle_sha256"])
     )
+    try:
+        validate_phase72b_bundle_record_semantics(record, bundle)
+    except ValueError as exc:
+        raise ValueError(
+            f"Phase 72B resumed bundle semantics mismatch: {filename}"
+        ) from exc
     if (
         str(bundle.get("axis_id")) != axis_id
         or str(bundle.get("variant_id")) != variant_id
@@ -699,10 +864,14 @@ def fit_freeze_phase72b_models(
     matrices = dict(verified_prepared["matrices"])
     split_registry = dict(verified_prepared["split_registry"])
     outcomes = _development_outcome(
-        development_target_path
+        development_target_path,
+        feature_rows=feature_rows,
+        development_years=set(protocol["years"]["train"])
+        | set(protocol["years"]["validation"]),
     )
     bundle_records = []
     validation_rows = []
+    fit_control_rows = []
     axes: dict[str, list[str]] = {}
     selected_control_seeds: dict[str, dict[str, int]] = {}
     selected_configs: dict[str, dict[str, object]] = {}
@@ -770,7 +939,7 @@ def fit_freeze_phase72b_models(
         for variant_id in _CONTROL_VARIANTS:
             seed_records = []
             for control_seed in protocol["controls"]["seeds"]:
-                train_matrix, validation_matrix = (
+                train_matrix, validation_matrix, control_rows = (
                     _fit_control_variant_matrices(
                         variant_id,
                         matrices,
@@ -781,6 +950,7 @@ def fit_freeze_phase72b_models(
                         seed=int(control_seed),
                     )
                 )
+                fit_control_rows.extend(control_rows)
                 resumed = _resume_bundle(
                     progress,
                     bundles_dir=bundles_dir,
@@ -864,7 +1034,7 @@ def fit_freeze_phase72b_models(
                     variant_id
                 ]
             if variant_id in _CONTROL_VARIANTS:
-                train_matrix, validation_matrix = (
+                train_matrix, validation_matrix, control_rows = (
                     _fit_control_variant_matrices(
                         variant_id,
                         matrices,
@@ -875,6 +1045,7 @@ def fit_freeze_phase72b_models(
                         seed=int(control_seed),
                     )
                 )
+                fit_control_rows.extend(control_rows)
             else:
                 matrix = _variant_matrix(
                     variant_id, matrices, feature_rows
@@ -933,8 +1104,15 @@ def fit_freeze_phase72b_models(
             validation_rows.extend(checkpoint_rows)
             axes[axis_id].append(record["bundle_path"])
 
+    fit_control_path = output / "phase72b_fit_control_manifest.csv"
+    pd.DataFrame(
+        fit_control_rows, columns=FIT_CONTROL_MANIFEST_FIELDS
+    ).to_csv(fit_control_path, index=False)
+    fit_control_hash = _file_sha256(fit_control_path)
     selected = {
         "status": "phase72b_models_frozen",
+        "fit_implementation_id": PHASE72B_FIT_IMPLEMENTATION_ID,
+        "fit_control_manifest_sha256": fit_control_hash,
         "frozen_protocol_sha256": protocol_hash,
         "prepared_artifacts_sha256": str(
             verified_prepared["manifest_sha256"]
@@ -957,6 +1135,8 @@ def fit_freeze_phase72b_models(
     _write_fit_progress(progress_path, progress)
     return selected, {
         "validation_metrics_csv": validation_path,
+        "fit_control_manifest_csv": fit_control_path,
+        "fit_control_manifest_sha256": fit_control_hash,
         "selected_models_json": selected_json,
         "selected_models_hash": selected_hash,
     }
