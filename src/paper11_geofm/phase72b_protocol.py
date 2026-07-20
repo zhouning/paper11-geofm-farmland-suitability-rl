@@ -27,6 +27,17 @@ PHASE72B_TERRAIN_FEATURES = (
     "slope_max",
     "local_relief",
 )
+PHASE72B_GATES = {
+    "ap_vs_explicit": 0.015,
+    "brier_vs_explicit": 0.005,
+    "ece_vs_explicit": 0.010,
+    "ap_vs_control": 0.005,
+    "brier_vs_control": 0.002,
+    "transfer_ap_gain": 0.005,
+    "transfer_brier_gain": 0.002,
+    "transfer_ap_harm": 0.005,
+    "transfer_brier_harm": 0.002,
+}
 
 
 @dataclass(frozen=True)
@@ -112,6 +123,8 @@ def load_phase72b_protocol(path: Path | str) -> Phase72BProtocol:
         str(key): float(value)
         for key, value in dict(payload["gates"]).items()
     }
+    if gates != PHASE72B_GATES:
+        raise ValueError("Phase 72B frozen gate thresholds mismatch")
     expected_terrain = {
         "source_id": PHASE72B_TERRAIN_SOURCE_ID,
         "collection": PHASE72B_TERRAIN_COLLECTION,

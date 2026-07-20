@@ -106,6 +106,26 @@ def test_phase72b_protocol_loads_frozen_thresholds(tmp_path):
     assert protocol.reuse_phase8_d4_tables is False
 
 
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        lambda gates: gates.__setitem__("ap_vs_explicit", 0.0),
+        lambda gates: gates.pop("brier_vs_control"),
+        lambda gates: gates.__setitem__("undeclared_gate", 1.0),
+    ],
+    ids=("changed", "missing", "extra"),
+)
+def test_phase72b_protocol_rejects_mutated_frozen_gates(tmp_path, mutation):
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+
+    payload = _protocol_payload()
+    mutation(payload["gates"])
+    path = tmp_path / "protocol.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="gate"):
+        load_phase72b_protocol(path)
+
+
 def test_phase72b_protocol_rejects_nonlocal_control_partition(tmp_path):
     from paper11_geofm.phase72b_protocol import load_phase72b_protocol
 
@@ -1656,6 +1676,66 @@ def test_phase72b_block_bootstrap_uses_paired_blocks():
     assert result["n_clusters"] == 2
 
 
+def test_phase72b_metrics_and_bootstrap_reject_invalid_inputs():
+    from paper11_geofm.phase72b_metrics import (
+        expected_calibration_error,
+        paired_block_bootstrap,
+        phase72b_metrics,
+    )
+
+    with pytest.raises(ValueError, match="binary"):
+        expected_calibration_error([0.2, 1.0], [0.1, 0.9], bins=2)
+    with pytest.raises(ValueError, match="binary"):
+        phase72b_metrics(
+            [0.2, 1.0],
+            [0.1, 0.9],
+            threshold=0.5,
+            budgets=(0.1,),
+            ece_bins=2,
+        )
+    with pytest.raises(ValueError, match="probabil"):
+        phase72b_metrics(
+            [0, 1],
+            [0.1, np.nan],
+            threshold=0.5,
+            budgets=(0.1,),
+            ece_bins=2,
+        )
+    with pytest.raises(ValueError, match="threshold"):
+        phase72b_metrics(
+            [0, 1],
+            [0.1, 0.9],
+            threshold=1.5,
+            budgets=(0.1,),
+            ece_bins=2,
+        )
+    with pytest.raises(ValueError, match="budget"):
+        phase72b_metrics(
+            [0, 1],
+            [0.1, 0.9],
+            threshold=0.5,
+            budgets=(2.0,),
+            ece_bins=2,
+        )
+    with pytest.raises(ValueError, match="bin"):
+        phase72b_metrics(
+            [0, 1],
+            [0.1, 0.9],
+            threshold=0.5,
+            budgets=(0.1,),
+            ece_bins=0,
+        )
+
+    rows = [
+        {"region_id": "", "spatial_block_id": "a0"},
+        {"region_id": "a", "spatial_block_id": "a1"},
+    ]
+    with pytest.raises(ValueError, match="region"):
+        paired_block_bootstrap(
+            [0, 1], [0.4, 0.6], [0.1, 0.9], rows, iterations=10, seed=72
+        )
+
+
 def _gate_inputs():
     return {
         "pooled_delta": {
@@ -1668,7 +1748,12 @@ def _gate_inputs():
             "brier_delta_ci_low": -0.001,
         },
         "control_rows": [
-            {"control_id": name, "ap_delta": 0.006, "brier_delta": 0.003}
+            {
+                "control_id": name,
+                "ap_delta": 0.006,
+                "brier_delta": 0.003,
+                "ece_delta": 0.001,
+            }
             for name in (
                 "temporal_order_shuffle",
                 "spatial_shuffle",
@@ -1680,16 +1765,26 @@ def _gate_inputs():
                 "axis_id": "bishan_to_dongxing",
                 "ap_delta": 0.006,
                 "brier_delta": 0.0,
+                "ece_delta": 0.001,
             },
             {
                 "axis_id": "dongxing_to_bishan",
                 "ap_delta": 0.0,
                 "brier_delta": 0.003,
+                "ece_delta": 0.001,
             },
         ],
         "spatial_rows": [
-            {"region_id": "bishan", "ap_delta": 0.001, "brier_delta": 0.0},
-            {"region_id": "dongxing", "ap_delta": 0.0, "brier_delta": 0.001},
+            {
+                "axis_id": f"spatial_{region_id}_fold{fold}",
+                "region_id": region_id,
+                "rows": 10,
+                "ap_delta": 0.001,
+                "brier_delta": 0.001,
+                "ece_delta": 0.001,
+            }
+            for region_id in ("bishan", "dongxing")
+            for fold in (0, 1)
         ],
         "gates": _protocol_payload()["gates"],
     }
@@ -1707,6 +1802,7 @@ def test_phase72b_gate_emits_all_frozen_statuses():
         "axis_id": "dongxing_to_bishan",
         "ap_delta": -0.006,
         "brier_delta": -0.003,
+        "ece_delta": -0.001,
     }
     mixed = build_phase72b_gate(**mixed_inputs, leakage_ok=True)
     assert mixed["phase72b_status"] == "geofm_information_mixed"
@@ -1729,6 +1825,119 @@ def test_phase72b_gate_emits_all_frozen_statuses():
 
     blocked = build_phase72b_gate(**base, leakage_ok=False)
     assert blocked["phase72b_status"] == "phase72b_inputs_not_ready"
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        {
+            "control_rows": [
+                {
+                    "control_id": "temporal_order_shuffle",
+                    "ap_delta": 0.006,
+                    "brier_delta": 0.003,
+                }
+            ]
+        },
+        {
+            "transfer_rows": [
+                {
+                    "axis_id": "bishan_to_dongxing",
+                    "ap_delta": 0.006,
+                    "brier_delta": 0.003,
+                }
+            ]
+            * 2
+        },
+        {
+            "spatial_rows": [
+                {
+                    "axis_id": "spatial_bishan_fold0",
+                    "region_id": "bishan",
+                    "rows": 10,
+                    "ap_delta": 0.001,
+                    "brier_delta": 0.001,
+                    "ece_delta": 0.001,
+                }
+            ]
+        },
+        {
+            "spatial_rows": [
+                {
+                    "axis_id": f"spatial_{region_id}_fold0",
+                    "region_id": region_id,
+                    "rows": 10,
+                    "ap_delta": 0.001,
+                    "brier_delta": 0.001,
+                    "ece_delta": 0.001,
+                }
+                for region_id in ("bishan", "dongxing")
+            ]
+        },
+        {
+            "gates": {
+                **_protocol_payload()["gates"],
+                "ap_vs_explicit": 0.0,
+            }
+        },
+    ],
+    ids=(
+        "missing-controls",
+        "duplicate-transfer-axis",
+        "missing-spatial-region",
+        "one-fold-per-region",
+        "mutated-gate-threshold",
+    ),
+)
+def test_phase72b_gate_rejects_incomplete_evidence_identity(replacement):
+    from paper11_geofm.phase72b_metrics import build_phase72b_gate
+
+    inputs = {**_gate_inputs(), **replacement}
+    result = build_phase72b_gate(**inputs, leakage_ok=True)
+    assert result["phase72b_status"] == "phase72b_inputs_not_ready"
+    assert result["checks"]["input_ready"] is False
+    assert result["evidence"]["input_blockers"]
+
+
+def test_phase72b_gate_audits_every_delta_and_preserves_pooled_direction():
+    from paper11_geofm.phase72b_metrics import build_phase72b_gate
+
+    base = _gate_inputs()
+    supported = build_phase72b_gate(**base, leakage_ok=True)
+    evidence = supported["evidence"]
+    assert evidence["pooled"]["deltas"] == base["pooled_delta"]
+    assert evidence["pooled"]["bootstrap"] == base["pooled_bootstrap"]
+    assert len(evidence["controls"]) == 3
+    assert len(evidence["transfers"]) == 2
+    assert len(evidence["spatial_folds"]) == 4
+    assert len(evidence["spatial_regions"]) == 2
+    assert all(row["passed"] for row in evidence["controls"])
+    assert all(row["passed"] for row in evidence["transfers"])
+    assert all(row["passed"] for row in evidence["spatial_folds"])
+
+    brier_only_spatial = {
+        **base,
+        "pooled_delta": {
+            "ap_delta": 0.001,
+            "brier_delta": 0.006,
+            "ece_delta": 0.011,
+        },
+        "pooled_bootstrap": {
+            "ap_delta_ci_low": -0.001,
+            "brier_delta_ci_low": 0.001,
+        },
+        "spatial_rows": [
+            {**row, "ap_delta": 0.100, "brier_delta": -0.100}
+            for row in base["spatial_rows"]
+        ],
+    }
+    mixed = build_phase72b_gate(**brier_only_spatial, leakage_ok=True)
+    assert mixed["phase72b_status"] == "geofm_information_mixed"
+    assert mixed["checks"]["spatial"] is False
+    assert all(
+        row["direction_checks"] == {"brier": False}
+        for row in mixed["evidence"]["spatial_folds"]
+    )
 
 
 def test_phase72b_model_selection_returns_frozen_bundle():
