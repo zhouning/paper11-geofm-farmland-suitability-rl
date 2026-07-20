@@ -1060,6 +1060,45 @@ def test_phase72b_controls_are_partition_materialization_invariant():
         assert np.array_equal(full["matrix"][3:], test_only["matrix"])
 
 
+def test_phase72b_fit_control_materialization_never_reads_test_rows(
+    monkeypatch,
+):
+    import paper11_geofm.phase72b_models as models
+
+    original = models.build_phase72b_control_features
+    calls = []
+
+    def guarded(*args, **kwargs):
+        partitions = list(kwargs["partition_ids"])
+        calls.append(partitions)
+        assert len(set(partitions)) == 1
+        assert not partitions[0].endswith(":test")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(models, "build_phase72b_control_features", guarded)
+    histories, masks, rows = _geofm_control_fixture()
+    matrices = {
+        "explicit_history": np.ones((4, 1), dtype=np.float32),
+        "embedding_history": histories,
+        "history_mask": masks,
+        "geofm_temporal_full": np.ones((4, 10), dtype=np.float32),
+    }
+    matrix = models._fit_control_variant_matrix(
+        "explicit_plus_spatial_shuffle",
+        matrices,
+        rows,
+        train_indexes=[0, 1],
+        validation_indexes=[2, 3],
+        axis_id="pooled_temporal",
+        seed=72,
+    )
+    assert matrix.shape == (4, 11)
+    assert calls == [
+        ["pooled_temporal:train"] * 2,
+        ["pooled_temporal:validation"] * 2,
+    ]
+
+
 def test_phase72b_random_projection_is_data_independent_and_orthonormal():
     from paper11_geofm.phase72b_geofm_features import (
         build_phase72b_random_projection,
@@ -1307,16 +1346,16 @@ def _phase72b_prepare_fixture(tmp_path: Path):
     region_config.write_text(
         json.dumps(regions_payload), encoding="utf-8"
     )
+    fixture_protocol = _protocol_payload()
     phase72a = build_phase72a_temporal_label_package(
         region_config=region_config,
         embedding_dirs=embedding_dirs,
         label_dirs=label_dirs,
         manual_review_per_stratum=1,
-        spatial_block_size=1,
+        spatial_block_size=fixture_protocol["spatial"]["block_size"],
     )
     phase72a_dir = tmp_path / "phase72a"
     write_phase72a_temporal_label_package_artifacts(phase72a, phase72a_dir)
-    fixture_protocol = _protocol_payload()
     fixture_protocol["models"] = {
         "logistic_c": [0.1],
         "logistic_class_weight": ["none"],
@@ -1434,6 +1473,13 @@ def test_phase72b_prepare_separates_confirmation_targets_and_freezes_protocol(
     }
     assert not feature_manifest["control_id"].any()
     assert not feature_manifest["partition_id"].any()
+    split_registry = json.loads(
+        paths["split_registry_json"].read_text(encoding="utf-8")
+    )
+    assert not any(
+        key.endswith("test")
+        for key in split_registry["pooled_temporal"]["class_counts"]
+    )
     terrain_manifest = pd.read_csv(
         paths["terrain_manifest_csv"], keep_default_na=False
     )
@@ -1480,6 +1526,29 @@ def test_phase72b_prepare_rejects_tampered_phase72a_sample_csv(tmp_path):
         assert "phase 72a derived sample mismatch" in str(exc).lower()
     else:
         raise AssertionError("Expected tampered Phase 72A CSV to be rejected")
+
+
+def test_phase72b_prepare_rejects_tampered_spatial_block_id(tmp_path):
+    from paper11_geofm.phase72b_information_gain_screen import (
+        prepare_phase72b_information_gain_screen,
+    )
+
+    inputs = _phase72b_prepare_fixture(tmp_path)
+    sample_path = (
+        inputs["phase72a_dir"] / "phase72a_temporal_sample_index.csv"
+    )
+    rows = pd.read_csv(sample_path, keep_default_na=False)
+    rows.loc[0, "spatial_block_id"] = "bishan_br999_bc999"
+    rows.to_csv(sample_path, index=False)
+    with pytest.raises(ValueError, match="spatial block"):
+        prepare_phase72b_information_gain_screen(
+            protocol_path=inputs["protocol_path"],
+            phase72a_region_config=inputs["region_config"],
+            phase72a_package_dir=inputs["phase72a_dir"],
+            embedding_dirs=inputs["embedding_dirs"],
+            label_dirs=inputs["label_dirs"],
+            terrain_dir=inputs["terrain_dir"],
+        )
 
 
 def test_phase72b_prepare_rejects_tampered_phase72a_tensor_npz(tmp_path):

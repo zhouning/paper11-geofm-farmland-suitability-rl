@@ -98,7 +98,6 @@ def _axis(
         "class_counts": {
             "train": _class_counts(rows, train),
             "validation": _class_counts(rows, validation),
-            "test": _class_counts(rows, test),
         },
     }
 
@@ -420,6 +419,7 @@ def audit_phase72b_splits(
             recomputed_counts = {
                 name: _class_counts(sample_rows, indexes)
                 for name, indexes in split_indexes.items()
+                if name in {"train", "validation"}
             }
             if counts != recomputed_counts:
                 errors.append(f"class count mismatch: {axis_id}")

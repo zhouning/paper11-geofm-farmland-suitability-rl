@@ -19,14 +19,16 @@ from .phase72a_temporal_label_package import (
     build_phase72a_temporal_label_package,
 )
 from .phase72b_explicit_features import build_phase72b_explicit_features
-from .phase72b_geofm_features import build_phase72b_geofm_features
+from .phase72b_geofm_features import (
+    build_phase72b_control_features,
+    build_phase72b_geofm_features,
+)
 from .phase72b_metrics import (
     build_phase72b_gate,
     paired_block_bootstrap,
     phase72b_metrics,
 )
 from .phase72b_models import (
-    _axis_partition_ids,
     _variant_matrix,
     load_phase72b_model_bundle,
     predict_phase72b_bundle,
@@ -220,6 +222,18 @@ def prepare_phase72b_information_gain_screen(
         ):
             raise ValueError(
                 f"Phase 72A derived sample mismatch at row {index}"
+            )
+        region_id = str(actual["region_id"])
+        expected_block_id = (
+            f"{region_id}_"
+            f"br{int(actual['row']) // protocol.spatial_block_size:03d}_"
+            f"bc{int(actual['col']) // protocol.spatial_block_size:03d}"
+        )
+        if str(actual.get("spatial_block_id", "")) != expected_block_id:
+            raise ValueError(
+                "Phase 72A spatial block mismatch at row "
+                f"{index}: expected {expected_block_id}, got "
+                f"{actual.get('spatial_block_id', '')}"
             )
     rebuilt_tensors = dict(rebuilt_phase72a.get("tensors", {}))
     if set(tensors) != set(rebuilt_tensors):
@@ -824,12 +838,6 @@ def confirm_phase72b_information_gain_screen(
     metrics_rows = []
     calibration_rows = []
     groups: dict[tuple[str, str, int | None], dict[str, object]] = {}
-    partition_ids_by_axis = {
-        axis_id: _axis_partition_ids(
-            axis_id, axis, len(feature_rows)
-        )
-        for axis_id, axis in split_registry.items()
-    }
     ece_bins = int(protocol["calibration"]["ece_bins"])
     budgets = tuple(float(value) for value in protocol["budgets"])
     for key, bundle in bundles.items():
@@ -857,20 +865,28 @@ def confirm_phase72b_information_gain_screen(
             [confirmation_outcomes[int(value)] for value in indexes],
             dtype=np.int8,
         )
-        matrix = _variant_matrix(
-            variant_id,
-            matrices,
-            feature_rows,
-            seed=seed,
-            partition_ids=(
-                partition_ids_by_axis[axis_id]
-                if variant_id in _CONTROL_VARIANTS
-                else None
-            ),
-        )
+        if variant_id in _CONTROL_VARIANTS:
+            subset_rows = [feature_rows[int(index)] for index in indexes]
+            control = build_phase72b_control_features(
+                _CONTROL_VARIANTS[variant_id],
+                matrices["embedding_history"][indexes],
+                matrices["history_mask"][indexes],
+                subset_rows,
+                partition_ids=[f"{axis_id}:test"] * len(indexes),
+                seed=int(seed),
+                output_dim=matrices["geofm_temporal_full"].shape[1],
+            )
+            matrix = np.concatenate(
+                [matrices["explicit_history"][indexes], control["matrix"]],
+                axis=1,
+            )
+        else:
+            matrix = _variant_matrix(
+                variant_id, matrices, feature_rows
+            )[indexes]
         if int(bundle["feature_count"]) != int(matrix.shape[1]):
             raise ValueError(f"Phase 72B bundle feature count mismatch: {key}")
-        probability = predict_phase72b_bundle(bundle, matrix[indexes])
+        probability = predict_phase72b_bundle(bundle, matrix)
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", category=UserWarning)
             metric = phase72b_metrics(

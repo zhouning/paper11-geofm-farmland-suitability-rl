@@ -519,6 +519,56 @@ def _axis_partition_ids(
     return partitions
 
 
+def _fit_control_variant_matrix(
+    variant_id: str,
+    matrices: Mapping[str, np.ndarray],
+    feature_rows: Sequence[Mapping[str, object]],
+    *,
+    train_indexes: Sequence[int],
+    validation_indexes: Sequence[int],
+    axis_id: str,
+    seed: int,
+) -> np.ndarray:
+    if variant_id not in _CONTROL_VARIANTS:
+        raise ValueError(
+            f"Phase 72B fit control variant is unknown: {variant_id}"
+        )
+    row_count = len(feature_rows)
+    result = np.full(
+        (
+            row_count,
+            matrices["explicit_history"].shape[1]
+            + matrices["geofm_temporal_full"].shape[1],
+        ),
+        np.nan,
+        dtype=np.float32,
+    )
+    for split_name, raw_indexes in (
+        ("train", train_indexes),
+        ("validation", validation_indexes),
+    ):
+        indexes = np.asarray([int(value) for value in raw_indexes], np.int64)
+        if not len(indexes):
+            raise ValueError(
+                f"Phase 72B control partition is empty: {axis_id}:{split_name}"
+            )
+        subset_rows = [feature_rows[int(index)] for index in indexes]
+        control = build_phase72b_control_features(
+            _CONTROL_VARIANTS[variant_id],
+            matrices["embedding_history"][indexes],
+            matrices["history_mask"][indexes],
+            subset_rows,
+            partition_ids=[f"{axis_id}:{split_name}"] * len(indexes),
+            seed=int(seed),
+            output_dim=matrices["geofm_temporal_full"].shape[1],
+        )
+        result[indexes] = np.concatenate(
+            [matrices["explicit_history"][indexes], control["matrix"]],
+            axis=1,
+        )
+    return result
+
+
 def _development_outcome(
     target_path: Path,
 ) -> dict[int, int]:
@@ -718,9 +768,6 @@ def fit_freeze_phase72b_models(
     )
     for axis_id in search_axes:
         axis = split_registry[axis_id]
-        partition_ids = _axis_partition_ids(
-            axis_id, axis, len(feature_rows)
-        )
         train_indexes = [int(value) for value in axis["train"]]
         validation_indexes = [int(value) for value in axis["validation"]]
         train_y = _outcomes_for_indexes(outcomes, train_indexes)
@@ -777,12 +824,14 @@ def fit_freeze_phase72b_models(
         for variant_id in _CONTROL_VARIANTS:
             seed_records = []
             for control_seed in protocol["controls"]["seeds"]:
-                matrix = _variant_matrix(
+                matrix = _fit_control_variant_matrix(
                     variant_id,
                     matrices,
                     feature_rows,
+                    train_indexes=train_indexes,
+                    validation_indexes=validation_indexes,
+                    axis_id=axis_id,
                     seed=int(control_seed),
-                    partition_ids=partition_ids,
                 )
                 resumed = _resume_bundle(
                     progress,
@@ -850,9 +899,6 @@ def fit_freeze_phase72b_models(
             continue
         train_indexes = [int(value) for value in axis["train"]]
         validation_indexes = [int(value) for value in axis["validation"]]
-        partition_ids = _axis_partition_ids(
-            axis_id, axis, len(feature_rows)
-        )
         if not train_indexes or not validation_indexes:
             continue
         train_y = _outcomes_for_indexes(outcomes, train_indexes)
@@ -869,16 +915,20 @@ def fit_freeze_phase72b_models(
                 control_seed = selected_control_seeds["pooled_temporal"][
                     variant_id
                 ]
-            matrix = _variant_matrix(
-                variant_id,
-                matrices,
-                feature_rows,
-                seed=control_seed,
-                partition_ids=(
-                    partition_ids
-                    if variant_id in _CONTROL_VARIANTS
-                    else None
-                ),
+            matrix = (
+                _fit_control_variant_matrix(
+                    variant_id,
+                    matrices,
+                    feature_rows,
+                    train_indexes=train_indexes,
+                    validation_indexes=validation_indexes,
+                    axis_id=axis_id,
+                    seed=int(control_seed),
+                )
+                if variant_id in _CONTROL_VARIANTS
+                else _variant_matrix(
+                    variant_id, matrices, feature_rows
+                )
             )
             config = selected_configs["pooled_temporal"][variant_id]
             resumed = _resume_bundle(
