@@ -71,6 +71,8 @@ def build_phase72b_explicit_features(
     terrain: Mapping[str, Mapping[str, np.ndarray]],
     crop_class_code: int = 5,
 ) -> dict[str, object]:
+    if not sample_rows:
+        raise ValueError("Phase 72B explicit features require sample rows")
     indexes = [int(row["sample_index"]) for row in sample_rows]
     if indexes != list(range(len(sample_rows))):
         raise ValueError("Phase 72B sample indexes must be contiguous")
@@ -105,6 +107,8 @@ def build_phase72b_explicit_features(
     }
     static_rows = []
     history_rows = []
+    label_arrays: dict[str, dict[int, np.ndarray]] = {}
+    terrain_arrays: dict[str, dict[str, np.ndarray]] = {}
 
     for row in sample_rows:
         region_id = str(row["region_id"])
@@ -113,20 +117,61 @@ def build_phase72b_explicit_features(
         spec = regions[region_id]
         grid_row = int(row["row"])
         grid_col = int(row["col"])
+        if not (
+            0 <= grid_row < spec.grid_shape[0]
+            and 0 <= grid_col < spec.grid_shape[1]
+        ):
+            raise ValueError(
+                "Phase 72B sample is outside grid bounds: "
+                f"{region_id} ({grid_row}, {grid_col})"
+            )
         origin = int(row["origin_year"])
+        if origin not in spec.years:
+            raise ValueError(
+                f"Phase 72B origin year is outside the region contract: "
+                f"{region_id} {origin}"
+            )
         years = [year for year in spec.years if year <= origin]
         if len(years) != int(row["history_length"]):
             raise ValueError(
                 f"Phase 72B history length mismatch at sample {row['sample_index']}"
             )
-        if any(year not in labels[region_id] for year in years):
+        if region_id not in labels:
+            raise ValueError(f"Missing Phase 72B LULC region: {region_id}")
+        region_labels = label_arrays.setdefault(region_id, {})
+        missing_years = [
+            year for year in years if year not in labels[region_id]
+        ]
+        if missing_years:
             raise ValueError(
-                f"Missing Phase 72B LULC history for {region_id} {origin}"
+                "Missing Phase 72B LULC history for "
+                f"{region_id}: {missing_years}"
             )
+        for year in years:
+            if year in region_labels:
+                continue
+            label_array = np.asarray(labels[region_id][year])
+            if tuple(label_array.shape) != spec.grid_shape:
+                raise ValueError(
+                    "Phase 72B LULC shape mismatch: "
+                    f"{region_id} {year}; expected {spec.grid_shape}, "
+                    f"got {tuple(label_array.shape)}"
+                )
+            if not np.isfinite(label_array).all():
+                raise ValueError(
+                    f"Phase 72B LULC values must be finite: "
+                    f"{region_id} {year}"
+                )
+            region_labels[year] = label_array
         cell_history = [
-            int(labels[region_id][year][grid_row, grid_col])
+            int(region_labels[year][grid_row, grid_col])
             for year in years
         ]
+        if cell_history[-1] != int(crop_class_code):
+            raise ValueError(
+                "Phase 72B sample is outside the origin-year crop cohort: "
+                f"{region_id} {origin} ({grid_row}, {grid_col})"
+            )
 
         min_lon, min_lat, max_lon, max_lat = spec.bbox
         lon = min_lon + (grid_col + 0.5) / spec.grid_shape[1] * (
@@ -135,18 +180,30 @@ def build_phase72b_explicit_features(
         lat = max_lat - (grid_row + 0.5) / spec.grid_shape[0] * (
             max_lat - min_lat
         )
-        terrain_values = []
-        for name in TERRAIN_FEATURES:
-            if name not in terrain[region_id]:
+        if region_id not in terrain_arrays:
+            if region_id not in terrain:
                 raise ValueError(
-                    f"Missing Phase 72B terrain feature: {region_id} {name}"
+                    f"Missing Phase 72B terrain region: {region_id}"
                 )
-            array = np.asarray(terrain[region_id][name])
-            if tuple(array.shape) != spec.grid_shape:
-                raise ValueError(
-                    f"Phase 72B terrain shape mismatch: {region_id} {name}"
-                )
-            terrain_values.append(float(array[grid_row, grid_col]))
+            validated_terrain = {}
+            for name in TERRAIN_FEATURES:
+                if name not in terrain[region_id]:
+                    raise ValueError(
+                        "Missing Phase 72B terrain feature: "
+                        f"{region_id} {name}"
+                    )
+                array = np.asarray(terrain[region_id][name])
+                if tuple(array.shape) != spec.grid_shape:
+                    raise ValueError(
+                        "Phase 72B terrain shape mismatch: "
+                        f"{region_id} {name}"
+                    )
+                validated_terrain[name] = array
+            terrain_arrays[region_id] = validated_terrain
+        terrain_values = [
+            float(terrain_arrays[region_id][name][grid_row, grid_col])
+            for name in TERRAIN_FEATURES
+        ]
         static = [
             *terrain_values,
             float(lon),
@@ -183,7 +240,7 @@ def build_phase72b_explicit_features(
             )
         )
 
-        current = np.asarray(labels[region_id][origin])
+        current = region_labels[origin]
         neighbor_values = []
         historical_neighbor_values = []
         for radius in (1, 2):
@@ -204,7 +261,7 @@ def build_phase72b_explicit_features(
                 float(
                     np.mean(
                         _window(
-                            labels[region_id][year],
+                            region_labels[year],
                             grid_row,
                             grid_col,
                             radius,

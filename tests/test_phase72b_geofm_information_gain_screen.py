@@ -7,6 +7,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -808,6 +809,97 @@ def test_phase72b_explicit_neighborhoods_clip_at_grid_edges():
     )
     assert values["neighbor3_current_crop_fraction"] == 1.0
     assert np.isclose(values["neighbor5_current_crop_fraction"], 6 / 9)
+
+
+@pytest.mark.parametrize(
+    ("row", "col"),
+    [(-1, 0), (0, -1), (3, 0), (0, 3)],
+)
+def test_phase72b_explicit_features_reject_out_of_grid_samples(
+    row, col
+):
+    from paper11_geofm.phase72b_explicit_features import (
+        build_phase72b_explicit_features,
+    )
+
+    region, labels, terrain = _explicit_fixture()
+    with pytest.raises(ValueError, match="grid bounds"):
+        build_phase72b_explicit_features(
+            [
+                {
+                    "sample_index": 0,
+                    "region_id": "alpha",
+                    "row": row,
+                    "col": col,
+                    "origin_year": 2018,
+                    "history_length": 2,
+                }
+            ],
+            regions={"alpha": region},
+            labels={"alpha": labels},
+            terrain={"alpha": terrain},
+            crop_class_code=5,
+        )
+
+
+def test_phase72b_explicit_features_reject_misaligned_lulc_grid():
+    from paper11_geofm.phase72b_explicit_features import (
+        build_phase72b_explicit_features,
+    )
+
+    region, labels, terrain = _explicit_fixture()
+    labels = {**labels, 2017: np.zeros((2, 3), dtype=np.int16)}
+    with pytest.raises(ValueError, match="LULC shape mismatch"):
+        build_phase72b_explicit_features(
+            [
+                {
+                    "sample_index": 0,
+                    "region_id": "alpha",
+                    "row": 1,
+                    "col": 1,
+                    "origin_year": 2018,
+                    "history_length": 2,
+                }
+            ],
+            regions={"alpha": region},
+            labels={"alpha": labels},
+            terrain={"alpha": terrain},
+            crop_class_code=5,
+        )
+
+
+def test_phase72b_explicit_features_reject_invalid_origin_and_cohort():
+    from paper11_geofm.phase72b_explicit_features import (
+        build_phase72b_explicit_features,
+    )
+
+    region, labels, terrain = _explicit_fixture()
+    base_row = {
+        "sample_index": 0,
+        "region_id": "alpha",
+        "row": 1,
+        "col": 1,
+        "history_length": 2,
+    }
+    with pytest.raises(ValueError, match="origin year"):
+        build_phase72b_explicit_features(
+            [{**base_row, "origin_year": 2016, "history_length": 0}],
+            regions={"alpha": region},
+            labels={"alpha": labels},
+            terrain={"alpha": terrain},
+            crop_class_code=5,
+        )
+
+    changed = {**labels, 2018: labels[2018].copy()}
+    changed[2018][1, 1] = 7
+    with pytest.raises(ValueError, match="crop cohort"):
+        build_phase72b_explicit_features(
+            [{**base_row, "origin_year": 2018}],
+            regions={"alpha": region},
+            labels={"alpha": changed},
+            terrain={"alpha": terrain},
+            crop_class_code=5,
+        )
 
 
 def _geofm_control_fixture():
