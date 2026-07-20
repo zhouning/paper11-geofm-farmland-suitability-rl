@@ -209,6 +209,23 @@ def _phase72a_regions(path: Path) -> Path:
     return path
 
 
+def _phase72a_two_regions(path: Path) -> Path:
+    payload = json.loads(_phase72a_regions(path).read_text(encoding="utf-8"))
+    payload["regions"].append(
+        {
+            "region_id": "beta",
+            "bbox": [101, 21, 102, 22],
+            "years": [2017, 2018, 2019],
+            "grid_shape": [2, 3],
+            "embedding_dim": 2,
+            "embedding_pattern": "beta_emb_{year}.npy",
+            "label_pattern": "beta_lulc_{year}.npy",
+        }
+    )
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    return path
+
+
 def test_phase72b_terrain_fetch_and_audit_use_exact_grid(tmp_path):
     from paper11_geofm.phase72a_label_sources import (
         load_phase72a_region_contract,
@@ -253,6 +270,15 @@ def test_phase72b_terrain_fetch_and_audit_use_exact_grid(tmp_path):
         protocol, regions, tmp_path / "terrain"
     )
     assert manifest["status"] == "complete"
+    record = manifest["records"][0]
+    assert record["source_id"] == "copernicus_dem_glo30"
+    assert record["band"] == "DEM"
+    assert record["scale_m"] == 500
+    assert record["bbox"] == [100.0, 20.0, 101.0, 21.0]
+    assert record["dtype"] == "float32"
+    assert record["feature_derivations"]["local_relief"] == (
+        "DEM:max-minus-min"
+    )
     assert audit["status"] == "terrain_inputs_ready"
     assert audit["rows"][0]["shape"] == "2x3"
     assert len(audit["rows"][0]["sha256"]) == 64
@@ -283,6 +309,154 @@ def test_phase72b_terrain_audit_blocks_wrong_shape(tmp_path):
     audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
     assert audit["status"] == "phase72b_inputs_not_ready"
     assert "shape" in " ".join(audit["errors"]).lower()
+
+
+def test_phase72b_terrain_audit_blocks_unexpected_proxy_feature(tmp_path):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import audit_phase72b_terrain_assets
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+    terrain = tmp_path / "terrain"
+    terrain.mkdir()
+    arrays = {
+        name: np.zeros((2, 3), np.float32)
+        for name in protocol.terrain_features
+    }
+    arrays["fallback_slope_proxy"] = np.zeros((2, 3), np.float32)
+    np.savez_compressed(terrain / "alpha_terrain.npz", **arrays)
+
+    audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+    assert audit["status"] == "phase72b_inputs_not_ready"
+    assert "unexpected" in " ".join(audit["errors"]).lower()
+
+
+def test_phase72b_terrain_audit_rejects_fetch_manifest_hash_mismatch(
+    tmp_path,
+):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import (
+        audit_phase72b_terrain_assets,
+        fetch_phase72b_terrain,
+    )
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_regions(tmp_path / "regions.json")
+    )
+    terrain = tmp_path / "terrain"
+
+    def extractor(**_kwargs):
+        return {
+            name: np.zeros((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        }
+
+    fetch_phase72b_terrain(
+        protocol, regions, output_dir=terrain, extractor=extractor
+    )
+    np.savez_compressed(
+        terrain / "alpha_terrain.npz",
+        **{
+            name: np.ones((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        },
+    )
+
+    audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+    assert audit["status"] == "phase72b_inputs_not_ready"
+    assert "hash mismatch" in " ".join(audit["errors"]).lower()
+
+
+def test_phase72b_terrain_audit_rejects_stale_asset_after_partial_fetch(
+    tmp_path,
+):
+    from paper11_geofm.phase72a_label_sources import (
+        load_phase72a_region_contract,
+    )
+    from paper11_geofm.phase72b_protocol import load_phase72b_protocol
+    from paper11_geofm.phase72b_terrain import (
+        audit_phase72b_terrain_assets,
+        fetch_phase72b_terrain,
+    )
+
+    protocol = load_phase72b_protocol(
+        _write_protocol(tmp_path / "protocol.json")
+    )
+    regions = load_phase72a_region_contract(
+        _phase72a_two_regions(tmp_path / "regions.json")
+    )
+    terrain = tmp_path / "terrain"
+    terrain.mkdir()
+    np.savez_compressed(
+        terrain / "beta_terrain.npz",
+        **{
+            name: np.zeros((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        },
+    )
+
+    def extractor(*, bbox, **_kwargs):
+        if bbox[0] == 101.0:
+            raise RuntimeError("simulated Earth Engine failure")
+        return {
+            name: np.zeros((2, 3), dtype=np.float32)
+            for name in protocol.terrain_features
+        }
+
+    manifest = fetch_phase72b_terrain(
+        protocol, regions, output_dir=terrain, extractor=extractor
+    )
+    audit = audit_phase72b_terrain_assets(protocol, regions, terrain)
+
+    assert manifest["status"] == "partial"
+    assert audit["status"] == "phase72b_inputs_not_ready"
+    assert "manifest" in " ".join(audit["errors"]).lower()
+
+
+def test_phase72b_terrain_cli_requires_every_declared_region(tmp_path):
+    from experiments.phase72b_geofm_information_gain_screen import (
+        fetch_phase72b_terrain as terrain_cli,
+    )
+
+    region_path = _phase72a_two_regions(tmp_path / "regions.json")
+    protocol_path = _write_protocol(tmp_path / "protocol.json")
+    original_initialize = terrain_cli.initialize_earth_engine
+    original_fetch = terrain_cli.fetch_phase72b_terrain
+    terrain_cli.initialize_earth_engine = lambda **_kwargs: None
+    terrain_cli.fetch_phase72b_terrain = lambda *_args, **_kwargs: {
+        "status": "complete",
+        "records": [{"region_id": "alpha"}],
+        "failures": [],
+    }
+    try:
+        exit_code = terrain_cli.main(
+            [
+                "--phase72a-region-config",
+                str(region_path),
+                "--phase72b-protocol",
+                str(protocol_path),
+                "--output-dir",
+                str(tmp_path / "terrain"),
+            ]
+        )
+    finally:
+        terrain_cli.initialize_earth_engine = original_initialize
+        terrain_cli.fetch_phase72b_terrain = original_fetch
+
+    assert exit_code == 1
 
 
 def _explicit_fixture():

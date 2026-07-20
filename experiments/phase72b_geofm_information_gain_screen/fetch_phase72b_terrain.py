@@ -162,7 +162,18 @@ def main(argv: list[str] | None = None) -> int:
         "Manifest: "
         f"{args.output_dir / 'phase72b_terrain_fetch_manifest.json'}"
     )
-    return 0 if manifest["status"] == "complete" else 1
+    declared_region_ids = {region.region_id for region in regions.regions}
+    fetched_region_ids = {
+        str(record.get("region_id", ""))
+        for record in manifest.get("records", [])
+        if isinstance(record, dict)
+    }
+    complete = (
+        manifest.get("status") == "complete"
+        and fetched_region_ids == declared_region_ids
+        and not manifest.get("failures")
+    )
+    return 0 if complete else 1
 
 
 if __name__ == "__main__":
