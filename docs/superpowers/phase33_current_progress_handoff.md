@@ -2313,3 +2313,75 @@ Read next:
 paper/phase28_results/39_phase72b_geofm_information_gain_screen.md
 docs/superpowers/phase33_current_progress_handoff.md
 ```
+
+## Phase 72B Main Integration / Window-Close Save - 2026-07-24
+
+Phase 72B is complete and was fast-forward merged into local `main`. The
+isolated Phase 72B worktree and local feature-branch pointer were removed only
+after the ignored scientific outputs had been copied into the main working
+tree and verified. The remote feature branch was not changed.
+
+Repository state before this window-close documentation commit:
+
+```text
+branch: main
+HEAD: 93a938efa96d788ccb5efa17f935458d00f72bb5
+origin/main: 844a773ab3381634cee4187a91ba75fe48be0bd8
+origin/main...HEAD: 0 behind, 47 ahead
+tracked working tree: clean
+local phase72b feature branch: removed
+phase72b worktree: removed
+formal manuscript: unchanged
+```
+
+The main working tree retains the ignored scientific evidence:
+
+```text
+Phase 72B outputs: 565 files, 569,196,146 bytes
+Phase 72A ESRI label evidence: 9 files, 294,098 bytes
+source-to-main copy verification: zero missing or SHA-256-mismatched files
+```
+
+Post-merge verification:
+
+```text
+full repository: 549 passed, 84 existing sklearn warnings
+git diff --check: passed
+paper/submission/final/* versus origin/main: zero differences
+```
+
+The full repository test used an isolated pytest base directory because the
+main working tree contains a pre-existing `.pytest_tmp` directory whose stale
+Windows ACL blocks the default pytest cleanup. The isolated run completed with
+exit code 0; this is an environment-path issue, not a test assertion failure.
+The temporary isolated directory was removed after verification.
+
+Authoritative scientific status:
+
+```text
+geofm_information_not_supported
+```
+
+Transition decision:
+
+```text
+Do not begin Phase 72C.
+Stop the GeoFM-STaR route.
+Proceed only with the approved Phase 72 exhaustion analysis.
+Do not change thresholds, metrics, regions, seeds, or folds post hoc.
+Do not modify paper/submission/final/* from this result.
+```
+
+Next entry point:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl
+```
+
+Read next:
+
+```text
+docs/superpowers/phase33_current_progress_handoff.md
+paper/phase28_results/39_phase72b_geofm_information_gain_screen.md
+docs/superpowers/specs/2026-07-10-phase72-geofm-star-future-stability-planning-design.md
+```
