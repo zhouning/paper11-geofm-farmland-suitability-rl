@@ -1295,6 +1295,50 @@ def test_phase72b_random_projection_is_data_independent_and_orthonormal():
     assert np.allclose(first.T @ first, np.eye(3), atol=1e-6)
 
 
+def test_phase72b_random_projection_features_are_thread_count_invariant():
+    from threadpoolctl import threadpool_limits
+
+    from paper11_geofm.phase72b_geofm_features import (
+        build_phase72b_control_features,
+    )
+
+    rng = np.random.default_rng(72)
+    histories = rng.normal(size=(257, 8, 64)).astype(np.float32)
+    masks = np.ones((257, 8), dtype=bool)
+    rows = [
+        {
+            "sample_index": index,
+            "region_id": "fixture",
+            "origin_year": 2020,
+        }
+        for index in range(len(histories))
+    ]
+    partitions = ["axis:train"] * len(histories)
+
+    with threadpool_limits(limits=1):
+        single_thread = build_phase72b_control_features(
+            "random_projection",
+            histories,
+            masks,
+            rows,
+            partition_ids=partitions,
+            seed=72,
+            output_dim=320,
+        )["matrix"]
+    with threadpool_limits(limits=4):
+        multi_thread = build_phase72b_control_features(
+            "random_projection",
+            histories,
+            masks,
+            rows,
+            partition_ids=partitions,
+            seed=72,
+            output_dim=320,
+        )["matrix"]
+
+    assert np.array_equal(single_thread, multi_thread)
+
+
 def test_phase72b_controls_require_frozen_partition_contract():
     from paper11_geofm.phase72b_geofm_features import (
         build_phase72b_control_features,

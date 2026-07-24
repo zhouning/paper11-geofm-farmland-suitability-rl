@@ -5,6 +5,7 @@ import hashlib
 import json
 
 import numpy as np
+from threadpoolctl import threadpool_limits
 
 
 def _derived_seed(seed: int, *parts: object) -> int:
@@ -211,9 +212,10 @@ def build_phase72b_control_features(
             output_dim=int(output_dim),
             seed=int(seed),
         )
-        result = np.asarray(
-            flattened @ projection, dtype=np.float32
-        )
+        with threadpool_limits(limits=1):
+            result = np.asarray(
+                flattened @ projection, dtype=np.float32
+            )
     else:
         raise ValueError(f"Unknown Phase 72B control: {control_name}")
 
