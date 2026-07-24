@@ -11,6 +11,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from . import phase72b_models as phase72b_model_module
 from .phase72a_label_sources import (
     audit_phase72a_region_assets,
     load_phase72a_region_contract,
@@ -31,10 +32,13 @@ from .phase72b_metrics import (
 from .phase72b_models import (
     FIT_CONTROL_MANIFEST_FIELDS,
     PHASE72B_FIT_IMPLEMENTATION_ID,
+    PHASE72B_VALIDATION_METRIC_FIELDS,
+    _bundle_filename,
     _variant_matrix,
     load_phase72b_model_bundle,
     predict_phase72b_bundle,
     validate_phase72b_bundle_record_semantics,
+    validate_phase72b_validation_metrics,
 )
 from .phase72b_protocol import (
     PHASE72B_CLAIM_BOUNDARY,
@@ -48,6 +52,7 @@ from .phase72b_prepared import (
     PREPARED_ARTIFACT_NAMES,
     TERRAIN_MANIFEST_CSV_FIELDS,
     load_verified_phase72b_prepared,
+    verify_phase72b_prepared_artifact,
 )
 from .phase72b_splits import (
     audit_phase72b_splits,
@@ -68,6 +73,14 @@ _MANDATORY_AXES = (
     "bishan_to_dongxing",
     "dongxing_to_bishan",
 )
+
+
+def _strict_control_seed(value: object) -> int:
+    if isinstance(value, (bool, np.bool_)) or not isinstance(
+        value, (int, np.integer)
+    ):
+        raise ValueError("Phase 72B control seed must be an integer")
+    return int(value)
 
 
 def _audit_phase72b_fit_control_manifest(
@@ -163,6 +176,219 @@ def _audit_phase72b_fit_control_manifest(
     for key in set(actual) - expected:
         blockers.append(f"unexpected fit control manifest row: {key}")
     return blockers
+
+
+def _audit_phase72b_selected_control_seeds(
+    *,
+    records: list[Mapping[str, object]],
+    selected_control_seeds: Mapping[str, object],
+    control_seeds: list[int],
+) -> list[str]:
+    blockers = []
+    if set(selected_control_seeds) != set(_MANDATORY_AXES):
+        blockers.append("selected control seed axes mismatch")
+    for axis_id in _MANDATORY_AXES:
+        try:
+            axis_seeds = dict(selected_control_seeds.get(axis_id, {}))
+        except (TypeError, ValueError):
+            blockers.append(f"selected control seed mapping invalid: {axis_id}")
+            continue
+        if set(axis_seeds) != set(_CONTROL_VARIANTS):
+            blockers.append(f"selected control seed variants mismatch: {axis_id}")
+        for variant_id in _CONTROL_VARIANTS:
+            candidates = [
+                record
+                for record in records
+                if str(record.get("axis_id", "")) == axis_id
+                and str(record.get("variant_id", "")) == variant_id
+                and record.get("control_seed", "") != ""
+            ]
+            try:
+                candidate_seed_set = {
+                    _strict_control_seed(record["control_seed"])
+                    for record in candidates
+                }
+            except ValueError:
+                blockers.append(
+                    f"selected control seed candidates invalid: "
+                    f"{axis_id}/{variant_id}"
+                )
+                continue
+            if candidate_seed_set != set(control_seeds):
+                blockers.append(
+                    f"selected control seed candidates mismatch: "
+                    f"{axis_id}/{variant_id}"
+                )
+                continue
+            expected = min(
+                candidates,
+                key=lambda record: (
+                    -float(record["validation_average_precision"]),
+                    float(record["validation_brier"]),
+                    float(record["validation_ece"]),
+                    int(record["control_seed"]),
+                ),
+            )
+            try:
+                actual_seed = _strict_control_seed(axis_seeds[variant_id])
+            except (KeyError, TypeError, ValueError):
+                blockers.append(
+                    f"selected control seed invalid: {axis_id}/{variant_id}"
+                )
+                continue
+            if actual_seed != int(expected["control_seed"]):
+                blockers.append(
+                    f"selected control seed mismatch: {axis_id}/{variant_id}"
+                )
+    return blockers
+
+
+def _validate_phase72b_fit_progress_entries(
+    *,
+    fit_progress: Mapping[str, object],
+    records: list[Mapping[str, object]],
+    validation_metric_rows: object,
+    protocol: Mapping[str, object],
+    bundles: Mapping[
+        tuple[str, str, int | None], Mapping[str, object]
+    ],
+) -> None:
+    try:
+        entries = dict(fit_progress.get("entries", {}))
+        expected_row_count = int(validation_metric_rows)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("Phase 72B fit progress entries mismatch") from exc
+    records_by_filename = {
+        Path(str(record["bundle_path"])).name: dict(record)
+        for record in records
+    }
+    if (
+        len(records_by_filename) != len(records)
+        or set(entries) != set(records_by_filename)
+    ):
+        raise ValueError("Phase 72B fit progress entries mismatch")
+    calibration_methods = {
+        str(value) for value in protocol["calibration"]["methods"]
+    }
+    total_rows = 0
+    for filename, expected_record in records_by_filename.items():
+        try:
+            entry = dict(entries[filename])
+            record = dict(entry["record"])
+            validation_rows = [
+                dict(row) for row in entry["validation_rows"]
+            ]
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError(
+                "Phase 72B fit progress entries mismatch"
+            ) from exc
+        if set(entry) != {"record", "validation_rows"}:
+            raise ValueError("Phase 72B fit progress entries mismatch")
+        if record != expected_record or not validation_rows:
+            raise ValueError("Phase 72B fit progress entries mismatch")
+        axis_id = str(expected_record["axis_id"])
+        variant_id = str(expected_record["variant_id"])
+        key = _bundle_key(expected_record)
+        if key not in bundles:
+            raise ValueError("Phase 72B fit progress entries mismatch")
+        bundle = dict(bundles[key])
+        if axis_id in _MANDATORY_AXES:
+            candidate_configs = phase72b_model_module._candidate_configs(
+                protocol
+            )
+        else:
+            candidate_configs = [dict(bundle["estimator_params"])]
+        candidate_families = {
+            phase72b_model_module._candidate_id(config): str(
+                config["model_family"]
+            )
+            for config in candidate_configs
+        }
+        if len(candidate_families) != len(candidate_configs):
+            raise ValueError("Phase 72B fit progress entries mismatch")
+        expected_row_keys = {
+            (candidate_id, method)
+            for candidate_id in candidate_families
+            for method in calibration_methods
+        }
+        actual_row_keys: set[tuple[str, str]] = set()
+        selected_row_found = False
+        for row in validation_rows:
+            if (
+                str(row.get("axis_id")) != axis_id
+                or str(row.get("variant_id")) != variant_id
+            ):
+                raise ValueError("Phase 72B fit progress entries mismatch")
+            row_fields = {
+                "axis_id",
+                "variant_id",
+                "candidate_id",
+                "model_family",
+                "calibration_method",
+                *PHASE72B_VALIDATION_METRIC_FIELDS,
+            }
+            if "control_seed" in row:
+                row_fields.add("control_seed")
+            if set(row) != row_fields:
+                raise ValueError("Phase 72B fit progress entries mismatch")
+            candidate_id = str(row["candidate_id"])
+            calibration_method = str(row["calibration_method"])
+            row_key = (candidate_id, calibration_method)
+            if (
+                row_key in actual_row_keys
+                or candidate_id not in candidate_families
+                or calibration_method not in calibration_methods
+                or str(row["model_family"])
+                != candidate_families[candidate_id]
+            ):
+                raise ValueError("Phase 72B fit progress entries mismatch")
+            actual_row_keys.add(row_key)
+            try:
+                row_metrics = {
+                    name: row[name]
+                    for name in PHASE72B_VALIDATION_METRIC_FIELDS
+                }
+                validate_phase72b_validation_metrics(row_metrics)
+            except (KeyError, ValueError) as exc:
+                raise ValueError(
+                    "Phase 72B fit progress entries mismatch"
+                ) from exc
+            expected_seed = expected_record.get("control_seed", "")
+            seed_field_required = (
+                axis_id not in _MANDATORY_AXES or expected_seed != ""
+            )
+            if ("control_seed" in row) != seed_field_required:
+                raise ValueError("Phase 72B fit progress entries mismatch")
+            if expected_seed != "":
+                try:
+                    seed_matches = _strict_control_seed(
+                        row.get("control_seed")
+                    ) == _strict_control_seed(expected_seed)
+                except ValueError:
+                    seed_matches = False
+                if not seed_matches:
+                    raise ValueError(
+                        "Phase 72B fit progress entries mismatch"
+                    )
+            elif row.get("control_seed", "") not in ("", None):
+                raise ValueError("Phase 72B fit progress entries mismatch")
+            if (
+                candidate_id
+                == str(expected_record.get("candidate_id"))
+                and str(row["model_family"])
+                == str(expected_record.get("model_family"))
+                and calibration_method
+                == str(expected_record.get("calibration_method"))
+                and row_metrics == dict(bundle["validation_metrics"])
+            ):
+                selected_row_found = True
+        if actual_row_keys != expected_row_keys:
+            raise ValueError("Phase 72B fit progress entries mismatch")
+        if not selected_row_found:
+            raise ValueError("Phase 72B fit progress entries mismatch")
+        total_rows += len(validation_rows)
+    if total_rows != expected_row_count:
+        raise ValueError("Phase 72B fit progress entries mismatch")
 
 
 def _array_sha256(array: np.ndarray) -> str:
@@ -650,8 +876,57 @@ def _load_npz(path: Path) -> dict[str, np.ndarray]:
         return {name: loaded[name] for name in loaded.files}
 
 
+def _confirmation_outcome(
+    target_path: Path,
+    *,
+    feature_rows: list[Mapping[str, object]],
+    confirmation_years: set[int],
+) -> tuple[dict[str, np.ndarray], dict[int, int]]:
+    arrays = _load_npz(target_path)
+    if set(arrays) != {
+        "sample_index",
+        "origin_year",
+        "conversion_1y",
+    }:
+        raise ValueError("Phase 72B confirmation target arrays mismatch")
+    indexes = np.asarray(arrays["sample_index"])
+    years = np.asarray(arrays["origin_year"])
+    outcomes = np.asarray(arrays["conversion_1y"])
+    if (
+        indexes.ndim != 1
+        or years.ndim != 1
+        or outcomes.ndim != 1
+        or indexes.dtype.kind not in "iu"
+        or years.dtype.kind not in "iu"
+        or not (len(indexes) == len(years) == len(outcomes))
+    ):
+        raise ValueError("Phase 72B confirmation target alignment mismatch")
+    expected_rows = [
+        row
+        for row in feature_rows
+        if int(row["origin_year"]) in confirmation_years
+    ]
+    expected_indexes = [int(row["sample_index"]) for row in expected_rows]
+    expected_years = [int(row["origin_year"]) for row in expected_rows]
+    actual_indexes = [int(value) for value in indexes.tolist()]
+    actual_years = [int(value) for value in years.tolist()]
+    if (
+        len(set(actual_indexes)) != len(actual_indexes)
+        or actual_indexes != expected_indexes
+        or actual_years != expected_years
+    ):
+        raise ValueError("Phase 72B confirmation target identity mismatch")
+    if outcomes.dtype.kind not in "biuf" or not np.isin(
+        outcomes, (0, 1)
+    ).all():
+        raise ValueError("Phase 72B confirmation target labels must be binary")
+    return arrays, dict(
+        zip(actual_indexes, (int(value) for value in outcomes.tolist()))
+    )
+
+
 def _control_seed(value: object) -> int | None:
-    return None if value in (None, "") else int(value)
+    return None if value in (None, "") else _strict_control_seed(value)
 
 
 def _bundle_key(record: Mapping[str, object]) -> tuple[str, str, int | None]:
@@ -743,6 +1018,7 @@ def _blocked_confirmation_result(
         "calibration_rows": [],
         "bootstrap_rows": [],
         "control_rows": [],
+        "confirmation_control_rows": [],
         "transfer_rows": [],
         "spatial_rows": [],
         "pooled_delta": {},
@@ -787,6 +1063,11 @@ def confirm_phase72b_information_gain_screen(
             "phase72b_confirmation_targets.npz",
         },
     )
+    verify_phase72b_prepared_artifact(
+        prepared,
+        verified_prepared["manifest"],
+        "phase72b_development_targets.npz",
+    )
     frozen_protocol = dict(verified_prepared["frozen_protocol"])
     protocol_hash = str(verified_prepared["protocol_hash"])
     selected = load_hashed_json(
@@ -806,6 +1087,31 @@ def confirm_phase72b_information_gain_screen(
         raise ValueError(
             "Phase 72B prepared artifact manifest hash mismatch between prepared and selected models"
         )
+    fit_progress = load_hashed_json(
+        frozen / "phase72b_fit_progress.json",
+        frozen / "phase72b_fit_progress.sha256",
+    )
+    if fit_progress.get("status") != "phase72b_fit_complete":
+        raise ValueError("Phase 72B fit progress is not complete")
+    if (
+        fit_progress.get("fit_implementation_id")
+        != PHASE72B_FIT_IMPLEMENTATION_ID
+    ):
+        raise ValueError("Phase 72B fit progress implementation mismatch")
+    if (
+        str(fit_progress.get("frozen_protocol_sha256", "")).lower()
+        != protocol_hash
+    ):
+        raise ValueError("Phase 72B fit progress protocol hash mismatch")
+    if str(fit_progress.get("prepared_artifacts_sha256", "")).lower() != str(
+        verified_prepared["manifest_sha256"]
+    ).lower():
+        raise ValueError("Phase 72B fit progress prepared hash mismatch")
+    if (
+        str(fit_progress.get("selected_models_sha256", "")).lower()
+        != selected_hash
+    ):
+        raise ValueError("Phase 72B fit progress selected-model hash mismatch")
 
     protocol = dict(frozen_protocol["tracked_protocol"])
     split_registry = dict(verified_prepared["split_registry"])
@@ -831,6 +1137,19 @@ def confirm_phase72b_information_gain_screen(
     )
 
     records = [dict(record) for record in selected.get("bundle_records", [])]
+    expected_feature_counts = {
+        str(variant_id): (
+            int(matrices["explicit_history"].shape[1])
+            + int(matrices["geofm_temporal_full"].shape[1])
+            if str(variant_id) in _CONTROL_VARIANTS
+            else int(
+                _variant_matrix(
+                    str(variant_id), matrices, feature_rows
+                ).shape[1]
+            )
+        )
+        for variant_id in protocol["variants"]
+    }
     record_by_key: dict[tuple[str, str, int | None], dict[str, object]] = {}
     bundles: dict[tuple[str, str, int | None], dict[str, object]] = {}
     bundle_hashes = []
@@ -860,6 +1179,14 @@ def confirm_phase72b_information_gain_screen(
             raise ValueError(
                 f"Phase 72B model bundle references unknown axis: {key[0]}"
             )
+        if (
+            key[1] not in expected_feature_counts
+            or int(bundle.get("feature_count", -1))
+            != expected_feature_counts[key[1]]
+        ):
+            raise ValueError(
+                f"Phase 72B model bundle feature count mismatch: {key}"
+            )
         axis = dict(split_registry[key[0]])
         if (
             bundle.get("train_index_sha256")
@@ -884,9 +1211,80 @@ def confirm_phase72b_information_gain_screen(
             }
         )
 
+    _validate_phase72b_fit_progress_entries(
+        fit_progress=fit_progress,
+        records=records,
+        validation_metric_rows=selected.get("validation_metric_rows"),
+        protocol=protocol,
+        bundles=bundles,
+    )
+
     selected_axes = dict(selected.get("axes", {}))
     selected_control_seeds = dict(selected.get("selected_control_seeds", {}))
     control_seeds = [int(value) for value in protocol["controls"]["seeds"]]
+    blockers.extend(
+        _audit_phase72b_selected_control_seeds(
+            records=records,
+            selected_control_seeds=selected_control_seeds,
+            control_seeds=control_seeds,
+        )
+    )
+    expected_spatial_axes = sorted(
+        axis_id
+        for axis_id in split_registry
+        if axis_id.startswith("spatial_")
+        and axis_id not in invalid_spatial_axes
+    )
+    core_variants = [
+        str(variant_id)
+        for variant_id in protocol["variants"]
+        if str(variant_id) not in _CONTROL_VARIANTS
+    ]
+    canonical_axis_paths: dict[str, list[str]] = {}
+    canonical_bundle_keys: set[tuple[str, str, int | None]] = set()
+
+    def add_canonical_bundle(
+        axis_id: str, variant_id: str, seed: int | None
+    ) -> None:
+        canonical_bundle_keys.add((axis_id, variant_id, seed))
+        canonical_axis_paths.setdefault(axis_id, []).append(
+            str(
+                Path("bundles")
+                / _bundle_filename(axis_id, variant_id, seed)
+            )
+        )
+
+    for axis_id in _MANDATORY_AXES:
+        for variant_id in core_variants:
+            add_canonical_bundle(axis_id, variant_id, None)
+        for variant_id in _CONTROL_VARIANTS:
+            for seed in control_seeds:
+                add_canonical_bundle(axis_id, variant_id, seed)
+    pooled_control_seeds = dict(
+        selected_control_seeds.get("pooled_temporal", {})
+    )
+    for axis_id in expected_spatial_axes:
+        for variant_id in core_variants:
+            add_canonical_bundle(axis_id, variant_id, None)
+        for variant_id in _CONTROL_VARIANTS:
+            if variant_id in pooled_control_seeds:
+                try:
+                    seed = _strict_control_seed(
+                        pooled_control_seeds[variant_id]
+                    )
+                except ValueError:
+                    continue
+                add_canonical_bundle(axis_id, variant_id, seed)
+    if set(record_by_key) != canonical_bundle_keys:
+        blockers.append("selected bundle set mismatch")
+    if selected_axes != canonical_axis_paths:
+        blockers.append("selected axis bundle paths mismatch")
+    for key, record in record_by_key.items():
+        expected_path = str(
+            Path("bundles") / _bundle_filename(key[0], key[1], key[2])
+        )
+        if str(record["bundle_path"]) != expected_path:
+            blockers.append(f"selected bundle path mismatch: {key}")
     for axis_id in _MANDATORY_AXES:
         if axis_id not in split_registry or axis_id not in selected_axes:
             blockers.append(f"missing mandatory axis: {axis_id}")
@@ -906,14 +1304,6 @@ def confirm_phase72b_information_gain_screen(
                         f"missing control bundle: {axis_id}/{variant_id}/seed{seed}"
                     )
 
-    expected_spatial_axes = sorted(
-        axis_id
-        for axis_id in split_registry
-        if axis_id.startswith("spatial_") and axis_id not in invalid_spatial_axes
-    )
-    pooled_control_seeds = dict(
-        selected_control_seeds.get("pooled_temporal", {})
-    )
     for axis_id in expected_spatial_axes:
         if axis_id not in selected_axes:
             blockers.append(f"missing valid spatial axis: {axis_id}")
@@ -945,23 +1335,25 @@ def confirm_phase72b_information_gain_screen(
 
     # The confirmation labels are intentionally opened only after every frozen
     # contract and model bundle has passed its integrity checks.
-    confirmation = _load_npz(
-        prepared / "phase72b_confirmation_targets.npz"
+    expected_test_years = set(int(value) for value in protocol["years"]["test"])
+    confirmation_target_path = prepared / "phase72b_confirmation_targets.npz"
+    verify_phase72b_prepared_artifact(
+        prepared,
+        verified_prepared["manifest"],
+        confirmation_target_path.name,
+    )
+    confirmation, confirmation_outcomes = _confirmation_outcome(
+        confirmation_target_path,
+        feature_rows=feature_rows,
+        confirmation_years=expected_test_years,
     )
     if _target_arrays_sha256(confirmation) != str(
         frozen_protocol.get("confirmation_targets_sha256", "")
     ):
         raise ValueError("Phase 72B confirmation target hash mismatch")
-    confirmation_outcomes = {
-        int(index): int(outcome)
-        for index, outcome in zip(
-            confirmation["sample_index"], confirmation["conversion_1y"]
-        )
-    }
     confirmation_years = set(
         int(value) for value in confirmation["origin_year"].tolist()
     )
-    expected_test_years = set(int(value) for value in protocol["years"]["test"])
     if confirmation_years != expected_test_years:
         blockers.append(
             f"confirmation years mismatch: {sorted(confirmation_years)}"
@@ -970,6 +1362,7 @@ def confirm_phase72b_information_gain_screen(
     prediction_rows = []
     metrics_rows = []
     calibration_rows = []
+    confirmation_control_rows = []
     groups: dict[tuple[str, str, int | None], dict[str, object]] = {}
     ece_bins = int(protocol["calibration"]["ece_bins"])
     budgets = tuple(float(value) for value in protocol["budgets"])
@@ -988,7 +1381,11 @@ def confirm_phase72b_information_gain_screen(
                 continue
             blockers.append(f"mandatory axis has no confirmation rows: {axis_id}")
             continue
-        missing = [int(value) for value in indexes if int(value) not in confirmation_outcomes]
+        missing = [
+            int(value)
+            for value in indexes
+            if int(value) not in confirmation_outcomes
+        ]
         if missing:
             blockers.append(
                 f"confirmation outcomes missing indexes for {axis_id}: {missing[:5]}"
@@ -1008,6 +1405,19 @@ def confirm_phase72b_information_gain_screen(
                 partition_ids=[f"{axis_id}:test"] * len(indexes),
                 seed=int(seed),
                 output_dim=matrices["geofm_temporal_full"].shape[1],
+            )
+            confirmation_control_rows.append(
+                {
+                    "axis_id": axis_id,
+                    "partition_id": f"{axis_id}:test",
+                    "control_id": _CONTROL_VARIANTS[variant_id],
+                    "seed": int(seed),
+                    "index_sha256": _array_sha256(indexes),
+                    "matrix_sha256": _array_sha256(control["matrix"]),
+                    "cross_partition_count": int(
+                        control["manifest"]["cross_partition_count"]
+                    ),
+                }
             )
             matrix = np.concatenate(
                 [matrices["explicit_history"][indexes], control["matrix"]],
@@ -1113,6 +1523,7 @@ def confirm_phase72b_information_gain_screen(
                 "metrics_rows": metrics_rows,
                 "prediction_rows": prediction_rows,
                 "calibration_rows": calibration_rows,
+                "confirmation_control_rows": confirmation_control_rows,
                 "counts": {
                     "confirmation_rows": len(confirmation_outcomes),
                     "prediction_rows": len(prediction_rows),
@@ -1310,6 +1721,7 @@ def confirm_phase72b_information_gain_screen(
         "calibration_rows": calibration_rows,
         "bootstrap_rows": bootstrap_rows,
         "control_rows": control_rows,
+        "confirmation_control_rows": confirmation_control_rows,
         "transfer_rows": transfer_rows,
         "spatial_rows": spatial_rows,
         "pooled_delta": pooled_delta,
@@ -1356,6 +1768,8 @@ def write_phase72b_confirmation_artifacts(
         "calibration_csv": output / "phase72b_calibration.csv",
         "bootstrap_csv": output / "phase72b_bootstrap_deltas.csv",
         "control_csv": output / "phase72b_control_comparison.csv",
+        "confirmation_control_csv": output
+        / "phase72b_confirmation_control_manifest.csv",
         "transfer_csv": output / "phase72b_transfer_summary.csv",
         "screen_json": output / "phase72b_information_gain_screen.json",
         "screen_md": output / "phase72b_information_gain_screen.md",
@@ -1399,6 +1813,11 @@ def write_phase72b_confirmation_artifacts(
         ["control_id", "variant_id", "selected_seed", "seed_count"],
     )
     _write_frame(
+        paths["confirmation_control_csv"],
+        list(result.get("confirmation_control_rows", [])),
+        list(FIT_CONTROL_MANIFEST_FIELDS),
+    )
+    _write_frame(
         paths["transfer_csv"],
         list(result.get("transfer_rows", [])),
         ["axis_id", "source_region", "target_region", "rows"],
@@ -1440,6 +1859,7 @@ def write_phase72b_confirmation_artifacts(
         "calibration_csv",
         "bootstrap_csv",
         "control_csv",
+        "confirmation_control_csv",
         "transfer_csv",
         "screen_json",
         "screen_md",

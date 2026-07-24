@@ -25,7 +25,10 @@ from .phase72b_protocol import (
     load_hashed_json,
     write_hashed_json,
 )
-from .phase72b_prepared import load_verified_phase72b_prepared
+from .phase72b_prepared import (
+    load_verified_phase72b_prepared,
+    verify_phase72b_prepared_artifact,
+)
 from .phase72b_terrain import _file_sha256
 
 
@@ -55,6 +58,70 @@ FIT_CONTROL_MANIFEST_FIELDS = (
     "matrix_sha256",
     "cross_partition_count",
 )
+PHASE72B_VALIDATION_METRIC_FIELDS = (
+    "average_precision",
+    "brier",
+    "ece",
+    "roc_auc",
+    "f1",
+    "balanced_accuracy",
+    "capture_at_10pct",
+    "precision_at_10pct",
+    "lift_at_10pct",
+    "net_benefit_at_10pct",
+    "capture_at_20pct",
+    "precision_at_20pct",
+    "lift_at_20pct",
+    "net_benefit_at_20pct",
+)
+
+
+def validate_phase72b_validation_metrics(
+    metrics: Mapping[str, object],
+) -> None:
+    validation = dict(metrics)
+    bounded_metric_names = {
+        "average_precision",
+        "brier",
+        "ece",
+        "roc_auc",
+        "f1",
+        "balanced_accuracy",
+        "capture_at_10pct",
+        "precision_at_10pct",
+        "capture_at_20pct",
+        "precision_at_20pct",
+    }
+    nonnegative_metric_names = {
+        "lift_at_10pct",
+        "lift_at_20pct",
+    }
+    finite_metric_names = {
+        "net_benefit_at_10pct",
+        "net_benefit_at_20pct",
+    }
+    try:
+        metrics_are_valid = (
+            set(validation) == set(PHASE72B_VALIDATION_METRIC_FIELDS)
+            and all(
+                np.isfinite(float(validation[name]))
+                and 0.0 <= float(validation[name]) <= 1.0
+                for name in bounded_metric_names
+            )
+            and all(
+                np.isfinite(float(validation[name]))
+                and float(validation[name]) >= 0.0
+                for name in nonnegative_metric_names
+            )
+            and all(
+                np.isfinite(float(validation[name]))
+                for name in finite_metric_names
+            )
+        )
+    except (KeyError, TypeError, ValueError):
+        metrics_are_valid = False
+    if not metrics_are_valid:
+        raise ValueError("Phase 72B validation metrics mismatch")
 
 
 def _array_sha256(array: np.ndarray) -> str:
@@ -707,8 +774,14 @@ def validate_phase72b_bundle_record_semantics(
     actual = {key: record.get(key) for key in expected}
     if actual != expected:
         raise ValueError("Phase 72B bundle semantics mismatch")
+    try:
+        validate_phase72b_validation_metrics(validation)
+        metrics_are_valid = True
+    except ValueError:
+        metrics_are_valid = False
     if (
-        bundle.get("fit_implementation_id")
+        not metrics_are_valid
+        or bundle.get("fit_implementation_id")
         != PHASE72B_FIT_IMPLEMENTATION_ID
         or bundle.get("claim_boundary") != PHASE72B_CLAIM_BOUNDARY
         or estimator_params.get("model_family") != bundle.get("model_family")
@@ -848,6 +921,11 @@ def fit_freeze_phase72b_models(
     protocol = dict(frozen_protocol["tracked_protocol"])
     protocol_hash = str(verified_prepared["protocol_hash"])
     development_target_path = prepared / "phase72b_development_targets.npz"
+    verify_phase72b_prepared_artifact(
+        prepared,
+        verified_prepared["manifest"],
+        development_target_path.name,
+    )
     if _target_npz_sha256(development_target_path) != str(
         frozen_protocol.get("development_targets_sha256", "")
     ):
