@@ -2212,34 +2212,104 @@ docs/superpowers/specs/2026-07-10-phase72-geofm-star-future-stability-planning-d
 
 ## Current Authoritative Resume Marker
 
-The authoritative state is the integrity-repaired Phase 72B fit checkpoint at
-2026-07-11 19:01 +08:00. The archived Phase 72B completion section immediately
-above records the pre-repair numerical run only.
+The authoritative state is the integrity-verified Phase 72B receipt-bound
+confirmation completed on 2026-07-24. The archived completion section above is
+pre-repair evidence only.
 
-The clean prepared-manifest-bound refit completed normally with 153 of 153
-bundles across 13 axes and 4,806 validation metric rows. The hashed fit
-progress reports `phase72b_fit_complete`, the selected-model package reports
-`phase72b_models_frozen`, and both packages bind to the same selected-model
-SHA256:
+Official identities:
 
 ```text
-64038e0baad8b216964cab2bf0fbedd108a75f2b33ee0420d50176996b6376f5
+frozen protocol: d7275d5264649d0215e784e800961aa205cf4986cf788123d5de7307016866bb
+prepared artifacts: 4843dfda860e0f87c276e62efad05b0604e9e3d95ff812d8f0000ce0619c9357
+selected models: 79c00435de9c537ab25cf36c19e91cafd4654ed9077fd7680e366ef524be70e0
+fit control manifest: 53ab9f106eff53c0ae04aa5bc21e13790d9c7c24b3e84af56666a67ed3feb449
+confirmation control manifest: d8666d0e6290eaa203894e1f6e5f46ef980eba58f11468a6ca4f0f00f2139e71
+confirmation receipt: 2de7750a82562178a25731c1250c7bbdb45502b29e903dbab5c905791ffe5988
 ```
 
-The prepared and protocol identities remain:
+Official execution counts:
 
 ```text
-prepared artifacts: 24aa98caf23bbcb5c28c120d1f0f3c94cfa6e1c47e41be4f93dfeabc8a5b1149
-frozen protocol: b51a8b45050579a7741d43d2244571815ef752304483184de30cb18a9cc1f864
+fit status: phase72b_fit_complete
+selected status: phase72b_models_frozen
+fit entries / bundles: 153 / 153
+validation metric rows: 4,806
+fit control rows: 150, all train/validation, zero cross-partition
+confirmation rows: 3,041
+prediction rows: 155,091
+metric rows: 153
+calibration rows: 1,530
+bootstrap rows: 16
+confirmation control rows: 75, all test, zero cross-partition
+valid / invalid spatial axes: 10 / 0
+blockers: 0
 ```
 
-The official receipt-bound confirmation has not run yet. Resume with:
+Official status:
 
-```powershell
-D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_screen\run_phase72b_information_gain_screen.py --mode confirm --prepared-dir experiments\phase72b_geofm_information_gain_screen\outputs\prepared --frozen-dir experiments\phase72b_geofm_information_gain_screen\outputs\frozen --output-dir experiments\phase72b_geofm_information_gain_screen\outputs\confirmation
+```text
+geofm_information_not_supported
 ```
 
-Do not treat the archived confirmation as official, and do not begin Phase 72C
-before the new receipt-bound confirmation is complete and reviewed. Generated
-Phase 72B outputs remain local under the intentionally Git-ignored `outputs/`
-tree.
+Pooled explicit-history versus temporal-GeoFM evidence was unchanged from the
+pre-repair archive: AP delta `+0.033009230885`, Brier delta
+`+0.023334228857`, and ECE delta `+0.091800275693`. The AP and Brier paired
+bootstrap intervals remained fully favorable. The official controls changed
+after the complete contract-bound refit:
+
+```text
+temporal-order shuffle, seed 74: AP -0.005872817466, Brier +0.001402165769
+spatial shuffle, seed 72: AP -0.003434131465, Brier +0.011750438090
+random projection, seed 74: AP +0.006494142840, Brier +0.034024283598
+```
+
+Temporal-order shuffle failed both frozen margins, and spatial shuffle failed
+the AP margin. Both zero-shot transfer directions failed; spatial direction
+was heterogeneous. Therefore the pooled gain cannot support a
+representation-specific, transferable, or spatially stable GeoFM claim.
+
+The first post-fit confirmation attempt was an integrity preflight that stopped
+before opening confirmation targets. It returned `phase72b_inputs_not_ready`
+with zero rows because multi-thread BLAS changed exact random-projection matrix
+bytes. Commit `e46c1fb` fixed random-projection thread-count determinism. The
+real fit manifest then reproduced with zero blockers, and 142 Phase 72B tests
+passed before the target-opening confirmation. The blocker receipt remains
+archived locally under:
+
+```text
+experiments/phase72b_geofm_information_gain_screen/outputs/confirmation_pre_target_random_projection_audit_blocker_20260724_195332
+```
+
+Repository state before the measured documentation commit:
+
+```text
+branch: phase72b-geofm-information-gain-screen
+HEAD: e46c1fb30153f5b0914b263571710b9e3200fbfe
+origin/main: 844a773ab3381634cee4187a91ba75fe48be0bd8
+origin/main...HEAD: 0 behind, 46 ahead
+formal manuscript: unchanged
+generated outputs: ignored and present locally only
+```
+
+Transition decision:
+
+```text
+Do not begin Phase 72C.
+Stop the GeoFM-STaR route.
+Proceed only with the approved Phase 72 exhaustion analysis.
+Do not change thresholds, metrics, regions, seeds, or folds post hoc.
+Do not modify paper/submission/final/* from this result.
+```
+
+Next entry point:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl\.worktrees\phase72b-geofm-information-gain-screen
+```
+
+Read next:
+
+```text
+paper/phase28_results/39_phase72b_geofm_information_gain_screen.md
+docs/superpowers/phase33_current_progress_handoff.md
+```

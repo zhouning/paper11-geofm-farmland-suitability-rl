@@ -1,23 +1,31 @@
 # Phase 72B GeoFM Information-Gain Screen
 
-Archived pre-integrity-repair confirmation status:
-`geofm_information_not_supported`
+Official integrity-verified status: `geofm_information_not_supported`
 
-Official integrity-verified status: pending completion of the clean refit and
-receipt-bound confirmation started on 2026-07-11. The numerical evidence below
-describes the archived pre-repair confirmation and must be rechecked against
-the new official receipt before this note is finalized.
+## Conclusion
+
+Phase 72B detected a pooled predictive gain from temporal GeoFM features beyond
+the explicit-history baseline, but the gain was not representation-specific,
+spatially stable, or transferable. The clean receipt-bound confirmation failed
+the frozen temporal-order and spatial-shuffle control gates, both zero-shot
+transfer directions, and the regional spatial-consistency gate. The Phase 72C
+GeoFM-STaR route must therefore stop.
 
 ## Purpose
 
 Phase 72B tested whether temporal AlphaEarth features improve one-year
 farmland-conversion prediction beyond explicit public-GIS and land-cover
 history features. The locked screen used independent annual product labels,
-strict representation controls, temporal confirmation, buffered spatial
-folds, and bidirectional zero-shot transfer. It did not train GeoFM-STaR,
-alter a planning reward, or run a planner.
+strict representation controls, temporal confirmation, buffered spatial folds,
+and bidirectional zero-shot transfer. It did not train GeoFM-STaR, alter a
+planning reward, or run a planner.
 
-## Inputs and Frozen State
+## Integrity-Bound Execution
+
+The official run regenerated the terrain provenance manifest and prepared
+package under the final contract, then refit all models from an empty frozen
+directory. Terrain values did not change during regeneration: the old and new
+NPZ hashes were identical for both regions.
 
 - Terrain source: Copernicus DEM GLO-30, Earth Engine collection
   `COPERNICUS/DEM/GLO30`, aggregated at `500 m`.
@@ -28,15 +36,33 @@ alter a planning reward, or run a planner.
 - Development rows, origins 2017-2022: `28,586`.
 - Confirmation rows, origin 2023: `3,041`, including `630` conversions.
 - Frozen protocol SHA256:
-  `b51a8b45050579a7741d43d2244571815ef752304483184de30cb18a9cc1f864`.
-- Frozen selected-model SHA256:
-  `0476dc525d302f1c08d6b1469b158fc186b054a184255c70e8c9a1b2eab5ade0`.
-- Confirmation coverage: `155,091` prediction rows, `153` metric rows,
-  `1,530` calibration rows, `16` bootstrap rows, 10 valid spatial axes,
-  and zero invalid spatial axes.
+  `d7275d5264649d0215e784e800961aa205cf4986cf788123d5de7307016866bb`.
+- Prepared-artifact manifest SHA256:
+  `4843dfda860e0f87c276e62efad05b0604e9e3d95ff812d8f0000ce0619c9357`.
+- Selected-model SHA256:
+  `79c00435de9c537ab25cf36c19e91cafd4654ed9077fd7680e366ef524be70e0`.
+- Fit-control manifest SHA256:
+  `53ab9f106eff53c0ae04aa5bc21e13790d9c7c24b3e84af56666a67ed3feb449`.
+- Confirmation-control manifest SHA256:
+  `d8666d0e6290eaa203894e1f6e5f46ef980eba58f11468a6ca4f0f00f2139e71`.
+- Confirmation receipt SHA256:
+  `2de7750a82562178a25731c1250c7bbdb45502b29e903dbab5c905791ffe5988`.
 
-The hashes reported by confirmation exactly match the values written before
-the held-out outcomes were evaluated.
+The fit completed `153 / 153` bundles across 13 axes and wrote 4,806
+validation metric rows. Its 150 control-manifest rows used only declared train
+or validation partitions and all had `cross_partition_count=0`. Confirmation
+wrote 75 control-manifest rows across the same 13 axes; every row used a
+declared test partition and had `cross_partition_count=0`.
+
+The first post-fit confirmation attempt stopped before opening confirmation
+targets because BLAS thread count changed the byte hash of mathematically
+equivalent random-projection products. It returned
+`phase72b_inputs_not_ready` with zero confirmation, prediction, and metric rows.
+Commit `e46c1fb` made random-projection multiplication thread-count invariant.
+The repaired implementation reproduced every recorded fit-control matrix hash,
+and all 142 Phase 72B tests passed before the target-opening confirmation. The
+pre-target blocker receipt remains archived locally and was not treated as a
+scientific result.
 
 ## Frozen Pooled Models
 
@@ -54,32 +80,34 @@ the held-out outcomes were evaluated.
 
 Favorable primary deltas were AP `+0.033009230885`, Brier
 `+0.023334228857`, and ECE `+0.091800275693`. The paired block bootstrap used
-all `2,000 / 2,000` valid replicates across 214 clusters. Its mean AP delta was
-`+0.032544250173` with 95% interval `[0.002717295271, 0.062074205092]`; its
-mean favorable Brier delta was `+0.023332824458` with 95% interval
+all `2,000 / 2,000` replicates across 214 clusters. Its mean AP delta was
+`+0.032544250173` with a 95% interval of
+`[0.002717295271, 0.062074205092]`; its mean favorable Brier delta was
+`+0.023332824458` with a 95% interval of
 `[0.014780303261, 0.032000531884]`.
 
-The pooled practical and statistical comparisons therefore passed. They are
-not sufficient for a positive Phase 72B result because the frozen protocol
-also requires the primary model to clear every strict representation control.
+The pooled practical and statistical checks passed. These checks were not
+sufficient for a positive Phase 72B result because the frozen protocol also
+required the primary model to clear every representation control, both
+zero-shot transfer directions, and the buffered spatial gate.
 
 ## Representation Controls
 
-Each control family used five frozen seeds. Deltas below are primary temporal
-GeoFM minus the selected strongest control for AP, and control minus primary
-for Brier and ECE, so positive values favor the primary model.
+Deltas below are primary temporal GeoFM minus the selected strongest control
+for AP, and control minus primary for Brier and ECE. Positive values favor the
+primary model.
 
 | Control | Selected seed | AP delta | AP range across seeds | Brier delta | Brier range across seeds | ECE delta | ECE range across seeds |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Temporal-order shuffle | 76 | 0.000529157576 | [-0.002149496118, 0.010686837909] | 0.000987420911 | [0.000966900674, 0.001955914907] | 0.000115241698 | [0.000115241698, 0.016859553374] |
-| Spatial shuffle | 74 | 0.008391128471 | [0.007150682124, 0.038574628539] | 0.012669512479 | [0.003610920032, 0.014320575958] | 0.068184174684 | [-0.006732825573, 0.068184174684] |
-| Same-dimension random projection | 74 | 0.014150381739 | [-0.004586192049, 0.046399915991] | 0.039950202911 | [0.018246672641, 0.046626428778] | 0.157703888077 | [0.081770584327, 0.157703888077] |
+| Temporal-order shuffle | 74 | -0.005872817466 | [-0.005872817466, 0.027670012406] | 0.001402165769 | [-0.000420302017, 0.003465212065] | 0.009099422172 | [-0.004855919342, 0.017256921482] |
+| Spatial shuffle | 72 | -0.003434131465 | [-0.003434131465, 0.030937810238] | 0.011750438090 | [0.001901893161, 0.019188902304] | 0.066173321790 | [-0.002802631987, 0.076672185281] |
+| Same-dimension random projection | 74 | 0.006494142840 | [-0.003157034090, 0.046279797734] | 0.034024283598 | [0.022082329628, 0.046840640247] | 0.144007406457 | [0.101202342165, 0.153922235581] |
 
-The frozen control gate requires AP delta at least `0.005` and Brier delta at
-least `0.002` for every control. The temporal-order-shuffle comparison missed
-both thresholds. This is the direct reason for
-`geofm_information_not_supported`: the measured gain cannot be attributed to
-the ordered temporal GeoFM representation under the predeclared controls.
+The frozen control gate required AP delta at least `0.005` and Brier delta at
+least `0.002` for every control. Temporal-order shuffle failed both margins.
+Spatial shuffle passed Brier but failed AP. Random projection passed both. The
+pooled improvement therefore could not be attributed to ordered temporal GeoFM
+information under the predeclared controls.
 
 ## Transfer and Buffered Spatial Evidence
 
@@ -88,9 +116,9 @@ the ordered temporal GeoFM representation under the predeclared controls.
 | Bishan to Dongxing | 2,353 | -0.016801606373 | 0.026115464037 | 0.096944527306 |
 | Dongxing to Bishan | 688 | 0.000851525829 | -0.001755600472 | -0.019835919679 |
 
-Neither direction met the complete transfer gate. Bishan-to-Dongxing improved
-Brier and ECE but exceeded the allowed AP harm. Dongxing-to-Bishan did not
-reach either required gain threshold.
+Neither transfer direction passed. Bishan-to-Dongxing improved Brier but
+exceeded the allowed AP harm. Dongxing-to-Bishan reached neither required gain
+threshold.
 
 | Spatial axis | Rows | AP delta | Brier delta | ECE delta |
 | --- | ---: | ---: | ---: | ---: |
@@ -105,24 +133,37 @@ reach either required gain threshold.
 | Dongxing fold 3 | 528 | -0.045260610746 | 0.005914935260 | 0.078841979088 |
 | Dongxing fold 4 | 427 | -0.090247705682 | -0.004299528419 | 0.006999889613 |
 
-All spatial folds were evaluable, but the direction was heterogeneous. Only
-Dongxing fold 0 improved both AP and Brier; several folds harmed both metrics,
-including a large Bishan fold 1 degradation.
+All 10 spatial axes were evaluable, but the direction was heterogeneous.
+Bishan degraded on both region-level AP and Brier. Dongxing improved Brier at
+the region level but degraded AP, and several individual folds harmed both
+metrics.
 
-## Archived Gate Decision
+## Comparison with the Pre-Repair Archive
 
-The archived Phase 72B confirmation status was
-`geofm_information_not_supported`, with no measured input blockers. Pooled
-evidence showed predictive signal, but the
-predeclared strict-control gate failed and transfer/spatial evidence did not
-support a consistent multi-region advantage. No post hoc threshold, metric,
-region, seed, or fold change is permitted.
+The official and pre-repair confirmations both contained 153 metric rows. All
+78 non-control rows were identical, including pooled explicit and primary
+metrics, both transfer directions, all spatial explicit-primary deltas, and all
+13 primary-versus-explicit bootstrap rows. The transfer CSV was byte-identical.
 
-Phase 72C must not begin while the integrity-verified confirmation is pending.
-If the clean confirmation reproduces the archived negative gate, the GeoFM-STaR
-route stops and the next allowed work is the approved Phase 72 exhaustion
-analysis. That analysis must retain the broader design's independent-product,
-endpoint, model, transfer, spatial, noise-sensitivity, and planning criteria.
+Only the 75 control metric rows and three control bootstrap comparisons
+changed. The clean refit used the complete candidate-grid and calibration
+contract and selected temporal-order seed 74 instead of 76 and spatial-shuffle
+seed 72 instead of 74. Random-projection seed 74 was unchanged. These changes
+strengthened the negative control result and did not alter the pooled,
+transfer, or spatial primary evidence.
+
+## Official Gate Decision
+
+The final status is `geofm_information_not_supported`, with zero input
+blockers. No post hoc threshold, metric, region, seed, or fold change is
+permitted.
+
+```text
+Do not begin Phase 72C.
+Stop the GeoFM-STaR route at the Phase 72B gate.
+Proceed only with the approved Phase 72 exhaustion analysis.
+Do not alter the planning reward or formal manuscript on this evidence.
+```
 
 ## Generated Artifacts
 
@@ -135,35 +176,32 @@ experiments/phase72b_geofm_information_gain_screen/outputs/frozen
 experiments/phase72b_geofm_information_gain_screen/outputs/confirmation
 ```
 
-The confirmation directory contains the metric, prediction, calibration,
-bootstrap, control, transfer, JSON, and Markdown outputs required by the
-frozen protocol.
+The confirmation receipt binds nine stable artifacts: metrics, predictions,
+calibration, bootstrap deltas, control comparison, confirmation-control
+manifest, transfer summary, JSON, and Markdown. All nine byte hashes and the
+receipt sidecar were independently verified.
 
 ## Reproduction
 
-Fetch terrain:
+Run from the repository root:
 
 ```powershell
 D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_screen\fetch_phase72b_terrain.py --phase72a-region-config experiments\phase72a_temporal_label_package\phase72a_regions.json --phase72b-protocol experiments\phase72b_geofm_information_gain_screen\phase72b_protocol.json --output-dir experiments\phase72b_geofm_information_gain_screen\outputs\terrain
-```
 
-Prepare the label-separated feature package:
-
-```powershell
 D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_screen\run_phase72b_information_gain_screen.py --mode prepare --protocol experiments\phase72b_geofm_information_gain_screen\phase72b_protocol.json --phase72a-region-config experiments\phase72a_temporal_label_package\phase72a_regions.json --phase72a-package-dir experiments\phase72a_temporal_label_package\outputs\bishan_dongxing_esri_2017_2024 --embedding-dir bishan=data\bishan_alphaearth_sample --label-dir bishan=D:\test\paper58-geofm-world-model-rl\data\independent_change_labels\labels --embedding-dir dongxing=D:\test\dongxing_alphaearth --label-dir dongxing=experiments\phase72a_temporal_label_package\outputs\esri_labels --terrain-dir experiments\phase72b_geofm_information_gain_screen\outputs\terrain --output-dir experiments\phase72b_geofm_information_gain_screen\outputs\prepared
-```
 
-Freeze development-selected models, then confirm once:
-
-```powershell
 D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_screen\run_phase72b_information_gain_screen.py --mode fit-freeze --prepared-dir experiments\phase72b_geofm_information_gain_screen\outputs\prepared --output-dir experiments\phase72b_geofm_information_gain_screen\outputs\frozen
+
 D:\adk\.venv\Scripts\python.exe experiments\phase72b_geofm_information_gain_screen\run_phase72b_information_gain_screen.py --mode confirm --prepared-dir experiments\phase72b_geofm_information_gain_screen\outputs\prepared --frozen-dir experiments\phase72b_geofm_information_gain_screen\outputs\frozen --output-dir experiments\phase72b_geofm_information_gain_screen\outputs\confirmation
 ```
 
+Each output directory must be absent before its stage writes. Do not reuse
+legacy progress, bundles, prepared artifacts, or confirmation receipts.
+
 ## Claim Boundary
 
-Phase 72B is a leakage-free, low-cost information-gain screen using
-independent annual product labels. It shows a pooled predictive improvement but
-does not establish representation-specific, spatially stable, or transferable
-GeoFM information. It does not implement GeoFM-STaR, alter planning rewards,
-run planning, or revise the formal manuscript.
+Phase 72B is a leakage-free, low-cost information-gain screen using independent
+annual product labels. It shows a pooled predictive improvement but does not
+establish representation-specific, spatially stable, or transferable GeoFM
+information. It does not implement GeoFM-STaR, validate agronomic suitability,
+alter planning rewards, run planning, or revise the formal manuscript.
