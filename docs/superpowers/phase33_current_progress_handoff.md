@@ -2385,3 +2385,98 @@ docs/superpowers/phase33_current_progress_handoff.md
 paper/phase28_results/39_phase72b_geofm_information_gain_screen.md
 docs/superpowers/specs/2026-07-10-phase72-geofm-star-future-stability-planning-design.md
 ```
+
+## Phase 72 Exhaustion Analysis - 2026-08-17
+
+The approved read-only Phase 72 exhaustion analysis was implemented and run
+from local `main`. It audits the completed Phase 72A package and official
+receipt-bound Phase 72B confirmation; it does not train Phase 72C, alter
+rewards, run planning, or modify `paper/submission/final/*`.
+
+Tracked implementation and evidence files:
+
+```text
+src/paper11_geofm/phase72_exhaustion_analysis.py
+experiments/phase72_exhaustion_analysis/run_phase72_exhaustion_analysis.py
+tests/test_phase72_exhaustion_analysis.py
+paper/phase28_results/40_phase72_exhaustion_analysis.md
+```
+
+Ignored local output:
+
+```text
+experiments/phase72_exhaustion_analysis/outputs/real_bishan_dongxing
+```
+
+The five generated artifacts are:
+
+```text
+phase72_exhaustion_criteria.csv
+phase72_exhaustion_claim_boundary.csv
+phase72_exhaustion_artifact_hashes.csv
+phase72_exhaustion_analysis.json
+phase72_exhaustion_analysis.md
+```
+
+Official audit status and transition:
+
+```text
+phase72_exhaustion_status: phase72_exhaustion_criteria_not_fully_evaluated
+route_decision: phase72_route_closed_at_phase72b_gate
+phase72c_allowed: false
+integrity_blockers: 0
+```
+
+The audit verified all nine receipt-bound Phase 72B artifact hashes and the
+receipt's own canonical-JSON SHA256 sidecar. It found 10 exhaustion-criterion
+rows: four have negative or mixed evaluated evidence, and six remain
+unresolved. The unresolved criteria are a second independent annual product,
+full two-year model evaluation, an explicit residual model, a temporal neural
+model, label disagreement/noise sensitivity, and constrained planning outcomes.
+
+This distinction is authoritative: the receipt-bound Phase 72B low-cost screen
+is negative and the Phase 72 route is closed at that gate, but the repository
+must not claim that every future-aware GeoFM design has been scientifically
+exhausted.
+
+Verification:
+
+```text
+python -m pytest tests\test_phase72_exhaustion_analysis.py tests\test_phase72a_temporal_label_package.py -q --basetemp=.pytest_tmp_phase72_exhaustion_receipt_verify -p no:cacheprovider
+15 passed
+
+python -m pytest tests\test_phase72b_geofm_information_gain_screen.py -q --basetemp=.pytest_tmp_phase72b_regression_after_exhaustion2 -p no:cacheprovider
+142 passed
+
+python -m pytest -q --basetemp=.pytest_tmp_phase72_exhaustion_receipt_full_20260817 -p no:cacheprovider
+554 passed, 84 existing sklearn warnings
+
+python scripts\smoke_check.py
+Paper11 smoke check passed.
+
+git diff --check
+passed
+```
+
+Transition decision:
+
+```text
+Do not begin Phase 72C.
+Do not alter thresholds, metrics, regions, seeds, or folds post hoc.
+Do not modify paper/submission/final/* from this analysis.
+Record the unresolved exhaustion criteria as limitations.
+```
+
+Next entry point:
+
+```text
+D:\test\paper11-geofm-farmland-suitability-rl
+```
+
+Read next:
+
+```text
+paper/phase28_results/40_phase72_exhaustion_analysis.md
+experiments/phase72_exhaustion_analysis/outputs/real_bishan_dongxing/phase72_exhaustion_analysis.json
+docs/superpowers/phase33_current_progress_handoff.md
+```

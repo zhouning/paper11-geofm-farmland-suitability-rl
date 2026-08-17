@@ -102,6 +102,10 @@ base-reward protocol.
 - `37_phase71_component_supervised_ranker.md`: component-supervised listwise ranker testing whether direct base-reward ranking improves the algorithm route beyond Phase 63 and Phase 70 while keeping GeoFM-specific claims secondary.
 - `38_phase72a_temporal_label_package.md`: audited Bishan-Dongxing independent annual ESRI label package with leakage-free one- and two-year farmland-persistence samples for the Phase 72B information-gain screen.
 - `39_phase72b_geofm_information_gain_screen.md`: integrity-verified Bishan-Dongxing information-gain screen with a receipt-bound `geofm_information_not_supported` result; pooled gains did not clear representation-control, spatial-stability, or bidirectional-transfer gates.
+- `40_phase72_exhaustion_analysis.md`: read-only evidence-coverage audit showing
+  that the Phase 72B route is closed while six broader future-aware GeoFM
+  exhaustion criteria remain unresolved, so a complete exhaustion claim and
+  Phase 72C are both blocked.
 
 ## Reproduction Link
 
