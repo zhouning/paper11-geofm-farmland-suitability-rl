@@ -2853,3 +2853,48 @@ paper/phase28_results/40_phase72_exhaustion_analysis.md
 experiments/phase72_temporal_neural_screen/outputs/confirmation/phase72_temporal_neural_screen.json
 experiments/phase72_exhaustion_analysis/outputs/real_bishan_dongxing_residual_neural/phase72_exhaustion_analysis.json
 ```
+
+## Window Close / Project Disposition - 2026-08-18
+
+This window closes Paper11 at baseline commit
+`d4d0e0358cc07eb9b94cb7ad8be8a6dd31b9de68`. At that baseline, `HEAD`,
+`main`, `origin/main`, and GitHub `main` were aligned, the tracked worktree was
+clean, and `paper/submission/final/*` was unchanged. The last full verification
+reported `599 passed` with 84 existing scikit-learn warnings; the focused Phase
+72 suite reported `46 passed`, the smoke check passed, and `git diff --check`
+passed.
+
+Project disposition:
+
+```text
+The original broad Paper11 objective is considered failed under the current evidence.
+```
+
+Specifically, the completed evidence does not establish that GeoFM provides a
+robust, calibrated, representation-specific, spatially stable, transferable
+future prediction advantage, and it does not establish agronomic suitability
+or constrained-planning benefit. The positive pooled AP delta from the final
+temporal neural screen is insufficient to rescue that objective because Brier
+and ECE worsened, all strict controls failed, both transfer directions failed,
+and fold-level spatial stability failed.
+
+One deliberately narrow observation remains: GeoFM may contain short-horizon
+residual information that depends on endpoint and region. This is mixed
+evidence only and must not be presented as validation of the original target.
+
+The exhaustion ledger contains 11 criteria: seven are negative or mixed, three
+remain unresolved, and 37 receipt/artifact checks found zero integrity
+blockers. The unresolved criteria are:
+
+```text
+independent_annual_products
+label_resolution_disagreement_noise_sensitivity
+constrained_planning_outcomes
+```
+
+Ignored experimental outputs remain preserved locally and are not part of the
+GitHub repository. No further Paper11 work should resume without explicit
+author authorization. In particular: do not enter Phase 72C, do not train a
+post hoc two-year neural extension, do not revise
+`paper/submission/final/*`, and do not promote the narrow residual observation
+into a prediction, suitability, or planning claim.
