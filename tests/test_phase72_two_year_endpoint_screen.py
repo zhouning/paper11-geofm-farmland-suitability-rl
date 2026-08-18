@@ -20,6 +20,7 @@ from paper11_geofm.phase72_two_year_endpoint_screen import (
     load_phase72_two_year_protocol,
     prepare_phase72_two_year_endpoint_screen,
     validate_phase72_two_year_protocol,
+    write_phase72_two_year_confirmation_artifacts,
     write_phase72_two_year_prepared_artifacts,
 )
 from paper11_geofm.phase72b_terrain import _file_sha256
@@ -356,3 +357,52 @@ def test_phase72_two_year_fit_orchestrates_all_frozen_axes(
     assert selected["bundle_count"] == 142
     assert len(selected["bundle_records"]) == 142
     assert paths["selected_models"].is_file()
+
+
+def test_phase72_two_year_confirmation_writer_maps_all_row_artifacts(
+    tmp_path,
+):
+    endpoint_results = {
+        endpoint: {
+            "phase72b_status": "geofm_information_not_supported",
+            "pooled_delta": {
+                "ap_delta": 0.0,
+                "brier_delta": 0.0,
+                "ece_delta": 0.0,
+            },
+        }
+        for endpoint in PHASE72_TWO_YEAR_ENDPOINTS
+    }
+    result = {
+        "phase": "phase72_two_year_endpoint_screen",
+        "phase72_two_year_status": "two_year_geofm_information_not_supported",
+        "endpoint_results": endpoint_results,
+        "metrics_rows": [{"endpoint": "conversion_2y", "value": 1}],
+        "prediction_rows": [{"endpoint": "conversion_2y", "value": 1}],
+        "bootstrap_rows": [{"endpoint": "conversion_2y", "value": 1}],
+        "control_rows": [{"endpoint": "conversion_2y", "value": 1}],
+        "transfer_rows": [{"endpoint": "conversion_2y", "value": 1}],
+        "spatial_rows": [{"endpoint": "conversion_2y", "value": 1}],
+        "prepared_sha256": "1" * 64,
+        "selected_models_sha256": "2" * 64,
+        "next_action": "Keep Phase 72C closed.",
+        "claim_boundary": "Test boundary.",
+    }
+
+    paths = write_phase72_two_year_confirmation_artifacts(
+        result, tmp_path / "confirmation"
+    )
+
+    assert set(paths) == {
+        "metrics",
+        "predictions",
+        "bootstrap",
+        "controls",
+        "transfers",
+        "spatial",
+        "result",
+        "markdown",
+        "receipt",
+        "receipt_sha256",
+    }
+    assert all(path.is_file() for path in paths.values())

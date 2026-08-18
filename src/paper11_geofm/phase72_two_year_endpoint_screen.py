@@ -1384,15 +1384,16 @@ def write_phase72_two_year_confirmation_artifacts(
         "result": output / "phase72_two_year_endpoint_screen.json",
         "markdown": output / "phase72_two_year_endpoint_screen.md",
     }
-    for key in (
-        "metrics",
-        "predictions",
-        "bootstrap",
-        "controls",
-        "transfers",
-        "spatial",
-    ):
-        _write_csv(artifacts[key], result[f"{key[:-1]}_rows"] if key.endswith("s") else result[f"{key}_rows"])
+    row_fields = {
+        "metrics": "metrics_rows",
+        "predictions": "prediction_rows",
+        "bootstrap": "bootstrap_rows",
+        "controls": "control_rows",
+        "transfers": "transfer_rows",
+        "spatial": "spatial_rows",
+    }
+    for artifact_key, result_key in row_fields.items():
+        _write_csv(artifacts[artifact_key], result[result_key])
     artifacts["result"].write_text(
         json.dumps(
             _json_ready(
