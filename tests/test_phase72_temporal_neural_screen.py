@@ -263,3 +263,31 @@ def test_prepare_keeps_confirmation_targets_deferred(monkeypatch):
 )
 def test_temporal_neural_status_preserves_gate_strength(gate_status, expected):
     assert phase72_temporal_neural_status(gate_status) == expected
+
+
+def test_checkpoint_record_allows_explicit_bundle_without_neural_epoch(
+    tmp_path,
+):
+    bundle = {
+        "axis_id": "pooled_temporal",
+        "variant_id": "explicit_history",
+        "control_seed": "",
+        "model_family": "logistic_regression",
+        "calibration_method": "none",
+        "validation_metrics": {
+            "average_precision": 0.5,
+            "brier": 0.25,
+            "ece": 0.1,
+        },
+    }
+    progress = {"entries": [], "validation_rows": []}
+
+    _, record = temporal_neural._checkpoint_bundle(
+        tmp_path,
+        progress,
+        bundle=bundle,
+        validation_rows=[],
+    )
+
+    assert record["best_epoch"] == ""
+    assert record["variant_id"] == "explicit_history"

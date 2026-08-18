@@ -990,7 +990,11 @@ def _checkpoint_bundle(
         ),
         "validation_brier": float(bundle["validation_metrics"]["brier"]),
         "validation_ece": float(bundle["validation_metrics"]["ece"]),
-        "best_epoch": int(bundle["residual_model"]["best_epoch"]),
+        "best_epoch": (
+            ""
+            if "residual_model" not in bundle
+            else int(bundle["residual_model"]["best_epoch"])
+        ),
         "bundle_path": path.relative_to(output).as_posix(),
         "bundle_sha256": _file_sha256(path),
     }
