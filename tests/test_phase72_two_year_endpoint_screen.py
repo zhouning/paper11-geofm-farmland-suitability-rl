@@ -45,6 +45,9 @@ def test_phase72_two_year_protocol_is_frozen_and_keeps_phase72c_closed():
     assert protocol["decision_rule"] == (
         "both_endpoints_must_pass_all_frozen_gates"
     )
+    assert protocol["model_selection"]["strategy"] == (
+        "reuse_phase72b_frozen_candidate_configs"
+    )
     assert protocol["phase72c_allowed"] is False
 
 
@@ -281,6 +284,35 @@ def test_phase72_two_year_fit_orchestrates_all_frozen_axes(
             np.ones((len(validation_indexes), 5), np.float32),
         ),
     )
+    reference_configs = {
+        (axis_id, variant_id, seed): {
+            "model_family": "logistic",
+            "C": 1.0,
+            "class_weight": None,
+        }
+        for axis_id in registry
+        for variant_id in (
+            "explicit_history",
+            "explicit_plus_geofm_temporal_full",
+            "explicit_plus_temporal_order_shuffle",
+            "explicit_plus_spatial_shuffle",
+            "explicit_plus_random_projection",
+        )
+        for seed in (
+            (None,)
+            if variant_id
+            in {
+                "explicit_history",
+                "explicit_plus_geofm_temporal_full",
+            }
+            else (72, 73, 74, 75, 76)
+        )
+    }
+    monkeypatch.setattr(
+        module,
+        "_load_phase72b_reference_configs",
+        lambda *_, **__: reference_configs,
+    )
 
     def fake_fit(
         train_x,
@@ -311,13 +343,13 @@ def test_phase72_two_year_fit_orchestrates_all_frozen_axes(
         }
         return bundle, [{"axis_id": axis_id, "variant_id": variant_id}]
 
-    monkeypatch.setattr(module, "fit_select_phase72b_model", fake_fit)
     monkeypatch.setattr(module, "fit_fixed_phase72b_model", fake_fit)
 
     selected, paths = fit_freeze_phase72_two_year_models(
         prepared_dir=tmp_path / "prepared",
         phase72a_package_dir=tmp_path / "phase72a",
         phase72b_prepared_dir=tmp_path / "phase72b",
+        phase72b_reference_frozen_dir=tmp_path / "phase72b-frozen",
         output_dir=tmp_path / "frozen",
     )
 

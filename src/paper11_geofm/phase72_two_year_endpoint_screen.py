@@ -20,7 +20,6 @@ from .phase72b_metrics import (
 )
 from .phase72b_models import (
     fit_fixed_phase72b_model,
-    fit_select_phase72b_model,
     predict_phase72b_bundle,
 )
 from .phase72b_prepared import load_verified_phase72b_prepared
@@ -70,6 +69,15 @@ PHASE72_TWO_YEAR_VARIANTS = [
 PHASE72_TWO_YEAR_DECISION_RULE = (
     "both_endpoints_must_pass_all_frozen_gates"
 )
+PHASE72_TWO_YEAR_MODEL_SELECTION = {
+    "strategy": "reuse_phase72b_frozen_candidate_configs",
+    "source_selected_models_sha256": (
+        "79c00435de9c537ab25cf36c19e91cafd4654ed9077fd7680e366ef524be70e0"
+    ),
+    "refit_scope": "phase72_two_year_development_rows",
+    "calibration_selection": "2021_validation",
+    "control_seed_selection": "best_2021_validation_per_endpoint_axis",
+}
 _BASE_VARIANTS = (
     "explicit_history",
     "explicit_plus_geofm_temporal_full",
@@ -128,6 +136,7 @@ def validate_phase72_two_year_protocol(
         "source_bindings",
         "endpoints",
         "decision_rule",
+        "model_selection",
         "years",
         "controls",
         "spatial",
@@ -149,6 +158,11 @@ def validate_phase72_two_year_protocol(
         protocol.get("decision_rule"),
         PHASE72_TWO_YEAR_DECISION_RULE,
         "decision rule",
+    )
+    _require_equal(
+        protocol.get("model_selection"),
+        PHASE72_TWO_YEAR_MODEL_SELECTION,
+        "model selection",
     )
     _require_equal(protocol.get("years"), PHASE72_TWO_YEAR_YEARS, "years")
     _require_equal(protocol.get("controls"), PHASE72B_CONTROLS, "controls")
@@ -719,11 +733,70 @@ def _resume_bundle(
     return bundle, record
 
 
+def _load_phase72b_reference_configs(
+    frozen_dir: Path | str, expected_sha256: str
+) -> dict[tuple[str, str, int | None], dict[str, object]]:
+    frozen = Path(frozen_dir)
+    selected_path = frozen / "phase72b_selected_models.json"
+    selected = load_hashed_json(selected_path)
+    selected_hash = selected_path.with_suffix(".sha256").read_text(
+        encoding="ascii"
+    ).strip().lower()
+    if selected_hash != str(expected_sha256).lower():
+        raise ValueError(
+            "Phase 72 two-year reference selected-model hash mismatch"
+        )
+    if selected.get("status") != "phase72b_models_frozen":
+        raise ValueError("Phase 72B reference models are not frozen")
+    configs = {}
+    for raw_record in selected.get("bundle_records", []):
+        record = dict(raw_record)
+        seed_value = record.get("control_seed", "")
+        key = (
+            str(record["axis_id"]),
+            str(record["variant_id"]),
+            None if seed_value == "" else int(seed_value),
+        )
+        path = frozen / str(record["bundle_path"])
+        if _file_sha256(path) != str(record["bundle_sha256"]):
+            raise ValueError(
+                "Phase 72B reference bundle hash mismatch: "
+                f"{record['axis_id']}/{record['variant_id']}/{seed_value}"
+            )
+        bundle = joblib.load(path)
+        configs[key] = dict(bundle["estimator_params"])
+    required = {
+        (axis_id, variant_id, seed)
+        for axis_id in _SEARCH_AXES
+        for variant_id in (*_BASE_VARIANTS, *_CONTROL_VARIANTS)
+        for seed in (
+            (None,)
+            if variant_id in _BASE_VARIANTS
+            else (72, 73, 74, 75, 76)
+        )
+    }
+    required.update(
+        {
+            (f"spatial_{region}_fold{fold}", variant_id, None)
+            for region in ("bishan", "dongxing")
+            for fold in range(5)
+            for variant_id in _BASE_VARIANTS
+        }
+    )
+    missing = sorted(required - set(configs), key=str)
+    if missing:
+        raise ValueError(
+            f"Phase 72B reference configurations are incomplete: {missing[:5]}"
+        )
+    return configs
+
+
 def fit_freeze_phase72_two_year_models(
     *,
     prepared_dir: Path | str,
     phase72a_package_dir: Path | str,
     phase72b_prepared_dir: Path | str,
+    phase72b_reference_frozen_dir: Path | str,
     output_dir: Path | str,
 ) -> tuple[dict[str, object], dict[str, Path]]:
     output = Path(output_dir)
@@ -737,6 +810,10 @@ def fit_freeze_phase72_two_year_models(
     protocol = dict(prepared["protocol"])
     prepared_hash = str(prepared["manifest_sha256"])
     protocol_hash = canonical_json_sha256(protocol)
+    reference_configs = _load_phase72b_reference_configs(
+        phase72b_reference_frozen_dir,
+        str(protocol["model_selection"]["source_selected_models_sha256"]),
+    )
     progress = _load_progress(output, prepared_hash, protocol_hash)
     matrices = dict(prepared["matrices"])
     feature_rows = list(prepared["feature_rows"])
@@ -762,7 +839,7 @@ def fit_freeze_phase72_two_year_models(
                     output, progress, endpoint, axis_id, variant_id, None
                 )
                 if resumed is None:
-                    bundle, validation_rows = fit_select_phase72b_model(
+                    bundle, validation_rows = fit_fixed_phase72b_model(
                         matrix[train_indexes],
                         train_y,
                         matrix[validation_indexes],
@@ -770,6 +847,9 @@ def fit_freeze_phase72_two_year_models(
                         variant_id=variant_id,
                         axis_id=axis_id,
                         protocol=protocol,
+                        candidate_config=reference_configs[
+                            (axis_id, variant_id, None)
+                        ],
                         train_indexes=train_indexes,
                         validation_indexes=validation_indexes,
                     )
@@ -814,7 +894,7 @@ def fit_freeze_phase72_two_year_models(
                         int(seed),
                     )
                     if resumed is None:
-                        bundle, validation_rows = fit_select_phase72b_model(
+                        bundle, validation_rows = fit_fixed_phase72b_model(
                             train_matrix,
                             train_y,
                             validation_matrix,
@@ -822,6 +902,9 @@ def fit_freeze_phase72_two_year_models(
                             variant_id=variant_id,
                             axis_id=axis_id,
                             protocol=protocol,
+                            candidate_config=reference_configs[
+                                (axis_id, variant_id, int(seed))
+                            ],
                             train_indexes=train_indexes,
                             validation_indexes=validation_indexes,
                         )
@@ -887,9 +970,9 @@ def fit_freeze_phase72_two_year_models(
                         variant_id=variant_id,
                         axis_id=axis_id,
                         protocol=protocol,
-                        candidate_config=selected_configs[endpoint][
-                            "pooled_temporal"
-                        ][variant_id],
+                        candidate_config=reference_configs[
+                            (axis_id, variant_id, None)
+                        ],
                         train_indexes=train_indexes,
                         validation_indexes=validation_indexes,
                     )

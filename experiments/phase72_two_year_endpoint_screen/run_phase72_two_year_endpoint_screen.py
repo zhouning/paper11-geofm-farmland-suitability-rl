@@ -35,6 +35,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--protocol", type=Path)
     parser.add_argument("--phase72a-package-dir", type=Path, required=True)
     parser.add_argument("--phase72b-prepared-dir", type=Path, required=True)
+    parser.add_argument("--phase72b-reference-frozen-dir", type=Path)
     parser.add_argument("--prepared-dir", type=Path)
     parser.add_argument("--frozen-dir", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
@@ -61,6 +62,10 @@ def main(argv: list[str] | None = None) -> int:
                 prepared_dir=_required(args.prepared_dir, "--prepared-dir"),
                 phase72a_package_dir=args.phase72a_package_dir,
                 phase72b_prepared_dir=args.phase72b_prepared_dir,
+                phase72b_reference_frozen_dir=_required(
+                    args.phase72b_reference_frozen_dir,
+                    "--phase72b-reference-frozen-dir",
+                ),
                 output_dir=args.output_dir,
             )
             print(f"Phase 72 two-year fit status: {selected['status']}")

@@ -13,6 +13,13 @@
     "noncontinuous_persistence_2y": "1-y_continuous_2y"
   },
   "decision_rule": "both_endpoints_must_pass_all_frozen_gates",
+  "model_selection": {
+    "strategy": "reuse_phase72b_frozen_candidate_configs",
+    "source_selected_models_sha256": "79c00435de9c537ab25cf36c19e91cafd4654ed9077fd7680e366ef524be70e0",
+    "refit_scope": "phase72_two_year_development_rows",
+    "calibration_selection": "2021_validation",
+    "control_seed_selection": "best_2021_validation_per_endpoint_axis"
+  },
   "years": {
     "train": [2017, 2018, 2019, 2020],
     "validation": [2021],
