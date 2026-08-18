@@ -166,6 +166,7 @@ def fit_offset_logistic_residual(
     class_weight: str,
     max_iter: int,
     tolerance: float,
+    initial_coefficient: np.ndarray | None = None,
 ) -> dict[str, object]:
     probability, features, target = _validate_residual_inputs(
         explicit_probability, residual_features, outcome
@@ -205,9 +206,16 @@ def fit_offset_logistic_residual(
         gradient += penalty * coefficient
         return value, np.asarray(gradient, dtype=np.float64)
 
+    initial = (
+        np.zeros(features.shape[1], dtype=np.float64)
+        if initial_coefficient is None
+        else np.asarray(initial_coefficient, dtype=np.float64)
+    )
+    if initial.shape != (features.shape[1],) or not np.isfinite(initial).all():
+        raise ValueError("Phase 72 residual initial coefficient is invalid")
     result = minimize(
         objective,
-        np.zeros(features.shape[1], dtype=np.float64),
+        initial,
         method="L-BFGS-B",
         jac=True,
         options={
@@ -704,8 +712,11 @@ def _fit_select_residual_bundle(
     )
     choices = []
     validation_rows = []
-    for l2_strength in residual["l2_strength"]:
-        for class_weight in residual["class_weight"]:
+    for class_weight in residual["class_weight"]:
+        initial_coefficient = None
+        for l2_strength in sorted(
+            (float(value) for value in residual["l2_strength"]), reverse=True
+        ):
             fitted = fit_offset_logistic_residual(
                 train_explicit_probability,
                 train_residual_features,
@@ -714,6 +725,10 @@ def _fit_select_residual_bundle(
                 class_weight=str(class_weight),
                 max_iter=int(residual["max_iter"]),
                 tolerance=float(residual["tolerance"]),
+                initial_coefficient=initial_coefficient,
+            )
+            initial_coefficient = np.asarray(
+                fitted["coefficient"], dtype=np.float64
             )
             raw_probability = predict_offset_logistic_residual(
                 fitted,
@@ -795,7 +810,7 @@ def _fit_select_residual_bundle(
         ),
     )
     return {
-        "fit_implementation_id": "phase72_explicit_residual_v1",
+        "fit_implementation_id": "phase72_explicit_residual_v2_warm_start",
         "endpoint": endpoint,
         "axis_id": axis_id,
         "variant_id": variant_id,
@@ -890,6 +905,7 @@ def _load_fit_progress(
     if not path.exists():
         return {
             "status": "phase72_explicit_residual_fit_in_progress",
+            "fit_implementation_id": "phase72_explicit_residual_v2_warm_start",
             "prepared_sha256": prepared_sha256,
             "protocol_sha256": protocol_sha256,
             "entries": [],
@@ -899,6 +915,8 @@ def _load_fit_progress(
     if (
         progress.get("prepared_sha256") != prepared_sha256
         or progress.get("protocol_sha256") != protocol_sha256
+        or progress.get("fit_implementation_id")
+        != "phase72_explicit_residual_v2_warm_start"
     ):
         raise ValueError("Phase 72 residual fit progress binding mismatch")
     return progress

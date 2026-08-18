@@ -121,6 +121,36 @@ def test_offset_residual_can_recover_signal_beyond_explicit_baseline():
     assert bundle["residual_intercept"] is False
 
 
+def test_offset_residual_accepts_a_finite_warm_start():
+    rng = np.random.default_rng(73)
+    features = rng.normal(size=(300, 3))
+    probability = np.full(300, 0.4)
+    outcome = (features[:, 0] + features[:, 1] > 0).astype(np.int8)
+    first = fit_offset_logistic_residual(
+        probability,
+        features,
+        outcome,
+        l2_strength=0.01,
+        class_weight="none",
+        max_iter=500,
+        tolerance=1e-7,
+    )
+
+    second = fit_offset_logistic_residual(
+        probability,
+        features,
+        outcome,
+        l2_strength=0.001,
+        class_weight="none",
+        max_iter=500,
+        tolerance=1e-7,
+        initial_coefficient=first["coefficient"],
+    )
+
+    assert second["optimizer_iterations"] < 500
+    assert np.isfinite(second["coefficient"]).all()
+
+
 def test_phase72_explicit_residual_overall_requires_all_endpoints():
     supported = {
         endpoint: {"phase72b_status": "geofm_information_supported"}
