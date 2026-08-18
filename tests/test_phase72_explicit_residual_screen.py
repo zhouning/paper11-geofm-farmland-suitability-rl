@@ -31,6 +31,12 @@ PROTOCOL = (
     / "phase72_explicit_residual_screen"
     / "phase72_explicit_residual_protocol.json"
 )
+FREEZE_RECEIPT = (
+    ROOT
+    / "experiments"
+    / "phase72_explicit_residual_screen"
+    / "phase72_explicit_residual_freeze_receipt.json"
+)
 
 
 def test_phase72_explicit_residual_protocol_is_frozen_and_keeps_phase72c_closed():
@@ -45,6 +51,29 @@ def test_phase72_explicit_residual_protocol_is_frozen_and_keeps_phase72c_closed(
         "all_three_endpoints_must_pass_all_frozen_gates"
     )
     assert protocol["phase72c_allowed"] is False
+
+
+def test_phase72_explicit_residual_freeze_receipt_precedes_confirmation():
+    receipt = json.loads(FREEZE_RECEIPT.read_text(encoding="utf-8"))
+
+    assert receipt["status"] == (
+        "phase72_explicit_residual_confirmation_frozen"
+    )
+    assert receipt["implementation_commit"] == (
+        "e3b2144ae906349f6a6d520200b17e16359c64c6"
+    )
+    assert receipt["prepared_sha256"] == (
+        "184ade17e02aa86aac2cd3ccb372d1d245be5bd149b734a88fb3df1a9235f396"
+    )
+    assert receipt["selected_models_sha256"] == (
+        "d49d4e0c57fcf75b668d3a30c1177e2b2600ca02195697ad991a4afbf4762628"
+    )
+    assert receipt["bundle_count"] == 123
+    assert receipt["residual_bundle_count"] == 84
+    assert receipt["bundle_hash_mismatches"] == 0
+    assert receipt["invalid_cross_fit_audits"] == 0
+    assert receipt["confirmation_targets_opened"] is False
+    assert receipt["phase72c_allowed"] is False
 
 
 @pytest.mark.parametrize(

@@ -1,0 +1,16 @@
+{
+  "status": "phase72_explicit_residual_confirmation_frozen",
+  "implementation_commit": "e3b2144ae906349f6a6d520200b17e16359c64c6",
+  "protocol_sha256": "774408f176e2e342de7b8a6027ff46542e2b602954faaaf77be97dff603df353",
+  "prepared_sha256": "184ade17e02aa86aac2cd3ccb372d1d245be5bd149b734a88fb3df1a9235f396",
+  "selected_models_sha256": "d49d4e0c57fcf75b668d3a30c1177e2b2600ca02195697ad991a4afbf4762628",
+  "fit_progress_sha256": "ad4f6504bc5005338a531418805363d4dd3b6408843346e253e6dff6e4e3af9f",
+  "validation_metrics_sha256": "1350d421da265a28b7775167cb25fa0d1758abb35977727ded28211b0434d707",
+  "bundle_count": 123,
+  "residual_bundle_count": 84,
+  "bundle_hash_mismatches": 0,
+  "invalid_cross_fit_audits": 0,
+  "confirmation_targets_opened": false,
+  "phase72c_allowed": false,
+  "claim_boundary": "This receipt freezes the explicit residual exhaustion-screen implementation, prepared inputs, selected models, and validation-only choices before confirmation labels are opened. It does not enter Phase 72C, run planning, alter rewards, or revise the formal manuscript."
+}
