@@ -1,0 +1,119 @@
+{
+  "phase": "phase72_temporal_neural_exhaustion_screen",
+  "endpoint": {
+    "target": "conversion_1y",
+    "train_years": [
+      2017,
+      2018,
+      2019,
+      2020,
+      2021
+    ],
+    "validation_year": 2022,
+    "confirmation_year": 2023
+  },
+  "axes": {
+    "pooled": [
+      "pooled_temporal"
+    ],
+    "transfer": [
+      "bishan_to_dongxing",
+      "dongxing_to_bishan"
+    ],
+    "spatial_prefix": "spatial_",
+    "spatial_folds_per_region": 5
+  },
+  "explicit_baseline": {
+    "variant": "explicit_history",
+    "candidate_config_source": "axis_matched_frozen_phase72b_bundle",
+    "explicit_training_prediction": "spatial_block_group_cross_fit",
+    "cross_fit_folds": 5,
+    "refit_scope": "axis_training_rows_only"
+  },
+  "architecture": {
+    "formulation": "fixed_explicit_logit_plus_compact_gated_temporal_neural_residual",
+    "input_channels": 64,
+    "projection_channels": 16,
+    "maximum_history_steps": 8,
+    "activation": "tanh",
+    "gate": "content_plus_relative_position",
+    "pooling": "masked_gated_weighted_mean",
+    "projection_bias": false,
+    "content_gate_bias": false,
+    "residual_head_bias": false,
+    "residual_intercept": false
+  },
+  "training": {
+    "optimizer": "adamw",
+    "learning_rate": 0.001,
+    "weight_decay": 0.001,
+    "batch_size": 512,
+    "max_epochs": 60,
+    "minimum_epochs": 8,
+    "early_stopping_patience": 8,
+    "early_stopping_metric": "validation_brier",
+    "minimum_delta": 0.00001,
+    "gradient_clip_norm": 1.0,
+    "class_weight": "none",
+    "seed": 72,
+    "standardization_scope": "axis_training_valid_history_entries_only",
+    "runtime_benchmark_epochs": 3
+  },
+  "calibration": {
+    "methods": [
+      "none",
+      "sigmoid",
+      "isotonic"
+    ],
+    "selection_data": "axis_validation_rows_only",
+    "ece_bins": 10
+  },
+  "controls": {
+    "variants": {
+      "neural_temporal_order_shuffle": "temporal_order_shuffle",
+      "neural_spatial_shuffle": "spatial_shuffle",
+      "neural_random_projection": "random_projection"
+    },
+    "seeds": [
+      72,
+      73,
+      74,
+      75,
+      76
+    ],
+    "selection_axis": "pooled_temporal_validation_only",
+    "partition_local": true,
+    "temporal_shuffle_preserves_current": true,
+    "random_projection": "same_shape_64x64_orthogonal_channel_projection",
+    "standardization_scope": "control_training_rows_only"
+  },
+  "budgets": [
+    0.1,
+    0.2
+  ],
+  "bootstrap": {
+    "iterations": 2000,
+    "seed": 72
+  },
+  "seed": 72,
+  "gates": {
+    "ap_vs_explicit": 0.015,
+    "brier_vs_explicit": 0.005,
+    "ece_vs_explicit": 0.01,
+    "ap_vs_control": 0.005,
+    "brier_vs_control": 0.002,
+    "transfer_ap_gain": 0.005,
+    "transfer_brier_gain": 0.002,
+    "transfer_ap_harm": 0.005,
+    "transfer_brier_harm": 0.002
+  },
+  "decision_rule": "conversion_1y_must_pass_all_frozen_gates",
+  "stopping_rule": "do_not_escalate_to_two_year_neural_or_planning_if_transfer_or_spatial_stability_fails",
+  "confirmation_policy": "confirmation_targets_unopened_until_protocol_implementation_and_models_are_committed_and_pushed",
+  "source_bindings": {
+    "phase72b_prepared_artifacts_sha256": "4843dfda860e0f87c276e62efad05b0604e9e3d95ff812d8f0000ce0619c9357",
+    "phase72b_selected_models_sha256": "79c00435de9c537ab25cf36c19e91cafd4654ed9077fd7680e366ef524be70e0",
+    "phase72b_confirmation_receipt_sha256": "2de7750a82562178a25731c1250c7bbdb45502b29e903dbab5c905791ffe5988"
+  },
+  "phase72c_allowed": false
+}
