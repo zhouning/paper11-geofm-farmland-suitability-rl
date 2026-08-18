@@ -1,0 +1,30 @@
+{
+  "status": "phase72_temporal_neural_confirmation_frozen",
+  "date": "2026-08-18",
+  "implementation_commit": "2a6a549d0c3ec3210a61036bb4f74e208bfb20e6",
+  "protocol_sha256": "f62448b84a3f640c78a12cbe7a2e1cd8891fdc640a408d3ff64d277c2a56da95",
+  "prepared_sha256": "a50f5bca4b8ffff4c0233e5de545cd06a309657a1f6b57310e8a7930187bdb1f",
+  "selected_models_sha256": "76ed030d5fd115b70e6aca2f1c0f256101c4295f1a216a43ebfb4f0f6aa27fcf",
+  "bundle_count": 41,
+  "explicit_bundle_count": 13,
+  "neural_bundle_count": 28,
+  "bundle_hash_mismatches": 0,
+  "invalid_cross_fit_audits": 0,
+  "selected_control_seeds": {
+    "conversion_1y": {
+      "neural_temporal_order_shuffle": 74,
+      "neural_spatial_shuffle": 74,
+      "neural_random_projection": 72
+    }
+  },
+  "best_epoch_minimum": 1,
+  "best_epoch_maximum": 60,
+  "runtime": {
+    "python": "3.13.7",
+    "torch": "2.9.1+cpu",
+    "device": "cpu"
+  },
+  "confirmation_targets_opened": false,
+  "phase72c_allowed": false,
+  "claim_boundary": "This bounded Phase 72 exhaustion experiment tests a compact gated temporal neural residual for one-year product-label conversion. It does not enter Phase 72C, train a two-year neural model, run planning, alter rewards, establish agronomic suitability, or revise the formal manuscript."
+}

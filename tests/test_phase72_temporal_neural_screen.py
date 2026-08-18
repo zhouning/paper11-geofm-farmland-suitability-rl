@@ -31,6 +31,12 @@ PROTOCOL = (
     / "phase72_temporal_neural_screen"
     / "phase72_temporal_neural_protocol.json"
 )
+FREEZE_RECEIPT = (
+    ROOT
+    / "experiments"
+    / "phase72_temporal_neural_screen"
+    / "phase72_temporal_neural_freeze_receipt.json"
+)
 
 
 def test_temporal_neural_protocol_is_frozen_and_keeps_phase72c_closed():
@@ -43,6 +49,27 @@ def test_temporal_neural_protocol_is_frozen_and_keeps_phase72c_closed():
         "conversion_1y_must_pass_all_frozen_gates"
     )
     assert protocol["phase72c_allowed"] is False
+
+
+def test_temporal_neural_freeze_receipt_precedes_confirmation():
+    receipt = json.loads(FREEZE_RECEIPT.read_text(encoding="utf-8"))
+
+    assert receipt["status"] == "phase72_temporal_neural_confirmation_frozen"
+    assert receipt["implementation_commit"] == (
+        "2a6a549d0c3ec3210a61036bb4f74e208bfb20e6"
+    )
+    assert receipt["prepared_sha256"] == (
+        "a50f5bca4b8ffff4c0233e5de545cd06a309657a1f6b57310e8a7930187bdb1f"
+    )
+    assert receipt["selected_models_sha256"] == (
+        "76ed030d5fd115b70e6aca2f1c0f256101c4295f1a216a43ebfb4f0f6aa27fcf"
+    )
+    assert receipt["bundle_count"] == 41
+    assert receipt["neural_bundle_count"] == 28
+    assert receipt["bundle_hash_mismatches"] == 0
+    assert receipt["invalid_cross_fit_audits"] == 0
+    assert receipt["confirmation_targets_opened"] is False
+    assert receipt["phase72c_allowed"] is False
 
 
 @pytest.mark.parametrize(
