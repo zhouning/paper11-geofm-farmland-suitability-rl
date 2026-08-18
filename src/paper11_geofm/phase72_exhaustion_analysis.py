@@ -78,6 +78,17 @@ _RESIDUAL_RECEIPT_REQUIRED_ARTIFACTS = {
     "phase72_explicit_residual_screen.md",
 }
 
+_TEMPORAL_NEURAL_RECEIPT_REQUIRED_ARTIFACTS = {
+    "phase72_temporal_neural_metrics.csv",
+    "phase72_temporal_neural_predictions.csv",
+    "phase72_temporal_neural_bootstrap_deltas.csv",
+    "phase72_temporal_neural_control_comparison.csv",
+    "phase72_temporal_neural_transfer_summary.csv",
+    "phase72_temporal_neural_spatial_summary.csv",
+    "phase72_temporal_neural_screen.json",
+    "phase72_temporal_neural_screen.md",
+}
+
 
 def build_phase72_exhaustion_analysis(
     *,
@@ -100,6 +111,10 @@ def build_phase72_exhaustion_analysis(
     phase72_residual_receipt_json: Path | str | None = None,
     phase72_residual_receipt_sha256: Path | str | None = None,
     phase72_residual_confirmation_dir: Path | str | None = None,
+    phase72_neural_json: Path | str | None = None,
+    phase72_neural_receipt_json: Path | str | None = None,
+    phase72_neural_receipt_sha256: Path | str | None = None,
+    phase72_neural_confirmation_dir: Path | str | None = None,
 ) -> dict[str, object]:
     phase72a = _read_json_object(phase72a_json, "Phase 72A JSON")
     phase72b = _read_json_object(phase72b_json, "Phase 72B JSON")
@@ -301,6 +316,101 @@ def build_phase72_exhaustion_analysis(
             "receipt_artifact_rows": len(residual_hash_rows),
         }
 
+    neural_paths = (
+        phase72_neural_json,
+        phase72_neural_receipt_json,
+        phase72_neural_receipt_sha256,
+        phase72_neural_confirmation_dir,
+    )
+    neural_evidence = None
+    if any(path is not None for path in neural_paths):
+        if any(path is None for path in neural_paths):
+            raise ValueError(
+                "All Phase 72 temporal neural evidence paths must be supplied together"
+            )
+        neural = _read_json_object(
+            phase72_neural_json, "Phase 72 temporal neural JSON"
+        )
+        neural_receipt = _read_json_object(
+            phase72_neural_receipt_json,
+            "Phase 72 temporal neural receipt JSON",
+        )
+        neural_status = _required_status(
+            neural,
+            "phase72_temporal_neural_status",
+            "Phase 72 temporal neural JSON",
+        )
+        receipt_neural_status = _required_status(
+            neural_receipt,
+            "phase72_temporal_neural_status",
+            "Phase 72 temporal neural receipt JSON",
+        )
+        neural_hash_rows, neural_blockers = _audit_receipt_artifacts(
+            neural_receipt,
+            Path(phase72_neural_confirmation_dir),
+            required_artifacts=_TEMPORAL_NEURAL_RECEIPT_REQUIRED_ARTIFACTS,
+            label="Phase 72 temporal neural",
+        )
+        neural_receipt_hash_row, neural_receipt_hash_blocker = (
+            _audit_receipt_self(
+                neural_receipt,
+                Path(phase72_neural_receipt_sha256),
+                label="Phase 72 temporal neural",
+                receipt_name=(
+                    "phase72_temporal_neural_confirmation_receipt.json"
+                ),
+            )
+        )
+        neural_hash_rows.append(neural_receipt_hash_row)
+        hash_rows.extend(neural_hash_rows)
+        integrity_blockers.extend(neural_blockers)
+        neural_result_entries = [
+            dict(entry)
+            for entry in neural_receipt.get("artifacts", [])
+            if isinstance(entry, Mapping)
+            and str(entry.get("name"))
+            == "phase72_temporal_neural_screen.json"
+        ]
+        if (
+            len(neural_result_entries) != 1
+            or _sha256(Path(phase72_neural_json))
+            != str(neural_result_entries[0].get("sha256", "")).lower()
+        ):
+            integrity_blockers.append(
+                "Phase 72 temporal neural JSON is not the receipt-bound result artifact"
+            )
+        if neural_receipt_hash_blocker:
+            integrity_blockers.append(neural_receipt_hash_blocker)
+        if receipt_neural_status != neural_status:
+            integrity_blockers.append(
+                "Phase 72 temporal neural receipt status does not match the screen JSON"
+            )
+        for field in ("prepared_sha256", "selected_models_sha256"):
+            if neural_receipt.get(field) != neural.get(field):
+                integrity_blockers.append(
+                    f"Phase 72 temporal neural receipt binding mismatch: {field}"
+                )
+        if (
+            neural.get("phase72c_allowed") is not False
+            or neural_receipt.get("phase72c_allowed") is not False
+        ):
+            integrity_blockers.append(
+                "Phase 72 temporal neural evidence must keep Phase 72C closed"
+            )
+        endpoint_result = neural.get("endpoint_result", {})
+        if not isinstance(endpoint_result, Mapping):
+            raise ValueError(
+                "Phase 72 temporal neural endpoint result must be an object"
+            )
+        neural_evidence = {
+            "status": neural_status,
+            "endpoint": str(neural.get("endpoint", "")),
+            "endpoint_status": str(endpoint_result.get("phase72b_status", "")),
+            "checks": dict(endpoint_result.get("checks", {})),
+            "counts": dict(neural.get("counts", {})),
+            "receipt_artifact_rows": len(neural_hash_rows),
+        }
+
     labels = _label_evidence(phase72a, summary_rows, review_rows)
     models = _model_evidence(metric_rows, protocol)
     screen = _screen_evidence(phase72b, protocol, control_rows, transfer_rows)
@@ -312,6 +422,7 @@ def build_phase72_exhaustion_analysis(
         phase72b_status,
         two_year_evidence,
         residual_evidence,
+        neural_evidence,
     )
     claims = _claim_boundary_rows(criteria, integrity_blockers, phase72b_status)
 
@@ -388,6 +499,22 @@ def build_phase72_exhaustion_analysis(
                 if residual_evidence is not None
                 else {}
             ),
+            **(
+                {
+                    "phase72_neural_json": str(Path(phase72_neural_json)),
+                    "phase72_neural_receipt_json": str(
+                        Path(phase72_neural_receipt_json)
+                    ),
+                    "phase72_neural_receipt_sha256": str(
+                        Path(phase72_neural_receipt_sha256)
+                    ),
+                    "phase72_neural_confirmation_dir": str(
+                        Path(phase72_neural_confirmation_dir)
+                    ),
+                }
+                if neural_evidence is not None
+                else {}
+            ),
         },
         "counts": {
             "criteria": len(criteria),
@@ -405,6 +532,7 @@ def build_phase72_exhaustion_analysis(
         "screen_evidence": screen,
         "two_year_evidence": two_year_evidence,
         "residual_evidence": residual_evidence,
+        "neural_evidence": neural_evidence,
         "artifact_hash_rows": hash_rows,
         "integrity_blockers": integrity_blockers,
         "criteria_rows": criteria,
@@ -414,8 +542,9 @@ def build_phase72_exhaustion_analysis(
         "recommended_next_step": (
             "Do not begin Phase 72C. Preserve the Phase 72B negative gate and "
             "the negative two-year result; treat the explicit residual result "
-            "as mixed rather than stable support, and record the remaining "
-            "product, noise, temporal-neural, and planning evidence as unresolved."
+            "as mixed rather than stable support, preserve the negative temporal-"
+            "neural result, and record the remaining product, label-noise, and "
+            "planning evidence as unresolved."
         ),
         "claim_boundary": PHASE72_EXHAUSTION_CLAIM_BOUNDARY,
     }
@@ -580,6 +709,7 @@ def _criteria_rows(
     phase72b_status: str,
     two_year_evidence: Mapping[str, object] | None = None,
     residual_evidence: Mapping[str, object] | None = None,
+    neural_evidence: Mapping[str, object] | None = None,
 ) -> list[dict[str, object]]:
     source_count = int(labels["independent_label_source_count"])
     horizons = set(labels["horizons_in_label_package"])
@@ -593,6 +723,9 @@ def _criteria_rows(
     )
     residual_status = (
         "" if residual_evidence is None else str(residual_evidence["status"])
+    )
+    neural_status = (
+        "" if neural_evidence is None else str(neural_evidence["status"])
     )
     if two_year_evidence is None:
         horizon_status = (
@@ -695,11 +828,38 @@ def _criteria_rows(
         _criterion(
             "temporal_neural_model",
             "model_coverage",
-            "evaluated_complete" if any(token in family.lower() for family in families for token in ("mlp", "neural", "transformer", "temporal_net")) else "not_evaluated",
+            (
+                "evaluated_negative"
+                if neural_status == "temporal_neural_information_not_supported"
+                else "evaluated_mixed"
+                if neural_status == "temporal_neural_information_mixed"
+                else "evaluated_complete"
+                if neural_status == "temporal_neural_information_supported"
+                else "evaluated_complete"
+                if any(
+                    token in family.lower()
+                    for family in families
+                    for token in ("mlp", "neural", "transformer", "temporal_net")
+                )
+                else "not_evaluated"
+            ),
             "A temporal neural model must be evaluated before claiming full GeoFM-STaR exhaustion.",
-            f"Frozen model families: {', '.join(sorted(families)) or 'none'}.",
-            ",".join(sorted(families)),
-            "phase72b_metrics.csv",
+            (
+                f"Frozen model families: {', '.join(sorted(families)) or 'none'}."
+                if neural_evidence is None
+                else (
+                    f"Temporal neural screen status: {neural_status}; endpoint "
+                    f"status: {neural_evidence['endpoint_status']}; checks: "
+                    f"{neural_evidence['checks']}."
+                )
+            ),
+            neural_status or ",".join(sorted(families)),
+            (
+                "phase72_temporal_neural_screen.json;"
+                "phase72_temporal_neural_confirmation_receipt.json"
+                if neural_evidence is not None
+                else "phase72b_metrics.csv"
+            ),
         ),
         _criterion(
             "bidirectional_cross_region_transfer",

@@ -39,6 +39,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--phase72-residual-receipt-json", type=Path)
     parser.add_argument("--phase72-residual-receipt-sha256", type=Path)
     parser.add_argument("--phase72-residual-confirmation-dir", type=Path)
+    parser.add_argument("--phase72-neural-json", type=Path)
+    parser.add_argument("--phase72-neural-receipt-json", type=Path)
+    parser.add_argument("--phase72-neural-receipt-sha256", type=Path)
+    parser.add_argument("--phase72-neural-confirmation-dir", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
 
@@ -70,6 +74,14 @@ def main(argv: list[str] | None = None) -> int:
             ),
             phase72_residual_confirmation_dir=(
                 args.phase72_residual_confirmation_dir
+            ),
+            phase72_neural_json=args.phase72_neural_json,
+            phase72_neural_receipt_json=args.phase72_neural_receipt_json,
+            phase72_neural_receipt_sha256=(
+                args.phase72_neural_receipt_sha256
+            ),
+            phase72_neural_confirmation_dir=(
+                args.phase72_neural_confirmation_dir
             ),
         )
         artifacts = write_phase72_exhaustion_analysis_artifacts(

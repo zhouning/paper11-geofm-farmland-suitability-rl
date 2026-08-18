@@ -309,6 +309,84 @@ def _with_residual_evidence(
     }
 
 
+def _with_temporal_neural_evidence(
+    tmp_path: Path, paths: dict[str, Path]
+) -> dict[str, Path]:
+    confirmation = tmp_path / "temporal-neural-confirmation"
+    artifact_names = [
+        "phase72_temporal_neural_metrics.csv",
+        "phase72_temporal_neural_predictions.csv",
+        "phase72_temporal_neural_bootstrap_deltas.csv",
+        "phase72_temporal_neural_control_comparison.csv",
+        "phase72_temporal_neural_transfer_summary.csv",
+        "phase72_temporal_neural_spatial_summary.csv",
+        "phase72_temporal_neural_screen.json",
+        "phase72_temporal_neural_screen.md",
+    ]
+    receipt_artifacts = []
+    for name in artifact_names:
+        path = confirmation / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(name, encoding="utf-8")
+        receipt_artifacts.append(
+            {
+                "name": name,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        )
+    neural_json = _write_json(
+        confirmation / "phase72_temporal_neural_screen.json",
+        {
+            "phase72_temporal_neural_status": (
+                "temporal_neural_information_not_supported"
+            ),
+            "phase72c_allowed": False,
+            "prepared_sha256": "4" * 64,
+            "selected_models_sha256": "5" * 64,
+            "endpoint": "conversion_1y",
+            "endpoint_result": {
+                "phase72b_status": "geofm_information_not_supported",
+                "checks": {
+                    "practical": False,
+                    "statistical": True,
+                    "controls": False,
+                    "transfer": False,
+                    "spatial": False,
+                },
+            },
+            "counts": {"bundle_count": 41, "confirmation_rows": 3041},
+        },
+    )
+    for entry in receipt_artifacts:
+        if entry["name"] == "phase72_temporal_neural_screen.json":
+            entry["sha256"] = hashlib.sha256(neural_json.read_bytes()).hexdigest()
+    receipt = _write_json(
+        tmp_path / "temporal-neural-receipt.json",
+        {
+            "phase72_temporal_neural_status": (
+                "temporal_neural_information_not_supported"
+            ),
+            "phase72c_allowed": False,
+            "prepared_sha256": "4" * 64,
+            "selected_models_sha256": "5" * 64,
+            "artifacts": receipt_artifacts,
+        },
+    )
+    receipt_hash = tmp_path / "temporal-neural-receipt.sha256"
+    receipt_hash.write_text(
+        canonical_json_sha256(json.loads(receipt.read_text(encoding="utf-8")))
+        + "\n",
+        encoding="ascii",
+    )
+    return {
+        **paths,
+        "phase72_neural_json": neural_json,
+        "phase72_neural_receipt_json": receipt,
+        "phase72_neural_receipt_sha256": receipt_hash,
+        "phase72_neural_confirmation_dir": confirmation,
+    }
+
+
 def test_phase72_exhaustion_separates_negative_from_unresolved(tmp_path):
     from paper11_geofm.phase72_exhaustion_analysis import (
         build_phase72_exhaustion_analysis,
@@ -401,6 +479,34 @@ def test_phase72_exhaustion_integrates_mixed_explicit_residual_screen(tmp_path):
     assert analysis["counts"]["receipt_hash_rows"] == 28
     assert analysis["counts"]["unresolved_criteria"] == 4
     assert analysis["counts"]["negative_or_mixed_criteria"] == 6
+    assert analysis["counts"]["integrity_blockers"] == 0
+
+
+def test_phase72_exhaustion_integrates_negative_temporal_neural_screen(tmp_path):
+    from paper11_geofm.phase72_exhaustion_analysis import (
+        build_phase72_exhaustion_analysis,
+    )
+
+    paths = _with_temporal_neural_evidence(
+        tmp_path,
+        _with_residual_evidence(
+            tmp_path,
+            _with_two_year_evidence(tmp_path, _fixture_paths(tmp_path)),
+        ),
+    )
+    analysis = build_phase72_exhaustion_analysis(**paths)
+
+    criteria = {row["criterion_id"]: row for row in analysis["criteria_rows"]}
+    assert criteria["temporal_neural_model"]["criterion_status"] == (
+        "evaluated_negative"
+    )
+    assert "temporal_neural_model" not in analysis["unresolved_criteria"]
+    assert analysis["neural_evidence"]["status"] == (
+        "temporal_neural_information_not_supported"
+    )
+    assert analysis["counts"]["receipt_hash_rows"] == 37
+    assert analysis["counts"]["unresolved_criteria"] == 3
+    assert analysis["counts"]["negative_or_mixed_criteria"] == 7
     assert analysis["counts"]["integrity_blockers"] == 0
 
 

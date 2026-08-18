@@ -103,12 +103,21 @@ base-reward protocol.
 - `38_phase72a_temporal_label_package.md`: audited Bishan-Dongxing independent annual ESRI label package with leakage-free one- and two-year farmland-persistence samples for the Phase 72B information-gain screen.
 - `39_phase72b_geofm_information_gain_screen.md`: integrity-verified Bishan-Dongxing information-gain screen with a receipt-bound `geofm_information_not_supported` result; pooled gains did not clear representation-control, spatial-stability, or bidirectional-transfer gates.
 - `40_phase72_exhaustion_analysis.md`: read-only evidence-coverage audit showing
-  that the Phase 72B route is closed while six broader future-aware GeoFM
-  exhaustion criteria remain unresolved, so a complete exhaustion claim and
-  Phase 72C are both blocked.
+  that the Phase 72B route is closed; after the two-year, explicit-residual,
+  and temporal-neural screens, three broader future-aware GeoFM exhaustion
+  criteria remain unresolved, so a complete exhaustion claim and Phase 72C
+  are both blocked.
 - `41_phase72_claim_drift_audit.md`: read-only comparison of formal manuscript
   GeoFM wording against later Phase 60/62/69/71/72 evidence, requiring a
   bounded low-dimensional route interpretation before any future revision.
+- `42_phase72_two_year_endpoint_screen.md`: separately frozen two-year screen
+  showing negative results for both conversion and noncontinuous persistence.
+- `43_phase72_explicit_residual_screen.md`: no-intercept residual screen showing
+  mixed one-year pooled evidence but negative transfer, spatial, and two-year
+  evidence.
+- `44_phase72_temporal_neural_screen.md`: compact gated temporal neural
+  residual screen showing a pooled AP gain that fails Brier/ECE, strict
+  controls, bidirectional transfer, and fold-level spatial stability.
 
 ## Reproduction Link
 
@@ -547,6 +556,16 @@ Neither endpoint passed the pooled practical/statistical gate, strict controls,
 bidirectional transfer, or buffered spatial validation. This resolves the
 previously unmodeled horizon criterion with negative evidence; it does not
 authorize Phase 72C or support future-aware GeoFM planning claims.
+
+The later explicit-residual and temporal-neural screens do not rescue the
+future-aware target. The explicit residual result is mixed because its pooled
+one-year signal fails transfer and spatial stability, while both two-year
+endpoints are negative. The compact temporal neural result is negative: pooled
+AP improves, but Brier/ECE, all three strict controls, both transfer directions,
+and fold-level spatial stability fail. The refreshed exhaustion audit has
+seven negative or mixed criteria and three unresolved criteria. Phase 72C and
+future-stability planning claims remain blocked.
+
 ## Claim Boundary
 
 These representation-branch follow-ups are diagnostic only. They do not enable
