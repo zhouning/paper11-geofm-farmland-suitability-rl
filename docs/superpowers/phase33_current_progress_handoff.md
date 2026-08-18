@@ -2480,3 +2480,53 @@ paper/phase28_results/40_phase72_exhaustion_analysis.md
 experiments/phase72_exhaustion_analysis/outputs/real_bishan_dongxing/phase72_exhaustion_analysis.json
 docs/superpowers/phase33_current_progress_handoff.md
 ```
+
+## Phase 72 Claim-Drift Audit - 2026-08-18
+
+The next read-only exhaustion-analysis step compares four compressed-GeoFM
+sentences in the formal manuscript with later Phase 60, 62, 69, 71, 72B, and
+Phase 72 exhaustion evidence. It does not modify `paper/submission/final/*`,
+train Phase 72C, alter rewards, or run new experiments.
+
+Tracked implementation and evidence files:
+
+```text
+src/paper11_geofm/phase72_claim_drift_audit.py
+experiments/phase72_claim_drift_audit/run_phase72_claim_drift_audit.py
+tests/test_phase72_claim_drift_audit.py
+paper/phase28_results/41_phase72_claim_drift_audit.md
+```
+
+The audit is expected to classify the current manuscript as:
+
+```text
+phase72_claim_drift_status: claim_drift_requires_narrowing
+```
+
+The defensible route remains a bounded low-dimensional compressed state result
+under the Bishan base-reward protocol. GeoFM-specific matched-dimension
+superiority, PCA optimality, suitability/agronomic value, cross-region transfer,
+and future-aware prediction/planning remain blocked. Formal manuscript files
+remain unchanged.
+
+Real audit result:
+
+```text
+phase72_claim_drift_status: claim_drift_requires_narrowing
+claims: 8
+supported: 1
+bounded_supported: 1
+blocked: 5
+needs_narrowing: 1
+missing_anchors: 0
+```
+
+Verification:
+
+```text
+python -m pytest tests\test_phase72_claim_drift_audit.py tests\test_phase72_exhaustion_analysis.py tests\test_phase72a_temporal_label_package.py -q --basetemp=.pytest_tmp_phase72_claim_drift_verify -p no:cacheprovider
+19 passed
+
+python -m pytest -q --basetemp=.pytest_tmp_phase72_claim_drift_full_20260818 -p no:cacheprovider
+558 passed, 84 existing sklearn warnings
+```

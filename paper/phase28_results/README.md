@@ -106,6 +106,9 @@ base-reward protocol.
   that the Phase 72B route is closed while six broader future-aware GeoFM
   exhaustion criteria remain unresolved, so a complete exhaustion claim and
   Phase 72C are both blocked.
+- `41_phase72_claim_drift_audit.md`: read-only comparison of formal manuscript
+  GeoFM wording against later Phase 60/62/69/71/72 evidence, requiring a
+  bounded low-dimensional route interpretation before any future revision.
 
 ## Reproduction Link
 
