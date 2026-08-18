@@ -67,6 +67,17 @@ _TWO_YEAR_RECEIPT_REQUIRED_ARTIFACTS = {
     "phase72_two_year_endpoint_screen.md",
 }
 
+_RESIDUAL_RECEIPT_REQUIRED_ARTIFACTS = {
+    "phase72_explicit_residual_metrics.csv",
+    "phase72_explicit_residual_predictions.csv",
+    "phase72_explicit_residual_bootstrap_deltas.csv",
+    "phase72_explicit_residual_control_comparison.csv",
+    "phase72_explicit_residual_transfer_summary.csv",
+    "phase72_explicit_residual_spatial_summary.csv",
+    "phase72_explicit_residual_screen.json",
+    "phase72_explicit_residual_screen.md",
+}
+
 
 def build_phase72_exhaustion_analysis(
     *,
@@ -85,6 +96,10 @@ def build_phase72_exhaustion_analysis(
     phase72_two_year_receipt_json: Path | str | None = None,
     phase72_two_year_receipt_sha256: Path | str | None = None,
     phase72_two_year_confirmation_dir: Path | str | None = None,
+    phase72_residual_json: Path | str | None = None,
+    phase72_residual_receipt_json: Path | str | None = None,
+    phase72_residual_receipt_sha256: Path | str | None = None,
+    phase72_residual_confirmation_dir: Path | str | None = None,
 ) -> dict[str, object]:
     phase72a = _read_json_object(phase72a_json, "Phase 72A JSON")
     phase72b = _read_json_object(phase72b_json, "Phase 72B JSON")
@@ -161,6 +176,7 @@ def build_phase72_exhaustion_analysis(
                 two_year_receipt,
                 Path(phase72_two_year_receipt_sha256),
                 label="Phase 72 two-year",
+                receipt_name="phase72_two_year_confirmation_receipt.json",
             )
         )
         two_year_hash_rows.append(two_year_receipt_hash_row)
@@ -188,6 +204,103 @@ def build_phase72_exhaustion_analysis(
             "receipt_artifact_rows": len(two_year_hash_rows),
         }
 
+    residual_paths = (
+        phase72_residual_json,
+        phase72_residual_receipt_json,
+        phase72_residual_receipt_sha256,
+        phase72_residual_confirmation_dir,
+    )
+    residual_evidence = None
+    if any(path is not None for path in residual_paths):
+        if any(path is None for path in residual_paths):
+            raise ValueError(
+                "All Phase 72 explicit residual evidence paths must be supplied together"
+            )
+        residual = _read_json_object(
+            phase72_residual_json, "Phase 72 explicit residual JSON"
+        )
+        residual_receipt = _read_json_object(
+            phase72_residual_receipt_json,
+            "Phase 72 explicit residual receipt JSON",
+        )
+        residual_status = _required_status(
+            residual,
+            "phase72_explicit_residual_status",
+            "Phase 72 explicit residual JSON",
+        )
+        receipt_residual_status = _required_status(
+            residual_receipt,
+            "phase72_explicit_residual_status",
+            "Phase 72 explicit residual receipt JSON",
+        )
+        residual_hash_rows, residual_blockers = _audit_receipt_artifacts(
+            residual_receipt,
+            Path(phase72_residual_confirmation_dir),
+            required_artifacts=_RESIDUAL_RECEIPT_REQUIRED_ARTIFACTS,
+            label="Phase 72 explicit residual",
+        )
+        residual_receipt_hash_row, residual_receipt_hash_blocker = (
+            _audit_receipt_self(
+                residual_receipt,
+                Path(phase72_residual_receipt_sha256),
+                label="Phase 72 explicit residual",
+                receipt_name=(
+                    "phase72_explicit_residual_confirmation_receipt.json"
+                ),
+            )
+        )
+        residual_hash_rows.append(residual_receipt_hash_row)
+        hash_rows.extend(residual_hash_rows)
+        integrity_blockers.extend(residual_blockers)
+        residual_result_entries = [
+            dict(entry)
+            for entry in residual_receipt.get("artifacts", [])
+            if isinstance(entry, Mapping)
+            and str(entry.get("name"))
+            == "phase72_explicit_residual_screen.json"
+        ]
+        if (
+            len(residual_result_entries) != 1
+            or _sha256(Path(phase72_residual_json))
+            != str(residual_result_entries[0].get("sha256", "")).lower()
+        ):
+            integrity_blockers.append(
+                "Phase 72 explicit residual JSON is not the receipt-bound result artifact"
+            )
+        if residual_receipt_hash_blocker:
+            integrity_blockers.append(residual_receipt_hash_blocker)
+        if receipt_residual_status != residual_status:
+            integrity_blockers.append(
+                "Phase 72 explicit residual receipt status does not match the screen JSON"
+            )
+        for field in ("prepared_sha256", "selected_models_sha256"):
+            if residual_receipt.get(field) != residual.get(field):
+                integrity_blockers.append(
+                    f"Phase 72 explicit residual receipt binding mismatch: {field}"
+                )
+        if (
+            residual.get("phase72c_allowed") is not False
+            or residual_receipt.get("phase72c_allowed") is not False
+        ):
+            integrity_blockers.append(
+                "Phase 72 explicit residual evidence must keep Phase 72C closed"
+            )
+        endpoint_results = residual.get("endpoint_results", {})
+        if not isinstance(endpoint_results, Mapping):
+            raise ValueError(
+                "Phase 72 explicit residual endpoint results must be an object"
+            )
+        residual_evidence = {
+            "status": residual_status,
+            "endpoint_statuses": {
+                str(endpoint): str(result.get("phase72b_status", ""))
+                for endpoint, result in endpoint_results.items()
+                if isinstance(result, Mapping)
+            },
+            "counts": dict(residual.get("counts", {})),
+            "receipt_artifact_rows": len(residual_hash_rows),
+        }
+
     labels = _label_evidence(phase72a, summary_rows, review_rows)
     models = _model_evidence(metric_rows, protocol)
     screen = _screen_evidence(phase72b, protocol, control_rows, transfer_rows)
@@ -198,6 +311,7 @@ def build_phase72_exhaustion_analysis(
         phase72a_status,
         phase72b_status,
         two_year_evidence,
+        residual_evidence,
     )
     claims = _claim_boundary_rows(criteria, integrity_blockers, phase72b_status)
 
@@ -258,6 +372,22 @@ def build_phase72_exhaustion_analysis(
                 if two_year_evidence is not None
                 else {}
             ),
+            **(
+                {
+                    "phase72_residual_json": str(Path(phase72_residual_json)),
+                    "phase72_residual_receipt_json": str(
+                        Path(phase72_residual_receipt_json)
+                    ),
+                    "phase72_residual_receipt_sha256": str(
+                        Path(phase72_residual_receipt_sha256)
+                    ),
+                    "phase72_residual_confirmation_dir": str(
+                        Path(phase72_residual_confirmation_dir)
+                    ),
+                }
+                if residual_evidence is not None
+                else {}
+            ),
         },
         "counts": {
             "criteria": len(criteria),
@@ -274,6 +404,7 @@ def build_phase72_exhaustion_analysis(
         "model_evidence": models,
         "screen_evidence": screen,
         "two_year_evidence": two_year_evidence,
+        "residual_evidence": residual_evidence,
         "artifact_hash_rows": hash_rows,
         "integrity_blockers": integrity_blockers,
         "criteria_rows": criteria,
@@ -282,8 +413,9 @@ def build_phase72_exhaustion_analysis(
         "negative_or_mixed_criteria": negative,
         "recommended_next_step": (
             "Do not begin Phase 72C. Preserve the Phase 72B negative gate and "
-            "the negative two-year result; record the remaining product, "
-            "noise, model, and planning evidence as unresolved limitations."
+            "the negative two-year result; treat the explicit residual result "
+            "as mixed rather than stable support, and record the remaining "
+            "product, noise, temporal-neural, and planning evidence as unresolved."
         ),
         "claim_boundary": PHASE72_EXHAUSTION_CLAIM_BOUNDARY,
     }
@@ -447,6 +579,7 @@ def _criteria_rows(
     phase72a_status: str,
     phase72b_status: str,
     two_year_evidence: Mapping[str, object] | None = None,
+    residual_evidence: Mapping[str, object] | None = None,
 ) -> list[dict[str, object]]:
     source_count = int(labels["independent_label_source_count"])
     horizons = set(labels["horizons_in_label_package"])
@@ -457,6 +590,9 @@ def _criteria_rows(
     spatial_regions = screen["spatial_regions"]
     two_year_status = (
         "" if two_year_evidence is None else str(two_year_evidence["status"])
+    )
+    residual_status = (
+        "" if residual_evidence is None else str(residual_evidence["status"])
     )
     if two_year_evidence is None:
         horizon_status = (
@@ -519,11 +655,42 @@ def _criteria_rows(
         _criterion(
             "explicit_residual_model",
             "model_coverage",
-            "evaluated_complete" if any("residual" in value.lower() for value in variants) else "not_evaluated",
+            (
+                "evaluated_mixed"
+                if residual_status == "explicit_residual_information_mixed"
+                else "evaluated_negative"
+                if residual_status
+                == "explicit_residual_information_not_supported"
+                else "evaluated_complete"
+                if residual_status == "explicit_residual_information_supported"
+                else "evaluated_complete"
+                if any("residual" in value.lower() for value in variants)
+                else "not_evaluated"
+            ),
             "An explicit residual risk model must be evaluated.",
-            "Residual variant present." if any("residual" in value.lower() for value in variants) else "No residual variant appears in the frozen Phase 72B metric variants.",
-            "residual" if any("residual" in value.lower() for value in variants) else "absent",
-            "phase72b_metrics.csv;phase72b_protocol.json",
+            (
+                "No separate explicit residual screen was supplied."
+                if residual_evidence is None
+                and not any("residual" in value.lower() for value in variants)
+                else "Residual variant present in the Phase 72B metrics."
+                if residual_evidence is None
+                else (
+                    f"Explicit residual screen status: {residual_status}; "
+                    f"endpoint statuses: {residual_evidence['endpoint_statuses']}."
+                )
+            ),
+            residual_status
+            or (
+                "residual"
+                if any("residual" in value.lower() for value in variants)
+                else "absent"
+            ),
+            (
+                "phase72_explicit_residual_screen.json;"
+                "phase72_explicit_residual_confirmation_receipt.json"
+                if residual_evidence is not None
+                else "phase72b_metrics.csv;phase72b_protocol.json"
+            ),
         ),
         _criterion(
             "temporal_neural_model",
@@ -705,6 +872,7 @@ def _audit_receipt_self(
     receipt_hash_path: Path,
     *,
     label: str,
+    receipt_name: str = "phase72b_confirmation_receipt.json",
 ) -> tuple[dict[str, str], str]:
     expected = ""
     if receipt_hash_path.is_file():
@@ -712,7 +880,7 @@ def _audit_receipt_self(
     actual = canonical_json_sha256(receipt)
     status = "match" if len(expected) == 64 and expected == actual else "missing_or_mismatch"
     row = {
-        "artifact_name": "phase72b_confirmation_receipt.json",
+        "artifact_name": receipt_name,
         "expected_sha256": expected,
         "actual_sha256": actual,
         "hash_status": status,

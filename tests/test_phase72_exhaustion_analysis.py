@@ -227,6 +227,88 @@ def _with_two_year_evidence(
     }
 
 
+def _with_residual_evidence(
+    tmp_path: Path, paths: dict[str, Path]
+) -> dict[str, Path]:
+    confirmation = tmp_path / "residual-confirmation"
+    artifact_names = [
+        "phase72_explicit_residual_metrics.csv",
+        "phase72_explicit_residual_predictions.csv",
+        "phase72_explicit_residual_bootstrap_deltas.csv",
+        "phase72_explicit_residual_control_comparison.csv",
+        "phase72_explicit_residual_transfer_summary.csv",
+        "phase72_explicit_residual_spatial_summary.csv",
+        "phase72_explicit_residual_screen.json",
+        "phase72_explicit_residual_screen.md",
+    ]
+    receipt_artifacts = []
+    for name in artifact_names:
+        path = confirmation / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(name, encoding="utf-8")
+        receipt_artifacts.append(
+            {
+                "name": name,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        )
+    residual_json = _write_json(
+        confirmation / "phase72_explicit_residual_screen.json",
+        {
+            "phase72_explicit_residual_status": (
+                "explicit_residual_information_mixed"
+            ),
+            "phase72c_allowed": False,
+            "prepared_sha256": "1" * 64,
+            "selected_models_sha256": "2" * 64,
+            "endpoint_results": {
+                "conversion_1y": {
+                    "phase72b_status": "geofm_information_mixed"
+                },
+                "conversion_2y": {
+                    "phase72b_status": "geofm_information_not_supported"
+                },
+                "noncontinuous_persistence_2y": {
+                    "phase72b_status": "geofm_information_not_supported"
+                },
+            },
+            "counts": {"endpoints": 3, "bundle_count": 123},
+        },
+    )
+    for entry in receipt_artifacts:
+        if entry["name"] == "phase72_explicit_residual_screen.json":
+            entry["sha256"] = hashlib.sha256(
+                residual_json.read_bytes()
+            ).hexdigest()
+    receipt = _write_json(
+        tmp_path / "residual-receipt.json",
+        {
+            "phase72_explicit_residual_status": (
+                "explicit_residual_information_mixed"
+            ),
+            "phase72c_allowed": False,
+            "prepared_sha256": "1" * 64,
+            "selected_models_sha256": "2" * 64,
+            "artifacts": receipt_artifacts,
+        },
+    )
+    receipt_hash = tmp_path / "residual-receipt.sha256"
+    receipt_hash.write_text(
+        canonical_json_sha256(
+            json.loads(receipt.read_text(encoding="utf-8"))
+        )
+        + "\n",
+        encoding="ascii",
+    )
+    return {
+        **paths,
+        "phase72_residual_json": residual_json,
+        "phase72_residual_receipt_json": receipt,
+        "phase72_residual_receipt_sha256": receipt_hash,
+        "phase72_residual_confirmation_dir": confirmation,
+    }
+
+
 def test_phase72_exhaustion_separates_negative_from_unresolved(tmp_path):
     from paper11_geofm.phase72_exhaustion_analysis import (
         build_phase72_exhaustion_analysis,
@@ -295,6 +377,52 @@ def test_phase72_exhaustion_integrates_negative_two_year_screen(tmp_path):
     )
     assert analysis["counts"]["receipt_hash_rows"] == 19
     assert analysis["counts"]["integrity_blockers"] == 0
+
+
+def test_phase72_exhaustion_integrates_mixed_explicit_residual_screen(tmp_path):
+    from paper11_geofm.phase72_exhaustion_analysis import (
+        build_phase72_exhaustion_analysis,
+    )
+
+    paths = _with_residual_evidence(
+        tmp_path,
+        _with_two_year_evidence(tmp_path, _fixture_paths(tmp_path)),
+    )
+    analysis = build_phase72_exhaustion_analysis(**paths)
+
+    criteria = {row["criterion_id"]: row for row in analysis["criteria_rows"]}
+    assert criteria["explicit_residual_model"]["criterion_status"] == (
+        "evaluated_mixed"
+    )
+    assert "explicit_residual_model" not in analysis["unresolved_criteria"]
+    assert analysis["residual_evidence"]["status"] == (
+        "explicit_residual_information_mixed"
+    )
+    assert analysis["counts"]["receipt_hash_rows"] == 28
+    assert analysis["counts"]["unresolved_criteria"] == 4
+    assert analysis["counts"]["negative_or_mixed_criteria"] == 6
+    assert analysis["counts"]["integrity_blockers"] == 0
+
+
+def test_phase72_exhaustion_rejects_residual_binding_mismatch(tmp_path):
+    from paper11_geofm.phase72_exhaustion_analysis import (
+        build_phase72_exhaustion_analysis,
+    )
+
+    paths = _with_residual_evidence(tmp_path, _fixture_paths(tmp_path))
+    residual = json.loads(paths["phase72_residual_json"].read_text())
+    residual["selected_models_sha256"] = "3" * 64
+    paths["phase72_residual_json"].write_text(json.dumps(residual))
+
+    analysis = build_phase72_exhaustion_analysis(**paths)
+
+    assert analysis["phase72_exhaustion_status"] == (
+        "phase72_exhaustion_inputs_not_ready"
+    )
+    assert any(
+        "residual receipt binding" in blocker
+        for blocker in analysis["integrity_blockers"]
+    )
 
 
 def test_phase72_exhaustion_rejects_tampered_receipt_sidecar(tmp_path):

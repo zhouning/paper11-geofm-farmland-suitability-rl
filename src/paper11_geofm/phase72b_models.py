@@ -13,7 +13,6 @@ import pandas as pd
 from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.isotonic import IsotonicRegression
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score
 from sklearn.preprocessing import StandardScaler
 from threadpoolctl import threadpool_limits
 
