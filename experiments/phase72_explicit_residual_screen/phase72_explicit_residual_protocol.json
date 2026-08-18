@@ -1,0 +1,95 @@
+{
+  "phase": "phase72_explicit_residual_exhaustion_screen",
+  "seed": 72,
+  "source_bindings": {
+    "phase72b_prepared_artifacts_sha256": "4843dfda860e0f87c276e62efad05b0604e9e3d95ff812d8f0000ce0619c9357",
+    "phase72b_selected_models_sha256": "79c00435de9c537ab25cf36c19e91cafd4654ed9077fd7680e366ef524be70e0",
+    "phase72b_confirmation_receipt_sha256": "2de7750a82562178a25731c1250c7bbdb45502b29e903dbab5c905791ffe5988",
+    "phase72_two_year_prepared_sha256": "4e71071037a636d85c8b9ead1819c769faf610c5f078d59df31f9ba9bd241531",
+    "phase72_two_year_selected_models_sha256": "cb1941b40d2982b16738c559e73f476bc906466f357a8305aa2818a2d9be574e",
+    "phase72_two_year_confirmation_receipt_sha256": "f5a3dcc99e828ae6558d175ca9b162d4198ecd5c452fbb804fb0fe570da00d1d"
+  },
+  "endpoints": {
+    "conversion_1y": {
+      "source": "phase72b",
+      "target": "conversion_1y",
+      "train_years": [2017, 2018, 2019, 2020, 2021],
+      "validation_year": 2022,
+      "confirmation_year": 2023
+    },
+    "conversion_2y": {
+      "source": "phase72_two_year",
+      "target": "conversion_2y",
+      "train_years": [2017, 2018, 2019, 2020],
+      "validation_year": 2021,
+      "confirmation_year": 2022
+    },
+    "noncontinuous_persistence_2y": {
+      "source": "phase72_two_year",
+      "target": "noncontinuous_persistence_2y",
+      "train_years": [2017, 2018, 2019, 2020],
+      "validation_year": 2021,
+      "confirmation_year": 2022
+    }
+  },
+  "explicit_baseline": {
+    "variant": "explicit_history",
+    "candidate_config_source": "endpoint_and_axis_matched_frozen_source_bundle",
+    "refit_scope": "endpoint_axis_training_rows_only"
+  },
+  "residual": {
+    "formulation": "fixed_explicit_logit_plus_linear_geofm_residual",
+    "feature_matrix": "geofm_temporal_full",
+    "residual_intercept": false,
+    "standardization_scope": "endpoint_axis_training_rows_only",
+    "explicit_training_prediction": "spatial_block_group_cross_fit",
+    "cross_fit_folds": 5,
+    "l2_strength": [0.0001, 0.001, 0.01],
+    "class_weight": ["none", "balanced"],
+    "optimizer": "lbfgs",
+    "max_iter": 500,
+    "tolerance": 1e-07
+  },
+  "controls": {
+    "variants": {
+      "residual_temporal_order_shuffle": "temporal_order_shuffle",
+      "residual_spatial_shuffle": "spatial_shuffle",
+      "residual_random_projection": "random_projection"
+    },
+    "seeds": [72, 73, 74, 75, 76],
+    "selection_axis": "pooled_temporal_validation_only",
+    "random_projection_dim": 320,
+    "partition_local": true,
+    "learned_transform_fit_scope": "training_rows_only"
+  },
+  "axes": {
+    "pooled": ["pooled_temporal"],
+    "transfer": ["bishan_to_dongxing", "dongxing_to_bishan"],
+    "spatial_prefix": "spatial_",
+    "spatial_folds_per_region": 5
+  },
+  "calibration": {
+    "methods": ["none", "sigmoid", "isotonic"],
+    "selection_data": "endpoint_axis_validation_rows_only",
+    "ece_bins": 10
+  },
+  "bootstrap": {
+    "iterations": 2000,
+    "seed": 72
+  },
+  "budgets": [0.10, 0.20],
+  "gates": {
+    "ap_vs_explicit": 0.015,
+    "brier_vs_explicit": 0.005,
+    "ece_vs_explicit": 0.010,
+    "ap_vs_control": 0.005,
+    "brier_vs_control": 0.002,
+    "transfer_ap_gain": 0.005,
+    "transfer_brier_gain": 0.002,
+    "transfer_ap_harm": 0.005,
+    "transfer_brier_harm": 0.002
+  },
+  "decision_rule": "all_three_endpoints_must_pass_all_frozen_gates",
+  "confirmation_policy": "confirmation_targets_unopened_until_protocol_implementation_and_models_are_committed",
+  "phase72c_allowed": false
+}

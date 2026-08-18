@@ -271,21 +271,36 @@ def _best_f1_threshold(outcome: np.ndarray, probability: np.ndarray) -> float:
     candidates = np.unique(
         np.concatenate([probability, np.asarray([0.5], dtype=np.float64)])
     )
-    scored = [
+    order = np.argsort(probability, kind="stable")
+    sorted_probability = np.asarray(probability, dtype=np.float64)[order]
+    sorted_outcome = np.asarray(outcome, dtype=np.int8)[order]
+    suffix_positive = np.concatenate(
+        [
+            np.cumsum(sorted_outcome[::-1], dtype=np.int64)[::-1],
+            np.asarray([0], dtype=np.int64),
+        ]
+    )
+    first_predicted = np.searchsorted(
+        sorted_probability, candidates, side="left"
+    )
+    true_positive = suffix_positive[first_predicted]
+    predicted_positive = len(sorted_probability) - first_predicted
+    positive = int(sorted_outcome.sum())
+    denominator = predicted_positive + positive
+    f1 = np.divide(
+        2.0 * true_positive,
+        denominator,
+        out=np.zeros(len(candidates), dtype=np.float64),
+        where=denominator > 0,
+    )
+    return max(
         (
-            float(
-                f1_score(
-                    outcome,
-                    (probability >= threshold).astype(np.int8),
-                    zero_division=0,
-                )
-            ),
+            float(f1[index]),
             -abs(float(threshold) - 0.5),
             float(threshold),
         )
-        for threshold in candidates
-    ]
-    return max(scored)[2]
+        for index, threshold in enumerate(candidates)
+    )[2]
 
 
 def _budget_thresholds(
