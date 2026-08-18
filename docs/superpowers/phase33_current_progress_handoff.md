@@ -2530,3 +2530,101 @@ python -m pytest tests\test_phase72_claim_drift_audit.py tests\test_phase72_exha
 python -m pytest -q --basetemp=.pytest_tmp_phase72_claim_drift_full_20260818 -p no:cacheprovider
 558 passed, 84 existing sklearn warnings
 ```
+
+## Phase 72 Two-Year Endpoint Screen - 2026-08-18
+
+This is the first post-audit step that ran a new falsifiable experiment rather
+than another documentation-only analysis. It remained inside Phase 72
+exhaustion analysis and did not enter Phase 72C or modify
+`paper/submission/final/*`.
+
+Frozen design:
+
+```text
+targets: conversion_2y; noncontinuous_persistence_2y
+train origins: 2017-2020
+validation origin: 2021
+locked confirmation origin: 2022
+decision rule: both endpoints must pass all frozen gates
+controls: temporal-order shuffle; spatial shuffle; random projection
+control seeds: 72-76
+transfer: both directions
+spatial: five buffered folds per region
+```
+
+The initial full-grid fit was stopped before its first checkpoint when its
+wall-clock cost showed that it was not a low-cost screen. No validation metric
+was inspected and no confirmation target was opened. Commit `98824fc` froze a
+configuration-only amendment: reuse the official Phase 72B selected candidate
+configurations, then refit all weights and calibrators on the two-year
+development labels. All controls, seeds, axes, thresholds, and the two-endpoint
+decision rule remained unchanged.
+
+Real execution identities and counts:
+
+```text
+prepared: 4e71071037a636d85c8b9ead1819c769faf610c5f078d59df31f9ba9bd241531
+selected models: cb1941b40d2982b16738c559e73f476bc906466f357a8305aa2818a2d9be574e
+confirmation receipt: f5a3dcc99e828ae6558d175ca9b162d4198ecd5c452fbb804fb0fe570da00d1d
+eligible rows: 28,586
+development / confirmation rows: 24,690 / 3,896
+bundles / metric rows / prediction rows: 142 / 142 / 280,512
+receipt artifact mismatches: 0 / 8
+```
+
+Official result:
+
+```text
+phase72_two_year_status: two_year_geofm_information_not_supported
+conversion_2y: geofm_information_not_supported
+noncontinuous_persistence_2y: geofm_information_not_supported
+```
+
+Core pooled evidence:
+
+```text
+conversion_2y AP / Brier / ECE deltas: -0.018988632052 / +0.000410629917 / +0.008331641770
+conversion_2y AP bootstrap CI95: [-0.039968587920, +0.001790106574]
+noncontinuous_persistence_2y AP / Brier / ECE deltas: +0.000266220113 / -0.005385588416 / -0.040125539855
+noncontinuous_persistence_2y AP bootstrap CI95: [-0.016824098439, +0.018144439200]
+```
+
+Both endpoints failed the practical and statistical gates, strict controls,
+bidirectional transfer, and spatial stability. The two-year horizon therefore
+does not rescue the original GeoFM-specific target in the current
+Bishan-Dongxing product-label experiment.
+
+Verification after evidence integration:
+
+```text
+focused Phase 72 tests: 26 passed
+full repository: 565 passed, 84 existing sklearn warnings
+smoke check: passed
+git diff --check: passed
+paper/submission/final/*: unchanged
+```
+
+The refreshed Phase 72 exhaustion analysis now contains 11 criteria: five are
+negative or mixed, five remain unresolved, and the one/two-year coverage
+criterion is complete. The new `two_year_prediction_outcome_gate` is
+`evaluated_negative`. Overall exhaustion remains incomplete because a second
+product, residual model, temporal neural model, label-noise/disagreement audit,
+and constrained planning outcomes are still unresolved.
+
+Authoritative next action:
+
+```text
+Do not enter Phase 72C.
+Do not revise the formal manuscript from this result.
+Preserve both the one-year and two-year negative gates.
+Continue only with remaining Phase 72 exhaustion criteria if further work is authorized.
+```
+
+Read next:
+
+```text
+paper/phase28_results/42_phase72_two_year_endpoint_screen.md
+paper/phase28_results/40_phase72_exhaustion_analysis.md
+experiments/phase72_two_year_endpoint_screen/outputs/confirmation_fixed_configs/phase72_two_year_endpoint_screen.json
+experiments/phase72_exhaustion_analysis/outputs/real_bishan_dongxing/phase72_exhaustion_analysis.json
+```

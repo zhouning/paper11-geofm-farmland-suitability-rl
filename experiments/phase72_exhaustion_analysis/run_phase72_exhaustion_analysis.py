@@ -31,6 +31,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--phase72b-receipt-json", type=Path, required=True)
     parser.add_argument("--phase72b-receipt-sha256", type=Path, required=True)
     parser.add_argument("--phase72b-confirmation-dir", type=Path, required=True)
+    parser.add_argument("--phase72-two-year-json", type=Path)
+    parser.add_argument("--phase72-two-year-receipt-json", type=Path)
+    parser.add_argument("--phase72-two-year-receipt-sha256", type=Path)
+    parser.add_argument("--phase72-two-year-confirmation-dir", type=Path)
     parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args(argv)
 
@@ -47,6 +51,14 @@ def main(argv: list[str] | None = None) -> int:
             phase72b_receipt_json=args.phase72b_receipt_json,
             phase72b_receipt_sha256=args.phase72b_receipt_sha256,
             phase72b_confirmation_dir=args.phase72b_confirmation_dir,
+            phase72_two_year_json=args.phase72_two_year_json,
+            phase72_two_year_receipt_json=args.phase72_two_year_receipt_json,
+            phase72_two_year_receipt_sha256=(
+                args.phase72_two_year_receipt_sha256
+            ),
+            phase72_two_year_confirmation_dir=(
+                args.phase72_two_year_confirmation_dir
+            ),
         )
         artifacts = write_phase72_exhaustion_analysis_artifacts(
             analysis,

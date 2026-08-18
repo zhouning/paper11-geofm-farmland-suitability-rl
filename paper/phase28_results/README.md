@@ -539,6 +539,14 @@ policy. It reads Phase 63 set-policy artifacts, diagnoses selected-block
 overlap, oracle-rank gaps, training convergence, and feature scale/effective
 rank, then records a standardization gate decision in
 `30_phase64_set_policy_error_diagnosis.md`.
+
+Phase 72 exhaustion now includes a separately frozen two-year endpoint screen
+recorded in `42_phase72_two_year_endpoint_screen.md`. Both `conversion_2y` and
+`noncontinuous_persistence_2y` returned `geofm_information_not_supported`.
+Neither endpoint passed the pooled practical/statistical gate, strict controls,
+bidirectional transfer, or buffered spatial validation. This resolves the
+previously unmodeled horizon criterion with negative evidence; it does not
+authorize Phase 72C or support future-aware GeoFM planning claims.
 ## Claim Boundary
 
 These representation-branch follow-ups are diagnostic only. They do not enable

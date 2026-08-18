@@ -159,6 +159,74 @@ def _fixture_paths(tmp_path: Path) -> dict[str, Path]:
     }
 
 
+def _with_two_year_evidence(
+    tmp_path: Path, paths: dict[str, Path]
+) -> dict[str, Path]:
+    confirmation = tmp_path / "two-year-confirmation"
+    artifact_names = [
+        "phase72_two_year_metrics.csv",
+        "phase72_two_year_predictions.csv",
+        "phase72_two_year_bootstrap_deltas.csv",
+        "phase72_two_year_control_comparison.csv",
+        "phase72_two_year_transfer_summary.csv",
+        "phase72_two_year_spatial_summary.csv",
+        "phase72_two_year_endpoint_screen.json",
+        "phase72_two_year_endpoint_screen.md",
+    ]
+    receipt_artifacts = []
+    for name in artifact_names:
+        path = confirmation / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(name, encoding="utf-8")
+        receipt_artifacts.append(
+            {
+                "name": name,
+                "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            }
+        )
+    two_year_json = _write_json(
+        tmp_path / "two-year.json",
+        {
+            "phase72_two_year_status": (
+                "two_year_geofm_information_not_supported"
+            ),
+            "endpoint_results": {
+                "conversion_2y": {
+                    "phase72b_status": "geofm_information_not_supported"
+                },
+                "noncontinuous_persistence_2y": {
+                    "phase72b_status": "geofm_information_not_supported"
+                },
+            },
+            "counts": {"endpoints": 2, "bundle_count": 142},
+        },
+    )
+    receipt = _write_json(
+        tmp_path / "two-year-receipt.json",
+        {
+            "phase72_two_year_status": (
+                "two_year_geofm_information_not_supported"
+            ),
+            "artifacts": receipt_artifacts,
+        },
+    )
+    receipt_hash = tmp_path / "two-year-receipt.sha256"
+    receipt_hash.write_text(
+        canonical_json_sha256(
+            json.loads(receipt.read_text(encoding="utf-8"))
+        )
+        + "\n",
+        encoding="ascii",
+    )
+    return {
+        **paths,
+        "phase72_two_year_json": two_year_json,
+        "phase72_two_year_receipt_json": receipt,
+        "phase72_two_year_receipt_sha256": receipt_hash,
+        "phase72_two_year_confirmation_dir": confirmation,
+    }
+
+
 def test_phase72_exhaustion_separates_negative_from_unresolved(tmp_path):
     from paper11_geofm.phase72_exhaustion_analysis import (
         build_phase72_exhaustion_analysis,
@@ -204,6 +272,29 @@ def test_phase72_exhaustion_rejects_tampered_receipt_artifact(tmp_path):
 
     assert analysis["phase72_exhaustion_status"] == "phase72_exhaustion_inputs_not_ready"
     assert any("phase72b_metrics.csv" in item for item in analysis["integrity_blockers"])
+
+
+def test_phase72_exhaustion_integrates_negative_two_year_screen(tmp_path):
+    from paper11_geofm.phase72_exhaustion_analysis import (
+        build_phase72_exhaustion_analysis,
+    )
+
+    paths = _with_two_year_evidence(tmp_path, _fixture_paths(tmp_path))
+    analysis = build_phase72_exhaustion_analysis(**paths)
+
+    criteria = {row["criterion_id"]: row for row in analysis["criteria_rows"]}
+    assert criteria["one_and_two_year_endpoints"]["criterion_status"] == (
+        "evaluated_complete"
+    )
+    assert criteria["two_year_prediction_outcome_gate"][
+        "criterion_status"
+    ] == "evaluated_negative"
+    assert "one_and_two_year_endpoints" not in analysis["unresolved_criteria"]
+    assert analysis["two_year_evidence"]["status"] == (
+        "two_year_geofm_information_not_supported"
+    )
+    assert analysis["counts"]["receipt_hash_rows"] == 19
+    assert analysis["counts"]["integrity_blockers"] == 0
 
 
 def test_phase72_exhaustion_rejects_tampered_receipt_sidecar(tmp_path):

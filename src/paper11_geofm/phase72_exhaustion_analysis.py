@@ -11,9 +11,10 @@ from .phase72b_protocol import canonical_json_sha256
 
 PHASE72_EXHAUSTION_CLAIM_BOUNDARY = (
     "Phase 72 exhaustion analysis is a read-only audit of the completed Phase "
-    "72A and Phase 72B evidence. It does not train Phase 72C, run planning, "
-    "alter rewards, revise the formal manuscript, or establish a complete "
-    "scientific exhaustion of every future-aware GeoFM design."
+    "72A, Phase 72B, and separately frozen exhaustion evidence. It does not "
+    "train Phase 72C, run planning, alter rewards, revise the formal "
+    "manuscript, or establish a complete scientific exhaustion of every "
+    "future-aware GeoFM design."
 )
 
 CRITERION_FIELDS = (
@@ -55,6 +56,17 @@ _RECEIPT_REQUIRED_ARTIFACTS = {
     "phase72b_information_gain_screen.md",
 }
 
+_TWO_YEAR_RECEIPT_REQUIRED_ARTIFACTS = {
+    "phase72_two_year_metrics.csv",
+    "phase72_two_year_predictions.csv",
+    "phase72_two_year_bootstrap_deltas.csv",
+    "phase72_two_year_control_comparison.csv",
+    "phase72_two_year_transfer_summary.csv",
+    "phase72_two_year_spatial_summary.csv",
+    "phase72_two_year_endpoint_screen.json",
+    "phase72_two_year_endpoint_screen.md",
+}
+
 
 def build_phase72_exhaustion_analysis(
     *,
@@ -69,6 +81,10 @@ def build_phase72_exhaustion_analysis(
     phase72b_receipt_json: Path | str,
     phase72b_receipt_sha256: Path | str,
     phase72b_confirmation_dir: Path | str,
+    phase72_two_year_json: Path | str | None = None,
+    phase72_two_year_receipt_json: Path | str | None = None,
+    phase72_two_year_receipt_sha256: Path | str | None = None,
+    phase72_two_year_confirmation_dir: Path | str | None = None,
 ) -> dict[str, object]:
     phase72a = _read_json_object(phase72a_json, "Phase 72A JSON")
     phase72b = _read_json_object(phase72b_json, "Phase 72B JSON")
@@ -89,10 +105,13 @@ def build_phase72_exhaustion_analysis(
     hash_rows, integrity_blockers = _audit_receipt_artifacts(
         receipt,
         Path(phase72b_confirmation_dir),
+        required_artifacts=_RECEIPT_REQUIRED_ARTIFACTS,
+        label="Phase 72B",
     )
     receipt_hash_row, receipt_hash_blocker = _audit_receipt_self(
         receipt,
         Path(phase72b_receipt_sha256),
+        label="Phase 72B",
     )
     hash_rows.append(receipt_hash_row)
     if receipt_hash_blocker:
@@ -102,10 +121,84 @@ def build_phase72_exhaustion_analysis(
             "Phase 72B receipt status does not match the information-gain JSON"
         )
 
+    two_year_paths = (
+        phase72_two_year_json,
+        phase72_two_year_receipt_json,
+        phase72_two_year_receipt_sha256,
+        phase72_two_year_confirmation_dir,
+    )
+    two_year_evidence = None
+    if any(path is not None for path in two_year_paths):
+        if any(path is None for path in two_year_paths):
+            raise ValueError(
+                "All Phase 72 two-year evidence paths must be supplied together"
+            )
+        two_year = _read_json_object(
+            phase72_two_year_json, "Phase 72 two-year JSON"
+        )
+        two_year_receipt = _read_json_object(
+            phase72_two_year_receipt_json,
+            "Phase 72 two-year receipt JSON",
+        )
+        two_year_status = _required_status(
+            two_year,
+            "phase72_two_year_status",
+            "Phase 72 two-year JSON",
+        )
+        receipt_two_year_status = _required_status(
+            two_year_receipt,
+            "phase72_two_year_status",
+            "Phase 72 two-year receipt JSON",
+        )
+        two_year_hash_rows, two_year_blockers = _audit_receipt_artifacts(
+            two_year_receipt,
+            Path(phase72_two_year_confirmation_dir),
+            required_artifacts=_TWO_YEAR_RECEIPT_REQUIRED_ARTIFACTS,
+            label="Phase 72 two-year",
+        )
+        two_year_receipt_hash_row, two_year_receipt_hash_blocker = (
+            _audit_receipt_self(
+                two_year_receipt,
+                Path(phase72_two_year_receipt_sha256),
+                label="Phase 72 two-year",
+            )
+        )
+        two_year_hash_rows.append(two_year_receipt_hash_row)
+        hash_rows.extend(two_year_hash_rows)
+        integrity_blockers.extend(two_year_blockers)
+        if two_year_receipt_hash_blocker:
+            integrity_blockers.append(two_year_receipt_hash_blocker)
+        if receipt_two_year_status != two_year_status:
+            integrity_blockers.append(
+                "Phase 72 two-year receipt status does not match the screen JSON"
+            )
+        endpoint_results = two_year.get("endpoint_results", {})
+        if not isinstance(endpoint_results, Mapping):
+            raise ValueError(
+                "Phase 72 two-year endpoint results must be an object"
+            )
+        two_year_evidence = {
+            "status": two_year_status,
+            "endpoint_statuses": {
+                str(endpoint): str(result.get("phase72b_status", ""))
+                for endpoint, result in endpoint_results.items()
+                if isinstance(result, Mapping)
+            },
+            "counts": dict(two_year.get("counts", {})),
+            "receipt_artifact_rows": len(two_year_hash_rows),
+        }
+
     labels = _label_evidence(phase72a, summary_rows, review_rows)
     models = _model_evidence(metric_rows, protocol)
     screen = _screen_evidence(phase72b, protocol, control_rows, transfer_rows)
-    criteria = _criteria_rows(labels, models, screen, phase72a_status, phase72b_status)
+    criteria = _criteria_rows(
+        labels,
+        models,
+        screen,
+        phase72a_status,
+        phase72b_status,
+        two_year_evidence,
+    )
     claims = _claim_boundary_rows(criteria, integrity_blockers, phase72b_status)
 
     unresolved = [
@@ -149,6 +242,22 @@ def build_phase72_exhaustion_analysis(
             "phase72b_receipt_json": str(Path(phase72b_receipt_json)),
             "phase72b_receipt_sha256": str(Path(phase72b_receipt_sha256)),
             "phase72b_confirmation_dir": str(Path(phase72b_confirmation_dir)),
+            **(
+                {
+                    "phase72_two_year_json": str(Path(phase72_two_year_json)),
+                    "phase72_two_year_receipt_json": str(
+                        Path(phase72_two_year_receipt_json)
+                    ),
+                    "phase72_two_year_receipt_sha256": str(
+                        Path(phase72_two_year_receipt_sha256)
+                    ),
+                    "phase72_two_year_confirmation_dir": str(
+                        Path(phase72_two_year_confirmation_dir)
+                    ),
+                }
+                if two_year_evidence is not None
+                else {}
+            ),
         },
         "counts": {
             "criteria": len(criteria),
@@ -164,6 +273,7 @@ def build_phase72_exhaustion_analysis(
         "label_evidence": labels,
         "model_evidence": models,
         "screen_evidence": screen,
+        "two_year_evidence": two_year_evidence,
         "artifact_hash_rows": hash_rows,
         "integrity_blockers": integrity_blockers,
         "criteria_rows": criteria,
@@ -172,8 +282,8 @@ def build_phase72_exhaustion_analysis(
         "negative_or_mixed_criteria": negative,
         "recommended_next_step": (
             "Do not begin Phase 72C. Preserve the Phase 72B negative gate and "
-            "record the remaining products, noise, model, horizon, and planning "
-            "evidence as unresolved limitations."
+            "the negative two-year result; record the remaining product, "
+            "noise, model, and planning evidence as unresolved limitations."
         ),
         "claim_boundary": PHASE72_EXHAUSTION_CLAIM_BOUNDARY,
     }
@@ -336,6 +446,7 @@ def _criteria_rows(
     screen: Mapping[str, object],
     phase72a_status: str,
     phase72b_status: str,
+    two_year_evidence: Mapping[str, object] | None = None,
 ) -> list[dict[str, object]]:
     source_count = int(labels["independent_label_source_count"])
     horizons = set(labels["horizons_in_label_package"])
@@ -344,6 +455,25 @@ def _criteria_rows(
     controls = {str(row.get("control_id")): row for row in screen["controls"]}
     transfers = screen["transfers"]
     spatial_regions = screen["spatial_regions"]
+    two_year_status = (
+        "" if two_year_evidence is None else str(two_year_evidence["status"])
+    )
+    if two_year_evidence is None:
+        horizon_status = (
+            "partially_evaluated"
+            if {"1y", "2y", "continuous_2y"}.issubset(horizons)
+            else "data_gap"
+        )
+        horizon_evidence = (
+            f"Label package contains horizons: {', '.join(sorted(horizons))}; "
+            "Phase 72B metrics are one-year only."
+        )
+    else:
+        horizon_status = "evaluated_complete"
+        horizon_evidence = (
+            f"Label package horizons: {', '.join(sorted(horizons))}; "
+            f"separate two-year screen status: {two_year_status}."
+        )
     rows = [
         _criterion(
             "independent_annual_products",
@@ -357,11 +487,34 @@ def _criteria_rows(
         _criterion(
             "one_and_two_year_endpoints",
             "horizon_coverage",
-            "partially_evaluated" if {"1y", "2y", "continuous_2y"}.issubset(horizons) else "data_gap",
+            horizon_status,
             "One-year and two-year outcomes must both be evaluated, not only assembled.",
-            f"Label package contains horizons: {', '.join(sorted(horizons))}; Phase 72B metrics are one-year only.",
+            horizon_evidence,
             ",".join(sorted(horizons)),
-            "phase72a_package_summary.csv;phase72b_metrics.csv",
+            "phase72a_package_summary.csv;phase72b_metrics.csv;phase72_two_year_endpoint_screen.json",
+        ),
+        _criterion(
+            "two_year_prediction_outcome_gate",
+            "prediction_outcome",
+            (
+                "not_evaluated"
+                if two_year_evidence is None
+                else "evaluated_negative"
+                if two_year_status == "two_year_geofm_information_not_supported"
+                else "evaluated_mixed"
+                if two_year_status == "two_year_geofm_information_mixed"
+                else "evaluated_complete"
+                if two_year_status == "two_year_geofm_information_supported"
+                else "not_evaluated"
+            ),
+            "Both frozen two-year endpoints must support representation-specific GeoFM information.",
+            (
+                "No separate two-year screen was supplied."
+                if two_year_evidence is None
+                else f"Separate two-year screen status: {two_year_status}; endpoint statuses: {two_year_evidence['endpoint_statuses']}."
+            ),
+            two_year_status or "absent",
+            "phase72_two_year_endpoint_screen.json;phase72_two_year_confirmation_receipt.json",
         ),
         _criterion(
             "explicit_residual_model",
@@ -515,18 +668,23 @@ def _criterion(
 def _audit_receipt_artifacts(
     receipt: Mapping[str, object],
     confirmation_dir: Path,
+    *,
+    required_artifacts: set[str],
+    label: str,
 ) -> tuple[list[dict[str, str]], list[str]]:
     artifact_entries = receipt.get("artifacts", [])
     if not isinstance(artifact_entries, Sequence) or isinstance(artifact_entries, (str, bytes)):
-        return [], ["Phase 72B receipt artifacts must be a list"]
+        return [], [f"{label} receipt artifacts must be a list"]
     names = {str(row.get("name")) for row in artifact_entries if isinstance(row, Mapping)}
     blockers = []
-    if names != _RECEIPT_REQUIRED_ARTIFACTS:
-        blockers.append("Phase 72B receipt artifact set does not match the nine required files")
+    if names != required_artifacts:
+        blockers.append(
+            f"{label} receipt artifact set does not match the required files"
+        )
     rows = []
     for entry in artifact_entries:
         if not isinstance(entry, Mapping):
-            blockers.append("Phase 72B receipt contains a non-object artifact entry")
+            blockers.append(f"{label} receipt contains a non-object artifact entry")
             continue
         name = str(entry.get("name", ""))
         expected = str(entry.get("sha256", "")).lower()
@@ -545,6 +703,8 @@ def _audit_receipt_artifacts(
 def _audit_receipt_self(
     receipt: Mapping[str, object],
     receipt_hash_path: Path,
+    *,
+    label: str,
 ) -> tuple[dict[str, str], str]:
     expected = ""
     if receipt_hash_path.is_file():
@@ -557,7 +717,11 @@ def _audit_receipt_self(
         "actual_sha256": actual,
         "hash_status": status,
     }
-    blocker = "" if status == "match" else "Phase 72B receipt canonical hash mismatch or sidecar missing"
+    blocker = (
+        ""
+        if status == "match"
+        else f"{label} receipt canonical hash mismatch or sidecar missing"
+    )
     return row, blocker
 
 
