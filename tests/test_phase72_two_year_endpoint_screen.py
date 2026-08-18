@@ -16,6 +16,7 @@ sys.path.insert(0, str(ROOT / "src"))
 from paper11_geofm.phase72_two_year_endpoint_screen import (
     PHASE72_TWO_YEAR_ENDPOINTS,
     _overall_status,
+    fit_freeze_phase72_two_year_models,
     load_phase72_two_year_protocol,
     prepare_phase72_two_year_endpoint_screen,
     validate_phase72_two_year_protocol,
@@ -214,3 +215,112 @@ def test_phase72_two_year_overall_requires_both_endpoints_to_pass():
     assert _overall_status(
         {name: negative for name in PHASE72_TWO_YEAR_ENDPOINTS}
     ) == "two_year_geofm_information_not_supported"
+
+
+def test_phase72_two_year_fit_orchestrates_all_frozen_axes(
+    tmp_path, monkeypatch
+):
+    import paper11_geofm.phase72_two_year_endpoint_screen as module
+
+    protocol = load_phase72_two_year_protocol(PROTOCOL)
+    base_axis = {
+        "train": [0, 1],
+        "validation": [2, 3],
+        "test": [],
+    }
+    registry = {
+        "pooled_temporal": copy.deepcopy(base_axis),
+        "bishan_to_dongxing": copy.deepcopy(base_axis),
+        "dongxing_to_bishan": copy.deepcopy(base_axis),
+        **{
+            f"spatial_{region}_fold{fold}": copy.deepcopy(base_axis)
+            for region in ("bishan", "dongxing")
+            for fold in range(5)
+        },
+    }
+    prepared = {
+        "manifest_sha256": "3" * 64,
+        "protocol": protocol,
+        "feature_rows": [
+            {
+                "sample_index": index,
+                "region_id": "bishan" if index < 2 else "dongxing",
+                "origin_year": 2017 + index,
+            }
+            for index in range(4)
+        ],
+        "matrices": {
+            "explicit_history": np.ones((4, 2), np.float32),
+            "geofm_temporal_full": np.ones((4, 3), np.float32),
+            "embedding_history": np.ones((4, 2, 1), np.float32),
+            "history_mask": np.ones((4, 2), bool),
+        },
+        "split_registries": {
+            endpoint: copy.deepcopy(registry)
+            for endpoint in PHASE72_TWO_YEAR_ENDPOINTS
+        },
+        "development_targets": {
+            "sample_index": np.arange(4, dtype=np.int32),
+            "origin_year": np.arange(2017, 2021, dtype=np.int16),
+            "conversion_2y": np.asarray([0, 1, 0, 1], np.int8),
+            "noncontinuous_persistence_2y": np.asarray(
+                [1, 0, 1, 0], np.int8
+            ),
+        },
+    }
+    monkeypatch.setattr(
+        module,
+        "load_verified_phase72_two_year_prepared",
+        lambda *_, **__: prepared,
+    )
+    monkeypatch.setattr(
+        module,
+        "_control_matrices",
+        lambda *_, train_indexes, validation_indexes, **__: (
+            np.ones((len(train_indexes), 5), np.float32),
+            np.ones((len(validation_indexes), 5), np.float32),
+        ),
+    )
+
+    def fake_fit(
+        train_x,
+        train_y,
+        validation_x,
+        validation_y,
+        *,
+        variant_id,
+        axis_id,
+        candidate_config=None,
+        **kwargs,
+    ):
+        config = candidate_config or {
+            "model_family": "logistic",
+            "C": 1.0,
+            "class_weight": None,
+        }
+        bundle = {
+            "axis_id": axis_id,
+            "variant_id": variant_id,
+            "estimator_params": config,
+            "feature_count": train_x.shape[1],
+            "validation_metrics": {
+                "average_precision": 0.6,
+                "brier": 0.2,
+                "ece": 0.1,
+            },
+        }
+        return bundle, [{"axis_id": axis_id, "variant_id": variant_id}]
+
+    monkeypatch.setattr(module, "fit_select_phase72b_model", fake_fit)
+    monkeypatch.setattr(module, "fit_fixed_phase72b_model", fake_fit)
+
+    selected, paths = fit_freeze_phase72_two_year_models(
+        prepared_dir=tmp_path / "prepared",
+        phase72a_package_dir=tmp_path / "phase72a",
+        phase72b_prepared_dir=tmp_path / "phase72b",
+        output_dir=tmp_path / "frozen",
+    )
+
+    assert selected["bundle_count"] == 142
+    assert len(selected["bundle_records"]) == 142
+    assert paths["selected_models"].is_file()

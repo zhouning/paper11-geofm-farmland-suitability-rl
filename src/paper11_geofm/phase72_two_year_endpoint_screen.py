@@ -776,6 +776,7 @@ def fit_freeze_phase72_two_year_models(
                     bundle, record = _checkpoint_bundle(
                         output=output,
                         progress=progress,
+                        endpoint=endpoint,
                         axis_id=axis_id,
                         variant_id=variant_id,
                         seed=None,
@@ -801,7 +802,6 @@ def fit_freeze_phase72_two_year_models(
                         feature_rows,
                         train_indexes=train_indexes,
                         validation_indexes=validation_indexes,
-                        endpoint=endpoint,
                         axis_id=axis_id,
                         seed=int(seed),
                     )
